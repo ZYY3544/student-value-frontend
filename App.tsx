@@ -10,6 +10,7 @@ import { AssessmentInput, AssessmentResult, AppState } from './types';
 const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
 const INDUSTRIES = ["互联网", "高科技", "金融", "大健康", "汽车", "消费品", "新零售", "地产", "泛娱乐", "教育", "农业", "通用行业"];
 const EDUCATION_LEVELS = ["大专", "本科", "硕士", "博士"];
+const COMPANY_TYPES = ["国有企业", "外资企业", "民营企业", "合资企业", "事业单位", "其他"];
 const FUNCTIONS = [
   "算法", "软件开发", "产品管理", "数据分析与商业智能",
   "硬件开发", "信息安全", "投融资管理", "战略管理",
@@ -34,6 +35,7 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
   schoolName: '',
   educationLevel: '',
   major: '',
+  companyType: '',
 };
 
 const App: React.FC = () => {
@@ -134,6 +136,7 @@ const App: React.FC = () => {
     if (!formData.schoolName.trim()) newErrors.push('schoolName');
     if (!formData.educationLevel) newErrors.push('educationLevel');
     if (!formData.major.trim()) newErrors.push('major');
+    if (!formData.companyType) newErrors.push('companyType');
 
     if (!formData.resumeFile && !formData.resumeText.trim()) {
       newErrors.push('resumeSource');
@@ -288,6 +291,24 @@ const App: React.FC = () => {
                   >
                     <option value="" disabled hidden>请选择</option>
                     {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[#110e0c] opacity-20 pointer-events-none z-20" size={16} />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <div className="flex justify-between items-center mb-1.5 ml-1">
+                  <label className="text-[10px] font-bold text-[#110e0c] opacity-40 tracking-wider uppercase">企业性质</label>
+                  {hasError('companyType') && <span className="text-[10px] text-rose-500 font-bold">请选择</span>}
+                </div>
+                <div className="relative">
+                  <select
+                    value={formData.companyType}
+                    onChange={(e) => handleInputChange('companyType', e.target.value)}
+                    style={{ color: formData.companyType ? '#110e0c' : 'rgba(17,14,12,0.2)' }}
+                    className={`w-full relative z-10 appearance-none bg-white border ${hasError('companyType') ? 'border-rose-500' : 'border-[#0A66C2]/20'} text-sm font-bold rounded-2xl py-3 px-4 pr-10 outline-none focus:bg-white focus:border-[#0A66C2] transition-all`}
+                  >
+                    <option value="" disabled hidden>请选择</option>
+                    {COMPANY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[#110e0c] opacity-20 pointer-events-none z-20" size={16} />
                 </div>
