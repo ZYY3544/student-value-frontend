@@ -44,6 +44,7 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
       educationLevel: input.educationLevel,
       major: input.major,
       companyType: input.companyType,
+      targetCompany: input.targetCompany,
       inviteCode: localStorage.getItem('invite_code') || '',
       retryCount: retryCount,
       welcomeS: pageDurations?.welcomeS,

@@ -36,6 +36,7 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
   educationLevel: '',
   major: '',
   companyType: '',
+  targetCompany: '',
 };
 
 const App: React.FC = () => {
@@ -316,6 +317,18 @@ const App: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="flex flex-col">
+                <div className="flex justify-between items-center mb-1.5 ml-1">
+                  <label className="text-[10px] font-bold text-[#110e0c] opacity-40 tracking-wider uppercase">意向企业</label>
+                </div>
+                <input
+                  type="text"
+                  placeholder="如: 腾讯（选填）"
+                  value={formData.targetCompany}
+                  onChange={(e) => handleInputChange('targetCompany', e.target.value)}
+                  className={`w-full relative z-10 bg-white border border-[#0A66C2]/20 text-sm font-bold text-[#110e0c] rounded-2xl py-3 px-4 outline-none focus:bg-white focus:border-[#0A66C2] transition-all placeholder-light`}
+                />
+              </div>
                <div className="flex flex-col">
                   <div className="flex justify-between items-center mb-1.5 ml-1">
                     <label className="text-[10px] font-bold text-[#110e0c] opacity-40 tracking-wider uppercase">

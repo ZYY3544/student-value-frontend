@@ -15,6 +15,7 @@ export interface AssessmentInput {
   educationLevel: string;
   major: string;
   companyType: string;
+  targetCompany: string;
 }
 
 // 单个能力维度
