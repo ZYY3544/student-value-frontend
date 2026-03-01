@@ -33,6 +33,7 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
   resumeFileName: '',
   schoolName: '',
   educationLevel: '',
+  major: '',
 };
 
 const App: React.FC = () => {
@@ -132,6 +133,7 @@ const App: React.FC = () => {
     if (!formData.jobFunction) newErrors.push('jobFunction');
     if (!formData.schoolName.trim()) newErrors.push('schoolName');
     if (!formData.educationLevel) newErrors.push('educationLevel');
+    if (!formData.major.trim()) newErrors.push('major');
 
     if (!formData.resumeFile && !formData.resumeText.trim()) {
       newErrors.push('resumeSource');
@@ -216,6 +218,19 @@ const App: React.FC = () => {
                   value={formData.schoolName}
                   onChange={(e) => handleInputChange('schoolName', e.target.value)}
                   className={`w-full relative z-10 bg-white border ${hasError('schoolName') ? 'border-rose-500' : 'border-[#0A66C2]/20'} text-sm font-bold text-[#110e0c] rounded-2xl py-3 px-4 outline-none focus:bg-white focus:border-[#0A66C2] transition-all placeholder-light`}
+                />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex justify-between items-center mb-1.5 ml-1">
+                  <label className="text-[10px] font-bold text-[#110e0c] opacity-40 tracking-wider uppercase">专业</label>
+                  {hasError('major') && <span className="text-[10px] text-rose-500 font-bold">必填项</span>}
+                </div>
+                <input
+                  type="text"
+                  placeholder="如: 计算机科学"
+                  value={formData.major}
+                  onChange={(e) => handleInputChange('major', e.target.value)}
+                  className={`w-full relative z-10 bg-white border ${hasError('major') ? 'border-rose-500' : 'border-[#0A66C2]/20'} text-sm font-bold text-[#110e0c] rounded-2xl py-3 px-4 outline-none focus:bg-white focus:border-[#0A66C2] transition-all placeholder-light`}
                 />
               </div>
               <div className="flex flex-col">

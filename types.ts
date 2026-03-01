@@ -13,6 +13,7 @@ export interface AssessmentInput {
   resumeFileName?: string;
   schoolName: string;
   educationLevel: string;
+  major: string;
 }
 
 // 单个能力维度
