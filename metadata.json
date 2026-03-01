@@ -1,0 +1,5 @@
+{
+  "name": "Value Assessment System",
+  "description": "A WeChat Mini Program style application to assess job and personal market value based on resume and performance data.",
+  "requestFramePermissions": []
+}
