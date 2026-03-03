@@ -40,6 +40,7 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
       jobTitle: input.jobTitle,
       jobFunction: input.jobFunction,
       resumeText: resumeText,
+      schoolName: input.schoolName,
       educationLevel: input.educationLevel,
       major: input.major,
       companyType: input.companyType,

@@ -32,6 +32,7 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
   resumeText: '',
   resumeFile: null,
   resumeFileName: '',
+  schoolName: '',
   educationLevel: '',
   major: '',
   companyType: '',
@@ -133,6 +134,7 @@ const App: React.FC = () => {
     if (!formData.industry) newErrors.push('industry');
     if (!formData.jobTitle) newErrors.push('jobTitle');
     if (!formData.jobFunction) newErrors.push('jobFunction');
+    if (!formData.schoolName.trim()) newErrors.push('schoolName');
     if (!formData.educationLevel) newErrors.push('educationLevel');
     if (!formData.major.trim()) newErrors.push('major');
     if (!formData.companyType) newErrors.push('companyType');
@@ -208,18 +210,18 @@ const App: React.FC = () => {
 
         <div className="px-5 py-6 space-y-6 pb-32 relative z-20">
           <InputCard title="院校信息" icon={<GraduationCap size={26} />} accentColor="text-[#0A66C2]" customBg="bg-white">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="flex flex-col">
                 <div className="flex justify-between items-center mb-1.5 ml-1">
-                  <label className="text-[10px] font-bold text-[#110e0c] opacity-40 tracking-wider uppercase">专业</label>
-                  {hasError('major') && <span className="text-[10px] text-rose-500 font-bold">必填项</span>}
+                  <label className="text-[10px] font-bold text-[#110e0c] opacity-40 tracking-wider uppercase">学校</label>
+                  {hasError('schoolName') && <span className="text-[10px] text-rose-500 font-bold">必填项</span>}
                 </div>
                 <input
                   type="text"
-                  placeholder="如: 计算机科学"
-                  value={formData.major}
-                  onChange={(e) => handleInputChange('major', e.target.value)}
-                  className={`w-full relative z-10 bg-white border ${hasError('major') ? 'border-rose-500' : 'border-[#0A66C2]/20'} text-sm font-bold text-[#110e0c] rounded-2xl py-3 px-4 outline-none focus:bg-white focus:border-[#0A66C2] transition-all placeholder-light`}
+                  placeholder="如: 北京大学"
+                  value={formData.schoolName}
+                  onChange={(e) => handleInputChange('schoolName', e.target.value)}
+                  className={`w-full relative z-10 bg-white border ${hasError('schoolName') ? 'border-rose-500' : 'border-[#0A66C2]/20'} text-sm font-bold text-[#110e0c] rounded-2xl py-3 px-4 outline-none focus:bg-white focus:border-[#0A66C2] transition-all placeholder-light`}
                 />
               </div>
               <div className="flex flex-col">
@@ -239,6 +241,19 @@ const App: React.FC = () => {
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[#110e0c] opacity-20 pointer-events-none z-20" size={16} />
                 </div>
+              </div>
+              <div className="flex flex-col">
+                <div className="flex justify-between items-center mb-1.5 ml-1">
+                  <label className="text-[10px] font-bold text-[#110e0c] opacity-40 tracking-wider uppercase">专业</label>
+                  {hasError('major') && <span className="text-[10px] text-rose-500 font-bold">必填项</span>}
+                </div>
+                <input
+                  type="text"
+                  placeholder="如: 计算机科学"
+                  value={formData.major}
+                  onChange={(e) => handleInputChange('major', e.target.value)}
+                  className={`w-full relative z-10 bg-white border ${hasError('major') ? 'border-rose-500' : 'border-[#0A66C2]/20'} text-sm font-bold text-[#110e0c] rounded-2xl py-3 px-4 outline-none focus:bg-white focus:border-[#0A66C2] transition-all placeholder-light`}
+                />
               </div>
             </div>
           </InputCard>
