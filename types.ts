@@ -11,7 +11,6 @@ export interface AssessmentInput {
     data: string;
   } | null;
   resumeFileName?: string;
-  schoolName: string;
   educationLevel: string;
   major: string;
   companyType: string;
