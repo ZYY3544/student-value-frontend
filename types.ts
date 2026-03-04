@@ -1,4 +1,3 @@
-
 export interface AssessmentInput {
   assessmentType: 'CV';
   city: string;
@@ -60,6 +59,9 @@ export interface AssessmentResult {
   salaryCompetitiveness?: number;
   resumeHealthScore?: number;
   logId?: number;
+
+  // HAY 8因素评估结果（用于简历优化助手）
+  factors?: Record<string, string>;
 }
 
 export enum AppState {

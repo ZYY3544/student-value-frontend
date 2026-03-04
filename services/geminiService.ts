@@ -1,4 +1,3 @@
-
 import { AssessmentInput, AssessmentResult, Abilities, AbilityItem } from "../types";
 
 /**
@@ -101,6 +100,9 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
     deepInsight: data.deepInsight,
     salaryCompetitiveness: data.salaryCompetitiveness,
     resumeHealthScore: data.resumeHealthScore,
+
+    // HAY 8因素（用于简历优化助手）
+    factors: data.factors,
 
     // 生成优劣势（基于能力数据）
     strengths: generateStrengths(data.abilities, input),

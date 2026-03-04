@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { AssessmentResult, AssessmentInput, AbilityItem } from '../types';
 import {
@@ -9,6 +8,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis,
   ResponsiveContainer, Tooltip
 } from 'recharts';
+import { ChatWidget } from './ChatWidget';
 
 interface ResultViewProps {
   result: AssessmentResult;
@@ -355,6 +355,21 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
              再测一次
           </button>
       </div>
+
+      {/* 简历优化助手浮窗 */}
+      <ChatWidget
+        assessmentContext={{
+          factors: result.factors || {},
+          abilities: result.abilities || {},
+          grade: result.level,
+          salaryRange: result.personValue || '',
+          jobTitle: inputData.jobTitle,
+          jobFunction: inputData.jobFunction,
+          deepInsight: result.deepInsight,
+        }}
+        resumeText={inputData.resumeText}
+        apiBase="https://student-value-backend.onrender.com"
+      />
     </div>
   );
 };
