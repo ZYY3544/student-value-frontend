@@ -367,7 +367,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           jobFunction: inputData.jobFunction,
           deepInsight: result.deepInsight,
         }}
-        resumeText={inputData.resumeText}
+        resumeText={result.resumeText || inputData.resumeText}
         apiBase="https://student-value-backend.onrender.com"
       />
     </div>

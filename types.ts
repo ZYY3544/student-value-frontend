@@ -62,6 +62,8 @@ export interface AssessmentResult {
 
   // HAY 8因素评估结果（用于简历优化助手）
   factors?: Record<string, string>;
+  // 解析后的简历文本（用于聊天 Agent）
+  resumeText?: string;
 }
 
 export enum AppState {

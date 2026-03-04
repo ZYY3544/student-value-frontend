@@ -103,6 +103,8 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
 
     // HAY 8因素（用于简历优化助手）
     factors: data.factors,
+    // 解析后的简历文本（用于聊天 Agent）
+    resumeText: data.resumeText,
 
     // 生成优劣势（基于能力数据）
     strengths: generateStrengths(data.abilities, input),
