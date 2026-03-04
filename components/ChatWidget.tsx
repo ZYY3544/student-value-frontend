@@ -35,7 +35,6 @@ interface ChatWidgetProps {
     salaryRange: string;
     jobTitle: string;
     jobFunction: string;
-    deepInsight?: string;
   };
   resumeText: string;
   apiBase?: string;
