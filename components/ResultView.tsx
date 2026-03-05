@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { AssessmentResult, AssessmentInput, AbilityItem } from '../types';
 import {
-  Sparkles, Target,
+  TrendingUp, Target, Users,
   Lightbulb, Brain, Handshake, PenTool
 } from 'lucide-react';
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis,
-  ResponsiveContainer, Tooltip
+  ResponsiveContainer, Tooltip,
+  PieChart, Pie, Cell
 } from 'recharts';
 import { ChatWidget } from './ChatWidget';
 
@@ -33,61 +34,48 @@ const ABILITY_ICONS: Record<string, React.ReactNode> = {
   创新力: <Lightbulb size={20} />,
 };
 
-
-// 圆环进度组件
-const RingChart: React.FC<{
-  value: number;
-  maxValue: number;
-  color: string;
-  gradientId: string;
-  size?: number;
-  strokeWidth?: number;
+// 环形进度组件（recharts PieChart）
+const CircularProgress: React.FC<{
+  score: number;
   label: string;
-  sublabel: string;
-  isPercent?: boolean;
-  desc: string;
-}> = ({ value, maxValue, color, gradientId, size = 90, strokeWidth = 8, label, sublabel, isPercent = false, desc }) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const percentage = Math.min(value / maxValue, 1);
-  const dashOffset = circumference * (1 - percentage);
+  description: string;
+  color: string;
+}> = ({ score, label, description, color }) => {
+  const data = [
+    { name: 'Score', value: score },
+    { name: 'Remaining', value: 100 - score },
+  ];
+  const colors = [color, '#f3f4f6'];
 
   return (
-    <div className="bg-white rounded-[20px] border border-gray-100 overflow-hidden flex flex-col items-center relative">
-      <div className="pt-4 pb-2 flex flex-col items-center w-full px-2">
-        <p className="text-[13px] font-black text-gray-600 mb-2 tracking-wider">{label}</p>
-
-        {/* SVG 圆环 */}
-        <div className="relative" style={{ width: size, height: size }}>
-          <svg width={size} height={size} className="transform -rotate-90">
-            <defs>
-              <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor={`${color}60`} />
-                <stop offset="100%" stopColor={color} />
-              </linearGradient>
-            </defs>
-            <circle
-              cx={size / 2} cy={size / 2} r={radius}
-              fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth}
-            />
-            <circle
-              cx={size / 2} cy={size / 2} r={radius}
-              fill="none"
-              stroke={`url(#${gradientId})`}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
-            />
-          </svg>
-          {/* 中心数字 */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xl font-black" style={{ color }}>{isPercent ? `${value}%` : `${value}分`}</span>
-          </div>
+    <div className="bg-white rounded-3xl p-5 flex items-center gap-4 border border-gray-100">
+      <div className="relative w-20 h-20 flex-shrink-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={28}
+              outerRadius={38}
+              paddingAngle={0}
+              dataKey="value"
+              startAngle={90}
+              endAngle={-270}
+            >
+              {data.map((_, index) => (
+                <Cell key={`cell-${index}`} fill={colors[index]} stroke="none" />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-lg font-bold" style={{ color }}>{score}</span>
         </div>
-
-        {/* 下方文案 */}
-        <p className="text-[11px] text-gray-500 font-medium leading-relaxed mt-3 text-center">{desc}</p>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-base font-bold text-gray-900 mb-0.5">{label}</h3>
+        <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -106,12 +94,6 @@ function getResumeHealthDesc(val: number): string {
 }
 
 export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset }) => {
-  const theme = useMemo(() => {
-    const level = result.level;
-    if (level <= 14) return { bg: 'bg-[#0A66C2]', lightBg: 'bg-[#0A66C2]/10', text: 'text-[#0A66C2]', chartFill: '#0A66C2', emoji: '💎' };
-    return { bg: 'bg-indigo-600', lightBg: 'bg-indigo-50', text: 'text-indigo-600', chartFill: '#4F46E5', emoji: '🚀' };
-  }, [result.level]);
-
   const radarData = useMemo(() => {
     if (result.radarData) {
       return Object.entries(result.radarData).map(([key, val]) => ({
@@ -132,6 +114,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       return {
         label: name,
         score: (info.score / 10).toFixed(1),
+        rawScore: info.score / 10,
         tag: ABILITY_TAGS[name]?.[info.level] || info.level,
         desc: info.explanation,
         icon: ABILITY_ICONS[name] || <PenTool size={20} />,
@@ -150,136 +133,139 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const resumeHealthScore = result.resumeHealthScore ?? 50;
 
   return (
-    <div className="min-h-screen bg-blue-50 flex flex-col relative pb-16 overflow-x-hidden max-w-2xl mx-auto">
-      {/* Main Header Blue Section */}
-      <div className="absolute top-0 left-0 right-0 h-[440px] gradient-primary rounded-b-[60px] z-0 shadow-xl opacity-95 overflow-hidden">
-          <div className="absolute top-4 right-0 p-4 opacity-30 pointer-events-none">
-            <div className="relative w-32 h-32 flex items-center justify-center">
-               <Sparkles size={120} className="text-white opacity-90 animate-float-soft" />
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col relative pb-16 overflow-x-hidden max-w-2xl mx-auto">
+      {/* 页面头部 */}
+      <div className="px-6 pt-10 pb-2">
+        <span className="text-xs font-bold text-[#0A66C2] tracking-widest uppercase block mb-1">CAMPUS REPORT</span>
+        <h1 className="text-3xl font-black text-gray-900">校招身价报告</h1>
       </div>
 
-      <div className="relative z-10 px-6 pt-14 flex flex-col items-start text-white">
-          <div className="text-white/90 text-[18px] font-black mb-2 uppercase tracking-widest text-left">
-            CAMPUS REPORT
-          </div>
-          <div className="text-4xl font-black text-white tracking-tight flex items-center gap-2 text-left">
-            校招身价报告
-            <Sparkles size={28} className="text-[#f8ea1a] fill-[#f8ea1a]" />
-          </div>
-      </div>
-
-      <div className="relative z-10 px-5 mt-8 space-y-6">
-        {/* 核心价值展示 */}
-        <div className="bg-white backdrop-blur-xl rounded-[44px] p-10 border border-white flex flex-col items-center text-center relative overflow-hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="absolute top-10 right-2 w-36 h-36 text-blue-300/20 select-none pointer-events-none rotate-[12deg]"><path d="M19.3788 15.1057C20.9258 11.4421 19.5373 7.11431 16.0042 5.0745C13.4511 3.60046 10.4232 3.69365 8.03452 5.0556L7.04216 3.31879C10.028 1.61639 13.8128 1.4999 17.0042 3.34245C21.4949 5.93513 23.2139 11.4848 21.1217 16.112L22.4635 16.8867L18.2984 19.1008L18.1334 14.3867L19.3788 15.1057ZM4.62961 8.89968C3.08263 12.5633 4.47116 16.8911 8.00421 18.9309C10.5573 20.4049 13.5851 20.3118 15.9737 18.9499L16.9661 20.6867C13.9803 22.389 10.1956 22.5055 7.00421 20.663C2.51357 18.0703 0.794565 12.5206 2.88672 7.89342L1.54492 7.11873L5.70999 4.90463L5.87505 9.61873L4.62961 8.89968ZM13.0042 13.5382H16.0042V15.5382H13.0042V17.5382H11.0042V15.5382H8.00421V13.5382H11.0042V12.5382H8.00421V10.5382H10.59L8.46868 8.41692L9.88289 7.00271L12.0042 9.12403L14.1255 7.00271L15.5397 8.41692L13.4184 10.5382H16.0042V12.5382H13.0042V13.5382Z"></path></svg>
-
-            {/* 1. levelTag 移到最上面 */}
-            <div className="w-full flex items-center justify-center py-2.5 mb-4">
-               <span className="relative inline-flex items-center">
-                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" className="w-7 h-7 absolute -left-9"><path d="M27.6002 18.5998V11.3998C27.6002 8.41743 25.1826 5.99977 22.2002 5.99977L15.0002 22.1998V41.9998H35.9162C37.7113 42.0201 39.2471 40.7147 39.5162 38.9398L42.0002 22.7398C42.1587 21.6955 41.8506 20.6343 41.1576 19.8373C40.4645 19.0403 39.4564 18.5878 38.4002 18.5998H27.6002Z" stroke="#f8ea1a" strokeWidth="4" strokeLinejoin="round"/><path d="M15 22.0001H10.194C8.08532 21.9628 6.2827 23.7095 6 25.7994V38.3994C6.2827 40.4894 8.08532 42.0367 10.194 41.9994H15V22.0001Z" fill="none" stroke="#f8ea1a" strokeWidth="4" strokeLinejoin="round"/></svg>
-                 <h3 className="text-[#0A66C2] text-2xl font-black tracking-tight" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif" }}>"{result.levelTag}"</h3>
-               </span>
+      <div className="px-5 mt-6 space-y-5">
+        {/* 估值卡片 */}
+        <div className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-8 border border-blue-100/50 relative overflow-hidden">
+          <div className="relative z-10">
+            {/* levelTag */}
+            <div className="mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0A66C2]/10 rounded-full">
+                <TrendingUp className="w-4 h-4 text-[#0A66C2]" />
+                <span className="text-sm font-bold text-[#0A66C2]">{result.levelTag}</span>
+              </div>
             </div>
 
-            {/* 2. 薪酬数字 */}
-            <div className="mb-4 flex items-center justify-center whitespace-nowrap" style={{ transform: "scaleY(1.1)" }}>
-              <span className="text-[28px] font-bold text-[#110e0c] mr-1 self-center">¥</span>
-              <div className="text-[42px] font-black tracking-wide drop-shadow-sm tabular-nums text-[#110e0c] flex items-baseline">
+            {/* 薪酬数字 */}
+            <div className="mb-4 flex items-baseline whitespace-nowrap">
+              <span className="text-2xl font-bold text-gray-900 mr-1">¥</span>
+              <div className="text-4xl font-black tracking-wide tabular-nums text-gray-900 flex items-baseline">
                 <span>{salaryNumbers[0]}</span>
-                <span className="text-[28px] ml-0.5">k</span>
+                <span className="text-2xl ml-0.5">k</span>
                 <span className="text-gray-300 mx-1">～</span>
                 <span>{salaryNumbers[1]}</span>
-                <span className="text-[28px] ml-0.5">k</span>
+                <span className="text-2xl ml-0.5">k</span>
               </div>
             </div>
 
-            {/* 3. levelDesc */}
-            <div className="w-full">
-               <p className="text-sm font-bold leading-relaxed italic text-left w-full"><span className="text-[#110e0c] opacity-80">"{result.levelDesc}"</span></p>
+            {/* 百分位徽章 */}
+            <div className="bg-[#0A66C2] rounded-2xl px-5 py-4 text-white text-center inline-block mb-5">
+              <p className="text-xs font-medium opacity-90 mb-0.5">超越全国毕业生</p>
+              <div className="flex items-baseline justify-center gap-0.5">
+                <span className="text-3xl font-black">{salaryCompetitiveness}</span>
+                <span className="text-lg font-bold">%</span>
+              </div>
             </div>
 
-            {/* 4. 两个圆环卡片 */}
-            <div className="grid grid-cols-2 gap-3 w-full mt-6 -mx-2" style={{ width: 'calc(100% + 16px)' }}>
-              <RingChart
-                value={salaryCompetitiveness}
-                maxValue={100}
-                color="#0A66C2"
-                gradientId="salaryGrad"
-                size={80}
-                strokeWidth={7}
-                label="薪酬竞争力"
-                sublabel="SALARY RANK"
-                isPercent={true}
-                desc={getSalaryCompDesc(salaryCompetitiveness)}
-              />
-              <RingChart
-                value={resumeHealthScore}
-                maxValue={100}
-                color="#10b981"
-                gradientId="healthGrad"
-                size={80}
-                strokeWidth={7}
-                label="简历健康度"
-                sublabel="RESUME HEALTH"
-                isPercent={false}
-                desc={getResumeHealthDesc(resumeHealthScore)}
-              />
-            </div>
+            {/* levelDesc */}
+            <p className="text-sm text-gray-500 leading-relaxed">{result.levelDesc}</p>
+          </div>
 
-            {/* 5. 分隔线 + 说明 */}
-            <div className="w-full h-px bg-[#110e0c]/15 mt-6"></div>
-            <p className="text-[11px] text-[#110e0c] opacity-30 font-medium leading-relaxed mt-6 text-left w-full">说明：以上为应届校招预估年度总薪酬包（单位：千元），由模型评估而成，仅供参考。</p>
+          {/* 背景装饰 */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-blue-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
         </div>
 
-        {/* 核心能力画像 - 雷达图 */}
-        <div className="bg-white rounded-[44px] px-8 pt-6 pb-4 shadow-sm border border-[#b7ccab]/15">
-           <div className="flex items-start justify-between mb-3">
-              <div className="flex flex-col">
-                 <h3 className="font-black text-[#0A66C2] text-xl leading-tight">核心能力画像</h3>
-                 <p className="text-[11px] text-[#110e0c] opacity-30 font-black uppercase tracking-widest mt-1 whitespace-nowrap">CORE COMPETENCY PROFILE</p>
+        {/* 环形进度卡片 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <CircularProgress
+            score={salaryCompetitiveness}
+            label="薪酬竞争力"
+            description={getSalaryCompDesc(salaryCompetitiveness)}
+            color="#0A66C2"
+          />
+          <CircularProgress
+            score={resumeHealthScore}
+            label="简历健康度"
+            description={getResumeHealthDesc(resumeHealthScore)}
+            color="#10b981"
+          />
+        </div>
+
+        {/* 说明 */}
+        <p className="text-[11px] text-gray-400 font-medium leading-relaxed px-1">说明：以上为应届校招预估年度总薪酬包（单位：千元），由模型评估而成，仅供参考。</p>
+
+        {/* 核心能力画像 - 雷达图 + 进度条 */}
+        <div className="bg-white rounded-3xl px-6 pt-6 pb-5 border border-gray-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+              <Users className="text-[#0A66C2] w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-lg leading-tight">核心能力画像</h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">CORE COMPETENCY PROFILE</p>
+            </div>
+          </div>
+
+          <div className="h-[260px] w-full flex items-center justify-center relative [&_*]:!outline-none">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart cx="50%" cy="50%" outerRadius={90} data={radarData}>
+                <PolarGrid stroke="#e5e7eb" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 13, fontWeight: 600 }} />
+                <Radar name="能力值" dataKey="A" stroke="#3b82f6" strokeWidth={2} fill="#3b82f6" fillOpacity={0.15} dot={false} activeDot={{ r: 5, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
+                <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#3b82f6] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 进度条 */}
+          <div className="mt-4 space-y-3">
+            {competencyDetails.map((item, idx) => (
+              <div key={idx} className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                  <span className="text-sm font-bold text-[#0A66C2]">{item.score}</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-blue-500"
+                    style={{ width: `${Math.min(item.rawScore * 10, 100)}%` }}
+                  />
+                </div>
               </div>
-           </div>
+            ))}
+          </div>
 
-           <div className="h-[280px] w-full flex items-center justify-center relative [&_*]:!outline-none">
-              <ResponsiveContainer width="100%" height="100%">
-                 <RadarChart cx="50%" cy="50%" outerRadius={90} data={radarData}>
-                    <PolarGrid stroke="#b7ccab" opacity={0.3} />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 13, fontWeight: 700 }} />
-                    <Radar name="能力值" dataKey="A" stroke="#3b82f6" strokeWidth={3} fill="#3b82f6" fillOpacity={0.35} dot={false} activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
-                    <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#3b82f6] text-white text-xs font-black px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
-                 </RadarChart>
-              </ResponsiveContainer>
-           </div>
-
-           <div className="mt-1 text-left">
-              <p className="text-[11px] text-[#110e0c] opacity-30 font-medium">
-                说明：雷达图显示了您的能力得分，分值越高代表在该领域的竞争力越强。
-              </p>
-           </div>
+          <p className="text-[11px] text-gray-400 font-medium mt-4">
+            说明：雷达图显示了您的能力得分，分值越高代表在该领域的竞争力越强。
+          </p>
         </div>
 
         {/* 各能力得分释义 */}
-        <div className="bg-white rounded-[44px] px-8 pt-6 pb-6 shadow-sm border border-[#b7ccab]/15">
-           <div className="flex flex-col mb-3">
-              <h3 className="font-black text-[#0A66C2] text-xl leading-tight">各能力得分释义</h3>
-              <p className="text-[11px] text-[#110e0c] opacity-30 font-black uppercase tracking-widest mt-1">SCORE DEFINITIONS</p>
-           </div>
+        <div className="bg-white rounded-3xl px-6 pt-6 pb-6 border border-gray-100">
+          <div className="flex flex-col mb-4">
+            <h3 className="font-bold text-gray-900 text-lg leading-tight">各能力得分释义</h3>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">SCORE DEFINITIONS</p>
+          </div>
 
-           <div className="space-y-6">
-              {competencyDetails.map((item, idx) => (
-                <div key={idx}>
-                  <div className="flex-1 min-w-0">
-                     <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-black text-[#1e293b] text-base">{item.label}</span>
-                        <span className="text-[#64748b] text-xs font-bold">{item.score}分</span>
-                     </div>
-                     <p className="text-[11px] text-[#64748b] font-medium leading-relaxed"><span className="text-[#64748b]">{item.tag}:</span> {item.desc}</p>
+          <div className="space-y-5">
+            {competencyDetails.map((item, idx) => (
+              <div key={idx}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="font-bold text-gray-900 text-base">{item.label}</span>
+                    <span className="text-gray-500 text-xs font-semibold">{item.score}分</span>
                   </div>
+                  <p className="text-xs text-gray-500 font-medium leading-relaxed"><span className="text-gray-500">{item.tag}:</span> {item.desc}</p>
                 </div>
-              ))}
-           </div>
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>
