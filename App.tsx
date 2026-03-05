@@ -191,7 +191,7 @@ const App: React.FC = () => {
     const step1Done = !!(formData.educationLevel && formData.major.trim());
     const step2Done = !!(formData.city && formData.industry && formData.companyType && formData.jobTitle.trim() && formData.jobFunction);
     const step3Done = !!(formData.resumeFile || formData.resumeText.trim());
-    const currentStep = !step1Done ? 1 : !step2Done ? 2 : 3;
+    const currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : 0;
 
     const selectClass = (field: string) =>
       `w-full appearance-none bg-white border ${hasError(field) ? 'border-rose-400' : 'border-slate-200'} text-sm rounded-2xl py-4 px-5 pr-10 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all`;
