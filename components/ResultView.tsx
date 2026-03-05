@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { AssessmentResult, AssessmentInput, AbilityItem } from '../types';
 import {
   Sparkles, Target,
@@ -33,39 +33,6 @@ const ABILITY_ICONS: Record<string, React.ReactNode> = {
   创新力: <Lightbulb size={20} />,
 };
 
-// CountUp 组件：数字跳动动画
-const CountUp: React.FC<{ target: number; duration?: number; delay?: number; suffix?: string; prefix?: string }> = ({ target, duration = 2000, delay = 0, suffix = '', prefix = '' }) => {
-  const [current, setCurrent] = useState(0);
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setStarted(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!started) return;
-    const startTime = performance.now();
-    let rafId: number;
-
-    const animate = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // cubic ease-out
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCurrent(Math.round(eased * target));
-      if (progress < 1) {
-        rafId = requestAnimationFrame(animate);
-      }
-    };
-
-    rafId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafId);
-  }, [started, target, duration]);
-
-  const display = (started ? current : 0).toString();
-  return <>{prefix}{display}{suffix}</>;
-};
 
 // 圆环进度组件
 const RingChart: React.FC<{
@@ -79,14 +46,14 @@ const RingChart: React.FC<{
   sublabel: string;
   isPercent?: boolean;
   desc: string;
-  animDelay?: number;
-}> = ({ value, maxValue, color, gradientId, size = 90, strokeWidth = 8, label, sublabel, isPercent = false, desc, animDelay = 12.5 }) => {
+}> = ({ value, maxValue, color, gradientId, size = 90, strokeWidth = 8, label, sublabel, isPercent = false, desc }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const percentage = Math.min(value / maxValue, 1);
+  const dashOffset = circumference * (1 - percentage);
 
   return (
-    <div className="bg-white rounded-[20px] border border-gray-100 overflow-hidden flex flex-col items-center relative ring-card" style={{ animationDelay: `${animDelay - 0.7}s` }}>
+    <div className="bg-white rounded-[20px] border border-gray-100 overflow-hidden flex flex-col items-center relative">
       <div className="pt-4 pb-2 flex flex-col items-center w-full px-2">
         <p className="text-[13px] font-black text-gray-600 mb-2 tracking-wider">{label}</p>
 
@@ -110,23 +77,17 @@ const RingChart: React.FC<{
               strokeWidth={strokeWidth}
               strokeLinecap="round"
               strokeDasharray={circumference}
-              strokeDashoffset={circumference}
-              className="ring-progress"
-              style={{
-                '--ring-target-offset': `${circumference * (1 - percentage)}`,
-                '--ring-circumference': `${circumference}`,
-                animationDelay: `${animDelay}s`,
-              } as React.CSSProperties}
+              strokeDashoffset={dashOffset}
             />
           </svg>
           {/* 中心数字 */}
-          <div className="absolute inset-0 flex items-center justify-center ring-center-num" style={{ animationDelay: `${animDelay + 2}s` }}>
+          <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-xl font-black" style={{ color }}>{isPercent ? `${value}%` : `${value}分`}</span>
           </div>
         </div>
 
         {/* 下方文案 */}
-        <p className="text-[11px] text-gray-500 font-medium leading-relaxed mt-3 text-center ring-desc" style={{ animationDelay: `${animDelay + 2.7}s` }}>{desc}</p>
+        <p className="text-[11px] text-gray-500 font-medium leading-relaxed mt-3 text-center">{desc}</p>
       </div>
     </div>
   );
@@ -199,7 +160,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           </div>
       </div>
 
-      <div className="relative z-10 px-6 pt-14 flex flex-col items-start text-white animate-fade-in">
+      <div className="relative z-10 px-6 pt-14 flex flex-col items-start text-white">
           <div className="text-white/90 text-[18px] font-black mb-2 uppercase tracking-widest text-left">
             CAMPUS REPORT
           </div>
@@ -209,33 +170,33 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           </div>
       </div>
 
-      <div className="relative z-10 px-5 mt-8 space-y-6 animate-fade-in">
+      <div className="relative z-10 px-5 mt-8 space-y-6">
         {/* 核心价值展示 */}
         <div className="bg-white backdrop-blur-xl rounded-[44px] p-10 border border-white flex flex-col items-center text-center relative overflow-hidden">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="absolute top-10 right-2 w-36 h-36 text-blue-300/20 select-none pointer-events-none rotate-[12deg]"><path d="M19.3788 15.1057C20.9258 11.4421 19.5373 7.11431 16.0042 5.0745C13.4511 3.60046 10.4232 3.69365 8.03452 5.0556L7.04216 3.31879C10.028 1.61639 13.8128 1.4999 17.0042 3.34245C21.4949 5.93513 23.2139 11.4848 21.1217 16.112L22.4635 16.8867L18.2984 19.1008L18.1334 14.3867L19.3788 15.1057ZM4.62961 8.89968C3.08263 12.5633 4.47116 16.8911 8.00421 18.9309C10.5573 20.4049 13.5851 20.3118 15.9737 18.9499L16.9661 20.6867C13.9803 22.389 10.1956 22.5055 7.00421 20.663C2.51357 18.0703 0.794565 12.5206 2.88672 7.89342L1.54492 7.11873L5.70999 4.90463L5.87505 9.61873L4.62961 8.89968ZM13.0042 13.5382H16.0042V15.5382H13.0042V17.5382H11.0042V15.5382H8.00421V13.5382H11.0042V12.5382H8.00421V10.5382H10.59L8.46868 8.41692L9.88289 7.00271L12.0042 9.12403L14.1255 7.00271L15.5397 8.41692L13.4184 10.5382H16.0042V12.5382H13.0042V13.5382Z"></path></svg>
 
             {/* 1. levelTag 移到最上面 */}
-            <div className="w-full flex items-center justify-center py-2.5 mb-4 anim-delay-fade" style={{ opacity: 0, animationDelay: '9.6s' }}>
+            <div className="w-full flex items-center justify-center py-2.5 mb-4">
                <span className="relative inline-flex items-center">
                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" className="w-7 h-7 absolute -left-9"><path d="M27.6002 18.5998V11.3998C27.6002 8.41743 25.1826 5.99977 22.2002 5.99977L15.0002 22.1998V41.9998H35.9162C37.7113 42.0201 39.2471 40.7147 39.5162 38.9398L42.0002 22.7398C42.1587 21.6955 41.8506 20.6343 41.1576 19.8373C40.4645 19.0403 39.4564 18.5878 38.4002 18.5998H27.6002Z" stroke="#f8ea1a" strokeWidth="4" strokeLinejoin="round"/><path d="M15 22.0001H10.194C8.08532 21.9628 6.2827 23.7095 6 25.7994V38.3994C6.2827 40.4894 8.08532 42.0367 10.194 41.9994H15V22.0001Z" fill="none" stroke="#f8ea1a" strokeWidth="4" strokeLinejoin="round"/></svg>
                  <h3 className="text-[#0A66C2] text-2xl font-black tracking-tight" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif" }}>"{result.levelTag}"</h3>
                </span>
             </div>
 
-            {/* 2. 薪酬数字（CountUp 动画） */}
+            {/* 2. 薪酬数字 */}
             <div className="mb-4 flex items-center justify-center whitespace-nowrap" style={{ transform: "scaleY(1.1)" }}>
               <span className="text-[28px] font-bold text-[#110e0c] mr-1 self-center">¥</span>
               <div className="text-[42px] font-black tracking-wide drop-shadow-sm tabular-nums text-[#110e0c] flex items-baseline">
-                <span style={{ minWidth: '3ch', textAlign: 'right', display: 'inline-block' }}><CountUp target={salaryNumbers[0]} duration={3000} delay={800} /></span>
+                <span>{salaryNumbers[0]}</span>
                 <span className="text-[28px] ml-0.5">k</span>
                 <span className="text-gray-300 mx-1">～</span>
-                <span style={{ minWidth: '3ch', textAlign: 'right', display: 'inline-block' }}><CountUp target={salaryNumbers[1]} duration={3500} delay={4600} /></span>
+                <span>{salaryNumbers[1]}</span>
                 <span className="text-[28px] ml-0.5">k</span>
               </div>
             </div>
 
             {/* 3. levelDesc */}
-            <div className="w-full anim-delay-scale" style={{ opacity: 0, animationDelay: '10.8s' }}>
+            <div className="w-full">
                <p className="text-sm font-bold leading-relaxed italic text-left w-full"><span className="text-[#110e0c] opacity-80">"{result.levelDesc}"</span></p>
             </div>
 
@@ -252,7 +213,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 sublabel="SALARY RANK"
                 isPercent={true}
                 desc={getSalaryCompDesc(salaryCompetitiveness)}
-                animDelay={12.5}
               />
               <RingChart
                 value={resumeHealthScore}
@@ -265,7 +225,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 sublabel="RESUME HEALTH"
                 isPercent={false}
                 desc={getResumeHealthDesc(resumeHealthScore)}
-                animDelay={12.5}
               />
             </div>
 
