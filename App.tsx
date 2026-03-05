@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FileText, Loader2, Sparkles, X, ChevronDown, AlertCircle, Lock, GraduationCap, Briefcase, CloudUpload, Zap } from 'lucide-react';
-import { InputCard } from './components/InputCard';
+import { Diamond, Bell, User, FileText, Loader2, Sparkles, X, ChevronDown, AlertCircle, Lock, GraduationCap, Briefcase, CloudUpload, Zap, BarChart3, TrendingUp } from 'lucide-react';
 import { ResultView } from './components/ResultView';
 import { WelcomeView } from './components/WelcomeView';
 import { generateAssessment } from './services/geminiService';
@@ -189,274 +188,382 @@ const App: React.FC = () => {
     const hasError = (field: string) => errors.includes(field);
 
     const selectClass = (field: string) =>
-      `w-full appearance-none bg-white border ${hasError(field) ? 'border-rose-500' : 'border-slate-200'} text-sm font-semibold rounded-2xl py-3.5 px-5 pr-10 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all`;
+      `w-full appearance-none bg-white border ${hasError(field) ? 'border-rose-400' : 'border-slate-200'} text-sm rounded-2xl py-4 px-5 pr-10 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all`;
 
     const inputClass = (field: string) =>
-      `w-full bg-white border ${hasError(field) ? 'border-rose-500' : 'border-slate-200'} text-sm font-semibold text-slate-900 rounded-2xl py-3.5 px-5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300`;
+      `w-full bg-white border ${hasError(field) ? 'border-rose-400' : 'border-slate-200'} text-sm text-slate-900 rounded-2xl py-4 px-5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300`;
 
     return (
-      <div className="bg-[#f8fafc] min-h-screen">
-        {/* 简洁标题 */}
-        <div className="px-6 pt-10 pb-2">
-          <span className="text-xs font-bold text-[#2D63ED] tracking-widest uppercase block mb-1">ASSESSMENT INFO</span>
-          <h1 className="text-3xl font-black text-gray-900">个人专业信息</h1>
-          <p className="text-slate-500 text-sm mt-1">填写下方详细信息，为您生成专属人才身价报告。</p>
-        </div>
-
-        <div className="px-5 pt-6 pb-32 space-y-5">
-          {/* 院校信息 */}
-          <InputCard title="院校信息" icon={<GraduationCap size={24} />} accentColor="text-[#2D63ED]">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-semibold text-slate-700">学历背景</label>
-                  {hasError('educationLevel') && <span className="text-[10px] text-rose-500 font-bold">请选择</span>}
-                </div>
-                <div className="relative">
-                  <select
-                    value={formData.educationLevel}
-                    onChange={(e) => handleInputChange('educationLevel', e.target.value)}
-                    style={{ color: formData.educationLevel ? undefined : '#cbd5e1' }}
-                    className={selectClass('educationLevel')}
-                  >
-                    <option value="" disabled hidden>请选择学历</option>
-                    {EDUCATION_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-semibold text-slate-700">所学专业</label>
-                  {hasError('major') && <span className="text-[10px] text-rose-500 font-bold">必填项</span>}
-                </div>
-                <input
-                  type="text"
-                  placeholder="例如：计算机科学与技术"
-                  value={formData.major}
-                  onChange={(e) => handleInputChange('major', e.target.value)}
-                  className={inputClass('major')}
-                />
-              </div>
+      <div className="flex min-h-screen bg-white font-sans text-slate-900">
+        {/* Left Sidebar */}
+        <aside className="w-[400px] bg-[#2D63ED] p-12 flex flex-col relative overflow-hidden shrink-0">
+          {/* Logo */}
+          <div className="flex items-center gap-3 text-white mb-16 z-10">
+            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+              <Diamond className="w-6 h-6 fill-white/20" />
             </div>
-          </InputCard>
+            <span className="text-xl font-bold tracking-tight">校园人才估值平台</span>
+          </div>
 
-          {/* 职场意向 */}
-          <InputCard title="职场意向" icon={<Briefcase size={24} />} accentColor="text-[#2D63ED]">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-semibold text-slate-700">意向城市</label>
-                  {hasError('city') && <span className="text-[10px] text-rose-500 font-bold">请选择</span>}
+          {/* Hero Card */}
+          <div className="bg-white/10 rounded-[40px] p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
+            <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
+              开启你的价值测评
+            </h1>
+            <p className="text-white/80 text-lg mb-12 leading-relaxed">
+              通过 AI 驱动的深度测评，解锁你的职业潜能，几分钟内即可获取市场价值报告。
+            </p>
+
+            {/* Feature List */}
+            <div className="space-y-8">
+              <div className="flex items-center gap-4 text-white/60">
+                <div className="bg-white/10 p-2 rounded-lg">
+                  <Sparkles className="w-5 h-5" />
                 </div>
-                <div className="relative">
-                  <select
-                    value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    style={{ color: formData.city ? undefined : '#cbd5e1' }}
-                    className={selectClass('city')}
-                  >
-                    <option value="" disabled hidden>请选择城市</option>
-                    {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
+                <span className="text-sm font-medium">AI 智能分析</span>
               </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-semibold text-slate-700">意向行业</label>
-                  {hasError('industry') && <span className="text-[10px] text-rose-500 font-bold">请选择</span>}
+              <div className="flex items-center gap-4 text-white/60">
+                <div className="bg-white/10 p-2 rounded-lg">
+                  <BarChart3 className="w-5 h-5" />
                 </div>
-                <div className="relative">
-                  <select
-                    value={formData.industry}
-                    onChange={(e) => handleInputChange('industry', e.target.value)}
-                    style={{ color: formData.industry ? undefined : '#cbd5e1' }}
-                    className={selectClass('industry')}
-                  >
-                    <option value="" disabled hidden>请选择行业</option>
-                    {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <span className="text-sm font-medium">专业身价报告</span>
+              </div>
+              <div className="flex items-center gap-4 text-white/60">
+                <div className="bg-white/10 p-2 rounded-lg">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-medium">个性化成长路径</span>
+              </div>
+
+              {/* Steps */}
+              <div className="pt-8 space-y-0">
+                <div className="relative flex gap-4 pb-12">
+                  <div className="absolute left-5 top-10 bottom-0 w-0.5 bg-white/20"></div>
+                  <div className="z-10 bg-[#3B82F6] p-2.5 rounded-full shadow-lg shadow-blue-900/20">
+                    <GraduationCap className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold">院校信息</p>
+                    <p className="text-white/50 text-xs mt-1">步骤 1 / 3 (进行中)</p>
+                  </div>
+                </div>
+                <div className="relative flex gap-4 pb-12">
+                  <div className="absolute left-5 top-10 bottom-0 w-0.5 bg-white/20"></div>
+                  <div className="z-10 bg-white/10 p-2.5 rounded-full">
+                    <Briefcase className="w-5 h-5 text-white/40" />
+                  </div>
+                  <div>
+                    <p className="text-white/40 font-semibold">职场意向</p>
+                    <p className="text-white/30 text-xs mt-1">待填写</p>
+                  </div>
+                </div>
+                <div className="relative flex gap-4">
+                  <div className="z-10 bg-white/10 p-2.5 rounded-full">
+                    <FileText className="w-5 h-5 text-white/40" />
+                  </div>
+                  <div>
+                    <p className="text-white/40 font-semibold">简历上传</p>
+                    <p className="text-white/30 text-xs mt-1">最后一步</p>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-semibold text-slate-700">企业性质</label>
-                  {hasError('companyType') && <span className="text-[10px] text-rose-500 font-bold">请选择</span>}
-                </div>
-                <div className="relative">
-                  <select
-                    value={formData.companyType}
-                    onChange={(e) => handleInputChange('companyType', e.target.value)}
-                    style={{ color: formData.companyType ? undefined : '#cbd5e1' }}
-                    className={selectClass('companyType')}
-                  >
-                    <option value="" disabled hidden>请选择类型</option>
-                    {COMPANY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">意向企业</label>
-                <input
-                  type="text"
-                  placeholder="例如：腾讯（选填）"
-                  value={formData.targetCompany}
-                  onChange={(e) => handleInputChange('targetCompany', e.target.value)}
-                  className={inputClass('')}
-                />
-              </div>
-            </div>
+          {/* Sidebar Footer */}
+          <div className="mt-12 text-white/40 text-sm z-10">
+            &copy; 2025 校园人才估值平台. 版权所有。
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-semibold text-slate-700">意向岗位</label>
-                  {hasError('jobTitle') && <span className="text-[10px] text-rose-500 font-bold">必填项</span>}
-                </div>
-                <input
-                  type="text"
-                  placeholder="例如：产品经理"
-                  value={formData.jobTitle}
-                  onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-                  className={inputClass('jobTitle')}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-semibold text-slate-700">所属职能</label>
-                  {hasError('jobFunction') && <span className="text-[10px] text-rose-500 font-bold">请选择</span>}
-                </div>
-                <div className="relative">
-                  <select
-                    value={formData.jobFunction}
-                    onChange={(e) => handleInputChange('jobFunction', e.target.value)}
-                    style={{ color: formData.jobFunction ? undefined : '#cbd5e1' }}
-                    className={selectClass('jobFunction')}
-                  >
-                    <option value="" disabled hidden>请选择职能</option>
-                    {FUNCTIONS.map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-          </InputCard>
+          {/* Background Decoration */}
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl"></div>
+        </aside>
 
-          {/* 简历信息 */}
-          <InputCard title="简历信息" icon={<CloudUpload size={24} />} accentColor="text-[#2D63ED]">
-            <p className="text-xs text-slate-400 mb-1">以下两种方式二选一，请勿重复填写。</p>
-            <div className="flex flex-col gap-4">
-              {/* Segmented Control */}
-              <div className="relative flex bg-slate-100 rounded-xl p-1">
-                <div
-                  className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#2D63ED] rounded-[10px] transition-transform duration-300 ease-out"
-                  style={{ transform: resumeInputMode === 'text' ? 'translateX(calc(100% + 4px))' : 'translateX(0)' }}
-                />
-                <button
-                  onClick={() => setResumeInputMode('upload')}
-                  className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-[10px] transition-colors duration-200 ${resumeInputMode === 'upload' ? 'text-white' : 'text-slate-400'}`}
-                >
-                  上传简历
-                </button>
-                <button
-                  onClick={() => setResumeInputMode('text')}
-                  className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-[10px] transition-colors duration-200 ${resumeInputMode === 'text' ? 'text-white' : 'text-slate-400'}`}
-                >
-                  手动填写
-                </button>
-              </div>
+        {/* Main Content */}
+        <main className="flex-1 bg-[#F8FAFC] p-12 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
+            {/* Top Header */}
+            <header className="flex justify-end gap-4 mb-12">
+              <button className="p-3 bg-white rounded-full shadow-sm">
+                <Bell className="w-5 h-5 text-slate-600" />
+              </button>
+              <button className="p-3 bg-white rounded-full shadow-sm">
+                <User className="w-5 h-5 text-slate-600" />
+              </button>
+            </header>
 
-              {/* Content Area */}
-              {resumeInputMode === 'text' ? (
-                <textarea
-                  value={formData.resumeText}
-                  onChange={(e) => {
-                    handleInputChange('resumeText', e.target.value);
-                    if (errors.includes('resumeSource')) setErrors(prev => prev.filter(err => err !== 'resumeSource'));
-                  }}
-                  placeholder="请描述实习经历、项目经验、校园活动等，信息越完整，评估结果越准确～"
-                  className={`w-full h-32 bg-white border ${hasError('resumeSource') ? 'border-rose-500' : 'border-slate-200'} text-sm font-medium text-slate-900 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all overflow-y-auto resume-input-scroll placeholder:text-slate-300 leading-relaxed`}
-                />
-              ) : (
-                <div>
-                  {formData.resumeFile ? (
-                    <div className="bg-blue-50 border border-blue-100 rounded-3xl p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-[#2D63ED] rounded-2xl flex items-center justify-center text-white">
-                          <FileText size={22} />
-                        </div>
-                        <div className="flex flex-col overflow-hidden">
-                          <span className="text-sm font-bold text-slate-900 truncate max-w-[180px]">
-                            {formData.resumeFileName}
-                          </span>
-                          <span className="text-xs text-[#2D63ED] font-medium">已上传附件</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => { handleInputChange('resumeFile', null); handleInputChange('resumeFileName', ''); }}
-                        className="w-10 h-10 flex items-center justify-center bg-white rounded-full text-rose-500 active:scale-90 transition-transform"
-                      >
-                        <X size={18} />
-                      </button>
+            {/* Title Section */}
+            <section className="mb-12">
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">个人专业信息</h2>
+              <p className="text-slate-500">填写下方详细信息，为您生成专属人才身价报告。</p>
+            </section>
+
+            {/* Form Sections */}
+            <div className="space-y-12">
+              {/* Section 1: 院校信息 */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 text-[#2D63ED]">
+                  <GraduationCap className="w-6 h-6" />
+                  <h3 className="text-lg font-bold">院校信息</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-slate-700">学历背景</label>
+                      {hasError('educationLevel') && <span className="text-xs text-rose-500 font-semibold">请选择</span>}
                     </div>
-                  ) : (
-                    <label className="group cursor-pointer">
-                      <div className={`border-2 border-dashed ${hasError('resumeSource') ? 'border-rose-300' : 'border-slate-200'} rounded-3xl py-10 flex flex-col items-center justify-center text-center`}>
-                        <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
-                          <CloudUpload className="w-7 h-7 text-[#2D63ED]" />
-                        </div>
-                        <h4 className="text-base font-bold text-slate-900 mb-1">点击上传简历文件</h4>
-                        <p className="text-xs text-slate-400">支持 PDF、Word 格式，大小不超过 10MB</p>
-                      </div>
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.txt"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              const base64 = (reader.result as string).split(',')[1];
-                              handleInputChange('resumeFile', { mimeType: file.type, data: base64 });
-                              handleInputChange('resumeFileName', file.name);
-                              if (errors.includes('resumeSource')) setErrors(prev => prev.filter(err => err !== 'resumeSource'));
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                    <div className="relative">
+                      <select
+                        value={formData.educationLevel}
+                        onChange={(e) => handleInputChange('educationLevel', e.target.value)}
+                        style={{ color: formData.educationLevel ? undefined : '#94a3b8' }}
+                        className={selectClass('educationLevel')}
+                      >
+                        <option value="" disabled hidden>请选择学历</option>
+                        {EDUCATION_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-slate-700">所学专业</label>
+                      {hasError('major') && <span className="text-xs text-rose-500 font-semibold">必填项</span>}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="例如：计算机科学与技术"
+                      value={formData.major}
+                      onChange={(e) => handleInputChange('major', e.target.value)}
+                      className={inputClass('major')}
+                    />
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Section 2: 职场意向 */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 text-[#2D63ED]">
+                  <Briefcase className="w-6 h-6" />
+                  <h3 className="text-lg font-bold">职场意向</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-slate-700">意向城市</label>
+                      {hasError('city') && <span className="text-xs text-rose-500 font-semibold">请选择</span>}
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={formData.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        style={{ color: formData.city ? undefined : '#94a3b8' }}
+                        className={selectClass('city')}
+                      >
+                        <option value="" disabled hidden>请选择城市</option>
+                        {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-slate-700">意向行业</label>
+                      {hasError('industry') && <span className="text-xs text-rose-500 font-semibold">请选择</span>}
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={formData.industry}
+                        onChange={(e) => handleInputChange('industry', e.target.value)}
+                        style={{ color: formData.industry ? undefined : '#94a3b8' }}
+                        className={selectClass('industry')}
+                      >
+                        <option value="" disabled hidden>请选择行业</option>
+                        {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-slate-700">企业性质</label>
+                      {hasError('companyType') && <span className="text-xs text-rose-500 font-semibold">请选择</span>}
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={formData.companyType}
+                        onChange={(e) => handleInputChange('companyType', e.target.value)}
+                        style={{ color: formData.companyType ? undefined : '#94a3b8' }}
+                        className={selectClass('companyType')}
+                      >
+                        <option value="" disabled hidden>请选择类型</option>
+                        {COMPANY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">意向企业</label>
+                    <input
+                      type="text"
+                      placeholder="例如：腾讯（选填）"
+                      value={formData.targetCompany}
+                      onChange={(e) => handleInputChange('targetCompany', e.target.value)}
+                      className={inputClass('')}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-slate-700">意向岗位</label>
+                      {hasError('jobTitle') && <span className="text-xs text-rose-500 font-semibold">必填项</span>}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="例如：产品经理"
+                      value={formData.jobTitle}
+                      onChange={(e) => handleInputChange('jobTitle', e.target.value)}
+                      className={inputClass('jobTitle')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-slate-700">所属职能</label>
+                      {hasError('jobFunction') && <span className="text-xs text-rose-500 font-semibold">请选择</span>}
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={formData.jobFunction}
+                        onChange={(e) => handleInputChange('jobFunction', e.target.value)}
+                        style={{ color: formData.jobFunction ? undefined : '#94a3b8' }}
+                        className={selectClass('jobFunction')}
+                      >
+                        <option value="" disabled hidden>请选择职能</option>
+                        {FUNCTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: 简历信息 */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 text-[#2D63ED]">
+                  <CloudUpload className="w-6 h-6" />
+                  <h3 className="text-lg font-bold">简历信息</h3>
+                </div>
+
+                {/* Segmented Control */}
+                <div className="relative flex bg-slate-100 rounded-xl p-1 max-w-xs">
+                  <div
+                    className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#2D63ED] rounded-[10px] transition-transform duration-300 ease-out"
+                    style={{ transform: resumeInputMode === 'text' ? 'translateX(calc(100% + 4px))' : 'translateX(0)' }}
+                  />
+                  <button
+                    onClick={() => setResumeInputMode('upload')}
+                    className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-[10px] transition-colors duration-200 ${resumeInputMode === 'upload' ? 'text-white' : 'text-slate-400'}`}
+                  >
+                    上传简历
+                  </button>
+                  <button
+                    onClick={() => setResumeInputMode('text')}
+                    className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-[10px] transition-colors duration-200 ${resumeInputMode === 'text' ? 'text-white' : 'text-slate-400'}`}
+                  >
+                    手动填写
+                  </button>
+                </div>
+
+                {resumeInputMode === 'text' ? (
+                  <textarea
+                    value={formData.resumeText}
+                    onChange={(e) => {
+                      handleInputChange('resumeText', e.target.value);
+                      if (errors.includes('resumeSource')) setErrors(prev => prev.filter(err => err !== 'resumeSource'));
+                    }}
+                    placeholder="请描述实习经历、项目经验、校园活动等，信息越完整，评估结果越准确～"
+                    className={`w-full h-40 bg-white border ${hasError('resumeSource') ? 'border-rose-400' : 'border-slate-200'} text-sm text-slate-900 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all overflow-y-auto resume-input-scroll placeholder:text-slate-300 leading-relaxed`}
+                  />
+                ) : (
+                  <div>
+                    {formData.resumeFile ? (
+                      <div className="bg-blue-50 border border-blue-100 rounded-[32px] p-5 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-[#2D63ED] rounded-2xl flex items-center justify-center text-white">
+                            <FileText size={24} />
+                          </div>
+                          <div className="flex flex-col overflow-hidden">
+                            <span className="text-sm font-bold text-slate-900 truncate max-w-[300px]">
+                              {formData.resumeFileName}
+                            </span>
+                            <span className="text-xs text-[#2D63ED] font-medium mt-0.5">已上传附件</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => { handleInputChange('resumeFile', null); handleInputChange('resumeFileName', ''); }}
+                          className="w-10 h-10 flex items-center justify-center bg-white rounded-full text-rose-500 active:scale-90 transition-transform"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="group cursor-pointer block">
+                        <div className={`border-2 border-dashed ${hasError('resumeSource') ? 'border-rose-300' : 'border-slate-200'} rounded-[32px] p-16 flex flex-col items-center justify-center text-center`}>
+                          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+                            <CloudUpload className="w-8 h-8 text-[#2D63ED]" />
+                          </div>
+                          <h4 className="text-xl font-bold text-slate-900 mb-2">点击或拖拽简历文件至此</h4>
+                          <p className="text-slate-400 mb-8">支持 PDF, Word 格式，大小不超过 10MB</p>
+                          <span className="bg-slate-50 text-slate-700 px-8 py-3 rounded-xl font-semibold border border-slate-100">
+                            上传简历附件
+                          </span>
+                        </div>
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.txt"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const base64 = (reader.result as string).split(',')[1];
+                                handleInputChange('resumeFile', { mimeType: file.type, data: base64 });
+                                handleInputChange('resumeFileName', file.name);
+                                if (errors.includes('resumeSource')) setErrors(prev => prev.filter(err => err !== 'resumeSource'));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
+                {hasError('resumeSource') && <p className="text-sm text-rose-500 font-semibold flex items-center gap-1"><AlertCircle size={16} />请上传简历附件或输入履历内容</p>}
+              </div>
             </div>
-            {hasError('resumeSource') && <p className="text-xs text-rose-500 font-semibold mt-2 flex items-center justify-center gap-1"><AlertCircle size={14} />请上传简历附件或输入履历内容</p>}
-          </InputCard>
 
-          {/* 提交按钮 */}
-          <div className="pt-6">
-            <button
-              onClick={handleSubmit}
-              className="w-full bg-[#FFC12D] text-slate-900 py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-[0.98] transition-all"
-            >
-              生成测评报告
-              <Zap className="w-5 h-5 fill-slate-900" />
-            </button>
+            {/* Action Button */}
+            <div className="mt-16 space-y-6">
+              <button
+                onClick={handleSubmit}
+                className="w-full bg-[#FFC12D] text-slate-900 py-6 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 shadow-lg shadow-amber-200 active:scale-[0.98] transition-all"
+              >
+                生成测评报告
+                <Zap className="w-6 h-6 fill-slate-900" />
+              </button>
+              <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
+                <Lock className="w-4 h-4" />
+                <span>您的数据已加密处理，仅用于 AI 引擎分析生成报告，确保隐私安全。</span>
+              </div>
+            </div>
           </div>
-
-          {/* 隐私说明 */}
-          <div className="flex items-center justify-center gap-2 text-slate-400 text-xs pt-2 pb-6">
-            <Lock className="w-3.5 h-3.5" />
-            <span>您的数据已加密处理，仅用于 AI 引擎分析生成报告，确保隐私安全。</span>
-          </div>
-        </div>
+        </main>
       </div>
     );
   };
@@ -491,7 +598,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen max-w-3xl mx-auto">
+    <div className="min-h-screen">
       {renderContent()}
 
       {/* 简历信息不足弹窗 */}
