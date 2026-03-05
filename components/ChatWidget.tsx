@@ -78,14 +78,23 @@ const formatContent = (text: string) => {
       content = line;
     }
 
-    // 处理 **加粗**
-    const parts = content.split(/(\*\*[^*]+\*\*)/);
+    // 处理 **加粗** 和 [链接](url)
+    const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
     const rendered = parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return (
           <span key={i} className="font-bold text-[#0A66C2]">
             {part.slice(2, -2)}
           </span>
+        );
+      }
+      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkMatch) {
+        return (
+          <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer"
+            className="text-[#0A66C2] underline break-all">
+            {linkMatch[1]}
+          </a>
         );
       }
       return part;
@@ -330,7 +339,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-bold">简历优化助手</h3>
-              <p className="text-[11px] text-white/70">基于 HAY 评估体系</p>
+              <p className="text-[11px] text-white/70">你的专属简历优化顾问</p>
             </div>
             <button
               onClick={() => setIsOpen(false)}
