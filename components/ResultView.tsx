@@ -133,8 +133,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const resumeHealthScore = result.resumeHealthScore ?? 50;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] relative">
-      <div className="max-w-[1600px] mx-auto p-8">
+    <div className="min-h-screen bg-[#f8fafc] flex relative">
+      {/* Left Content */}
+      <div className="flex-1 p-8 pr-4 overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -274,7 +275,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         </div>
       </div>
 
-      {/* 简历优化助手浮窗 */}
+      {/* Right Sidebar - Chat */}
       <ChatWidget
         assessmentContext={{
           factors: result.factors || {},
