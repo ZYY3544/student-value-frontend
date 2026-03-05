@@ -232,7 +232,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   );
 
   return (
-    <aside className="w-[420px] bg-white border-l border-gray-100 h-screen flex flex-col shrink-0 sticky top-0">
+    <aside className="w-[420px] bg-white border-l border-gray-100 h-full flex flex-col shrink-0">
       {/* Header */}
       <div className="p-6 border-b border-gray-50">
         <div className="flex items-center justify-between mb-1">
