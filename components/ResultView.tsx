@@ -316,7 +316,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                         <span className="font-black text-[#1e293b] text-base">{item.label}</span>
                         <span className="text-[#64748b] text-xs font-bold">{item.score}分</span>
                      </div>
-                     <svg className="h-[6px] mb-1" style={{ width: '80px' }} viewBox="0 0 80 6"><path d="M0,3 Q5,0 10,3 T20,3 T30,3 T40,3 T50,3 T60,3 T70,3 T80,3" fill="none" stroke="#f8ea1a" strokeWidth="3.5" /></svg>
                      <p className="text-[11px] text-[#64748b] font-medium leading-relaxed"><span className="text-[#64748b]">{item.tag}:</span> {item.desc}</p>
                   </div>
                 </div>
@@ -326,12 +325,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
       </div>
 
-      {/* 再测一次按钮 */}
-      <div className="px-6 mt-6 pb-16 flex relative z-10">
-          <button onClick={onReset} className="w-[220px] h-[58px] bg-[#0A66C2] text-white text-2xl tracking-widest rounded-[14px] flex items-center justify-center active:scale-95 shadow-sm transition-all btn-cta-shimmer mx-auto" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif", fontWeight: 700 }}>
-             再测一次
-          </button>
-      </div>
+      {/* 底部留白（给浮窗按钮让出空间） */}
+      <div className="pb-16" />
 
       {/* 简历优化助手浮窗 */}
       <ChatWidget
