@@ -232,7 +232,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   );
 
   return (
-    <aside className="w-[420px] bg-white border-l border-gray-100 h-full flex flex-col shrink-0">
+    <aside className="w-[420px] h-full shrink-0 p-4 pl-0">
+    <div className="bg-white border border-gray-200 rounded-3xl h-full flex flex-col overflow-hidden shadow-sm">
       {/* Header */}
       <div className="p-6 border-b border-gray-50">
         <div className="flex items-center justify-between mb-1">
@@ -341,6 +342,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           ))}
         </div>
       </div>
+    </div>
     </aside>
   );
 };
