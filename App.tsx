@@ -187,6 +187,12 @@ const App: React.FC = () => {
   const renderFormContent = () => {
     const hasError = (field: string) => errors.includes(field);
 
+    // 计算步骤进度
+    const step1Done = !!(formData.educationLevel && formData.major.trim());
+    const step2Done = !!(formData.city && formData.industry && formData.companyType && formData.jobTitle.trim() && formData.jobFunction);
+    const step3Done = !!(formData.resumeFile || formData.resumeText.trim());
+    const currentStep = !step1Done ? 1 : !step2Done ? 2 : 3;
+
     const selectClass = (field: string) =>
       `w-full appearance-none bg-white border ${hasError(field) ? 'border-rose-400' : 'border-slate-200'} text-sm rounded-2xl py-4 px-5 pr-10 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all`;
 
@@ -237,33 +243,42 @@ const App: React.FC = () => {
 
               {/* Steps */}
               <div className="pt-8 space-y-0">
+                {/* Step 1 */}
                 <div className="relative flex gap-4 pb-12">
                   <div className="absolute left-5 top-10 bottom-0 w-0.5 bg-white/20"></div>
-                  <div className="z-10 bg-[#3B82F6] p-2.5 rounded-full shadow-lg shadow-blue-900/20">
-                    <GraduationCap className="w-5 h-5 text-white" />
+                  <div className={`z-10 p-2.5 rounded-full ${currentStep === 1 ? 'bg-[#3B82F6] shadow-lg shadow-blue-900/20' : step1Done ? 'bg-green-500' : 'bg-white/10'}`}>
+                    <GraduationCap className={`w-5 h-5 ${currentStep === 1 || step1Done ? 'text-white' : 'text-white/40'}`} />
                   </div>
                   <div>
-                    <p className="text-white font-semibold">院校信息</p>
-                    <p className="text-white/50 text-xs mt-1">步骤 1 / 3 (进行中)</p>
+                    <p className={`font-semibold ${currentStep === 1 || step1Done ? 'text-white' : 'text-white/40'}`}>院校信息</p>
+                    <p className={`text-xs mt-1 ${currentStep === 1 ? 'text-white/50' : step1Done ? 'text-green-300/60' : 'text-white/30'}`}>
+                      {step1Done ? '已完成' : currentStep === 1 ? '步骤 1 / 3 (进行中)' : '待填写'}
+                    </p>
                   </div>
                 </div>
+                {/* Step 2 */}
                 <div className="relative flex gap-4 pb-12">
                   <div className="absolute left-5 top-10 bottom-0 w-0.5 bg-white/20"></div>
-                  <div className="z-10 bg-white/10 p-2.5 rounded-full">
-                    <Briefcase className="w-5 h-5 text-white/40" />
+                  <div className={`z-10 p-2.5 rounded-full ${currentStep === 2 ? 'bg-[#3B82F6] shadow-lg shadow-blue-900/20' : step2Done ? 'bg-green-500' : 'bg-white/10'}`}>
+                    <Briefcase className={`w-5 h-5 ${currentStep === 2 || step2Done ? 'text-white' : 'text-white/40'}`} />
                   </div>
                   <div>
-                    <p className="text-white/40 font-semibold">职场意向</p>
-                    <p className="text-white/30 text-xs mt-1">待填写</p>
+                    <p className={`font-semibold ${currentStep === 2 || step2Done ? 'text-white' : 'text-white/40'}`}>职场意向</p>
+                    <p className={`text-xs mt-1 ${currentStep === 2 ? 'text-white/50' : step2Done ? 'text-green-300/60' : 'text-white/30'}`}>
+                      {step2Done ? '已完成' : currentStep === 2 ? '步骤 2 / 3 (进行中)' : '待填写'}
+                    </p>
                   </div>
                 </div>
+                {/* Step 3 */}
                 <div className="relative flex gap-4">
-                  <div className="z-10 bg-white/10 p-2.5 rounded-full">
-                    <FileText className="w-5 h-5 text-white/40" />
+                  <div className={`z-10 p-2.5 rounded-full ${currentStep === 3 ? 'bg-[#3B82F6] shadow-lg shadow-blue-900/20' : step3Done ? 'bg-green-500' : 'bg-white/10'}`}>
+                    <FileText className={`w-5 h-5 ${currentStep === 3 || step3Done ? 'text-white' : 'text-white/40'}`} />
                   </div>
                   <div>
-                    <p className="text-white/40 font-semibold">简历上传</p>
-                    <p className="text-white/30 text-xs mt-1">最后一步</p>
+                    <p className={`font-semibold ${currentStep === 3 || step3Done ? 'text-white' : 'text-white/40'}`}>简历上传</p>
+                    <p className={`text-xs mt-1 ${currentStep === 3 ? 'text-white/50' : step3Done ? 'text-green-300/60' : 'text-white/30'}`}>
+                      {step3Done ? '已完成' : currentStep === 3 ? '步骤 3 / 3 (进行中)' : '最后一步'}
+                    </p>
                   </div>
                 </div>
               </div>
