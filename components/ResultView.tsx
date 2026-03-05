@@ -63,7 +63,7 @@ const CountUp: React.FC<{ target: number; duration?: number; delay?: number; suf
     return () => cancelAnimationFrame(rafId);
   }, [started, target, duration]);
 
-  const display = (started ? current : 0).toString().padStart(2, '0');
+  const display = (started ? current : 0).toString();
   return <>{prefix}{display}{suffix}</>;
 };
 
@@ -138,6 +138,11 @@ function getSalaryCompDesc(val: number): string {
   return `你超过了${val}%的同届候选人，继续努力！`;
 }
 
+// 根据分数生成简历健康度描述
+function getResumeHealthDesc(val: number): string {
+  if (val >= 50) return '您的简历健康度不错，继续保持！';
+  return '您的简历健康度有待提升，继续努力！';
+}
 
 export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset }) => {
   const theme = useMemo(() => {
@@ -181,7 +186,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [result.personValue]);
 
   const salaryCompetitiveness = result.salaryCompetitiveness ?? 50;
-  // resumeHealthScore 已移除（深度分析功能由聊天 Agent 承接）
+  const resumeHealthScore = result.resumeHealthScore ?? 50;
 
   return (
     <div className="min-h-screen bg-blue-50 flex flex-col relative pb-16 overflow-x-hidden max-w-2xl mx-auto">
@@ -247,6 +252,19 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 sublabel="SALARY RANK"
                 isPercent={true}
                 desc={getSalaryCompDesc(salaryCompetitiveness)}
+                animDelay={12.5}
+              />
+              <RingChart
+                value={resumeHealthScore}
+                maxValue={100}
+                color="#10b981"
+                gradientId="healthGrad"
+                size={80}
+                strokeWidth={7}
+                label="简历健康度"
+                sublabel="RESUME HEALTH"
+                isPercent={false}
+                desc={getResumeHealthDesc(resumeHealthScore)}
                 animDelay={12.5}
               />
             </div>

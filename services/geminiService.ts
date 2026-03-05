@@ -98,6 +98,7 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
     radarData: data.radarData,
     abilitySummary: data.abilitySummary,
     salaryCompetitiveness: data.salaryCompetitiveness,
+    resumeHealthScore: data.resumeHealthScore,
 
     // HAY 8因素（用于简历优化助手）
     factors: data.factors,

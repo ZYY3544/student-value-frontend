@@ -56,6 +56,7 @@ export interface AssessmentResult {
   radarData?: RadarData;
   abilitySummary?: string;
   salaryCompetitiveness?: number;
+  resumeHealthScore?: number;
   logId?: number;
 
   // HAY 8因素评估结果（用于简历优化助手）
