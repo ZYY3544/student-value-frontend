@@ -94,9 +94,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typingRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -121,7 +123,24 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start chat');
       setSessionId(data.data.sessionId);
-      setMessages([{ role: 'assistant', content: data.data.greeting }]);
+      // 打字机效果逐字显示开场白
+      const greeting = data.data.greeting;
+      setMessages([{ role: 'assistant', content: '' }]);
+      setIsTyping(true);
+      typingRef.current = true;
+      let i = 0;
+      const typeNext = () => {
+        if (i < greeting.length && typingRef.current) {
+          i++;
+          setMessages([{ role: 'assistant', content: greeting.slice(0, i) }]);
+          setTimeout(typeNext, 30);
+        } else {
+          setMessages([{ role: 'assistant', content: greeting }]);
+          setIsTyping(false);
+          typingRef.current = false;
+        }
+      };
+      typeNext();
     } catch (err: any) {
       console.error('Chat init failed:', err);
       setError(err.message || 'Failed to connect');
@@ -161,7 +180,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
-    if (!text || isLoading || !sessionId) return;
+    if (!text || isLoading || isTyping || !sessionId) return;
 
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setInputValue('');
@@ -225,7 +244,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [apiBase, inputValue, isLoading, sessionId, recoverSession]);
+  }, [apiBase, inputValue, isLoading, isTyping, sessionId, recoverSession]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -324,7 +343,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             onChange={e => setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH))}
             onKeyDown={handleKeyDown}
             placeholder="询问 AI 如何提升简历身价..."
-            disabled={isLoading || isInitializing}
+            disabled={isLoading || isInitializing || isTyping}
             className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:bg-gray-100 disabled:text-gray-400"
           />
           <button
@@ -340,7 +359,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             <button
               key={chip}
               onClick={() => sendMessage(chip)}
-              disabled={isLoading || isInitializing || !sessionId}
+              disabled={isLoading || isInitializing || isTyping || !sessionId}
               className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600 disabled:opacity-50 transition-colors"
             >
               {chip}
