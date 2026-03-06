@@ -210,7 +210,7 @@ const App: React.FC = () => {
               开启测评
             </h1>
             <p className="text-white/80 text-lg mb-12 leading-relaxed">
-              通过 AI 驱动的深度测评，解锁你的职业潜能，几分钟内即可获取校招身价报告。
+              融合500强企业标配的价值评估体系与行业头部最新的薪酬数据库，结合独家AI简历Agent，不仅能够精准核算您的市场价值，并由专业AI深度拆解您的优劣势，生成最能打动HR的专属简历定制方案。
             </p>
 
             {/* Feature List */}
