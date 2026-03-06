@@ -198,8 +198,8 @@ const App: React.FC = () => {
         <aside className="w-[400px] bg-[#0A66C2] p-12 flex flex-col relative overflow-hidden shrink-0">
           {/* Logo */}
           <div className="flex items-center gap-3 text-white mb-16 z-10">
-            <div className="bg-[#f8ea1a] p-2 rounded-xl">
-              <Sparkles className="w-6 h-6 text-[#1a1a1a]" />
+            <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
+              <Sparkles className="w-6 h-6 text-[#f8ea1a]" />
             </div>
             <span className="text-xl font-bold tracking-tight">校园人才估值平台</span>
           </div>
