@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu, Maximize2, Minimize2 } from 'lucide-react';
 
 // Types
 interface ChatMessage {
@@ -83,6 +83,29 @@ const formatContent = (text: string) => {
 const MAX_INPUT_LENGTH = 2000;
 const QUICK_CHIPS = ['解读报告', '润色项目经历', '模拟面试'];
 
+// 每个快捷按钮的固定引导语（本地展示，不走后端）
+const CHIP_INTROS: Record<string, string> = {
+  '解读报告':
+    '好的！我将从以下 4 个维度来为你深度解读这份报告：\n\n' +
+    '📊 **定价总结**：你为什么值这个薪酬\n\n' +
+    '💪 **核心竞争力**：你简历中最有市场价值的亮点\n\n' +
+    '📈 **提升空间**：哪些方面加强后可以更值钱\n\n' +
+    '🎤 **面试建议**：面试时可以重点讲的故事和经历\n\n' +
+    '如果你还有其他想了解的维度，也可以一并告诉我～没有的话，我就直接开始啦！',
+  '润色项目经历':
+    '好的！我会仔细看你简历中的项目经历部分，从以下几个方面帮你润色：\n\n' +
+    '✨ **成果量化**：把模糊的描述变成有说服力的数据\n\n' +
+    '🎯 **STAR法则**：让每段经历都有清晰的情境、任务、行动和结果\n\n' +
+    '💡 **亮点提炼**：突出最能体现你能力的关键词\n\n' +
+    '你有没有哪段经历是特别想重点润色的？或者我直接从头到尾帮你看一遍？',
+  '模拟面试':
+    '好的！我会基于你的简历内容和目标岗位，来模拟一场面试：\n\n' +
+    '🎯 **提问环节**：像真实面试官一样向你提问\n\n' +
+    '💬 **追问深挖**：根据你的回答继续追问\n\n' +
+    '📝 **复盘点评**：面试结束后给你详细反馈\n\n' +
+    '准备好了吗？如果你有想特别准备的问题方向，可以先告诉我～没有的话，我们直接开始！',
+};
+
 export const ChatWidget: React.FC<ChatWidgetProps> = ({
   assessmentContext,
   resumeText,
@@ -95,6 +118,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -125,22 +150,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       setSessionId(data.data.sessionId);
       // 打字机效果逐字显示开场白
       const greeting = data.data.greeting;
-      setMessages([{ role: 'assistant', content: '' }]);
-      setIsTyping(true);
-      typingRef.current = true;
-      let i = 0;
-      const typeNext = () => {
-        if (i < greeting.length && typingRef.current) {
-          i++;
-          setMessages([{ role: 'assistant', content: greeting.slice(0, i) }]);
-          setTimeout(typeNext, 30);
-        } else {
-          setMessages([{ role: 'assistant', content: greeting }]);
-          setIsTyping(false);
-          typingRef.current = false;
-        }
-      };
-      typeNext();
+      setMessages([]);
+      typewriterEffect(greeting);
     } catch (err: any) {
       console.error('Chat init failed:', err);
       setError(err.message || 'Failed to connect');
@@ -178,9 +189,62 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
   }, [apiBase, assessmentContext, resumeText]);
 
+  // 通用打字机效果：在 messages 末尾逐字显示文本
+  const typewriterEffect = useCallback((text: string, onDone?: () => void) => {
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    setIsTyping(true);
+    typingRef.current = true;
+    let i = 0;
+    const typeNext = () => {
+      if (i < text.length && typingRef.current) {
+        i++;
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: text.slice(0, i) };
+          return updated;
+        });
+        setTimeout(typeNext, 30);
+      } else {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: text };
+          return updated;
+        });
+        setIsTyping(false);
+        typingRef.current = false;
+        onDone?.();
+      }
+    };
+    typeNext();
+  }, []);
+
+  // 快捷按钮点击：显示固定引导语（打字机），等用户确认后再发后端
+  const handleChipClick = useCallback((chip: string) => {
+    if (isLoading || isTyping || !sessionId) return;
+
+    const intro = CHIP_INTROS[chip];
+    if (!intro) {
+      // 无引导语的 chip，直接发送
+      return;
+    }
+
+    // 显示用户消息
+    setMessages(prev => [...prev, { role: 'user', content: chip }]);
+    // 打字机效果显示引导语
+    typewriterEffect(intro);
+    // 记录待执行的动作
+    setPendingAction(chip);
+  }, [isLoading, isTyping, sessionId, typewriterEffect]);
+
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || isTyping || !sessionId) return;
+
+    // 如果有待执行的动作，拼接 [ACTION:xxx] 前缀发给后端
+    const messageToSend = pendingAction
+      ? `[ACTION:${pendingAction}] ${text}`
+      : text;
+    if (pendingAction) setPendingAction(null);
 
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setInputValue('');
@@ -191,7 +255,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const res = await fetch(`${apiBase}/api/chat/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, message: text, stream: true }),
+        body: JSON.stringify({ sessionId, message: messageToSend, stream: true }),
       });
 
       if (res.status === 404) {
@@ -244,7 +308,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [apiBase, inputValue, isLoading, isTyping, sessionId, recoverSession]);
+  }, [apiBase, inputValue, isLoading, isTyping, sessionId, pendingAction, recoverSession]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -256,9 +320,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     [sendMessage]
   );
 
-  return (
-    <aside className="w-[420px] h-full shrink-0 p-4 pl-0">
-    <div className="bg-white border border-gray-200 rounded-3xl h-full flex flex-col overflow-hidden shadow-sm">
+  const chatContent = (
+    <div className={`bg-white border border-gray-200 rounded-3xl flex flex-col overflow-hidden shadow-sm ${isExpanded ? 'h-full' : 'h-full'}`}>
       {/* Header */}
       <div className="p-6 border-b border-gray-50">
         <div className="flex items-center justify-between mb-1">
@@ -276,6 +339,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               </div>
             </div>
           </div>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            title={isExpanded ? '收起' : '展开'}
+          >
+            {isExpanded ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
+          </button>
         </div>
       </div>
 
@@ -358,8 +428,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           {QUICK_CHIPS.map((chip) => (
             <button
               key={chip}
-              onClick={() => sendMessage(chip)}
-              disabled={isLoading || isInitializing || isTyping || !sessionId}
+              onClick={() => handleChipClick(chip)}
+              disabled={isLoading || isInitializing || isTyping || !sessionId || !!pendingAction}
               className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600 disabled:opacity-50 transition-colors"
             >
               {chip}
@@ -368,6 +438,29 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         </div>
       </div>
     </div>
+  );
+
+  if (isExpanded) {
+    return (
+      <>
+        {/* 遮罩层 */}
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100]"
+          onClick={() => setIsExpanded(false)}
+        />
+        {/* 居中悬浮对话框 */}
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-8 pointer-events-none">
+          <div className="w-full max-w-3xl h-[85vh] pointer-events-auto">
+            {chatContent}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <aside className="w-[420px] h-full shrink-0 p-4 pl-0">
+      {chatContent}
     </aside>
   );
 };

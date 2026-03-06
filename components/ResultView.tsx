@@ -182,7 +182,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         <div className="bg-gradient-to-br from-blue-50 to-white rounded-[40px] p-10 mb-8 border border-blue-100/50 shadow-sm relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
             <div>
-              <p className="text-gray-500 font-medium mb-3">预计年薪估值</p>
+              <p className="text-gray-500 font-medium mb-3">预计月薪估值</p>
               <div className="flex items-baseline gap-2 mb-6">
                 <span className="text-6xl font-black text-[#0A66C2]">
                   ¥ {salaryNumbers[0]}k ~ {salaryNumbers[1]}k
@@ -192,6 +192,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 <TrendingUp className="w-4 h-4" />
                 等级：{result.levelTag}
               </div>
+              {result.levelDesc && (
+                <p className="text-sm text-gray-500 leading-relaxed mt-4 max-w-lg">{result.levelDesc}</p>
+              )}
             </div>
 
             <div className="bg-[#0A66C2] rounded-3xl p-8 text-white text-center shadow-xl shadow-blue-200/50">
@@ -205,11 +208,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-100/30 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
         </div>
-
-        {/* levelDesc */}
-        {result.levelDesc && (
-          <p className="text-sm text-gray-500 leading-relaxed mb-8 max-w-3xl">{result.levelDesc}</p>
-        )}
 
         {/* Circular Progress */}
         <div className="grid grid-cols-2 gap-6 mb-8">
