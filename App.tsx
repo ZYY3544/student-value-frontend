@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Diamond, Bell, User, FileText, Loader2, Sparkles, X, ChevronDown, AlertCircle, Lock, GraduationCap, Briefcase, CloudUpload, Zap, BarChart3, TrendingUp } from 'lucide-react';
 import { ResultView } from './components/ResultView';
-import { WelcomeView } from './components/WelcomeView';
 import { generateAssessment } from './services/geminiService';
 import { AssessmentInput, AssessmentResult, AppState } from './types';
 
@@ -38,10 +37,9 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
 };
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>(AppState.WELCOME);
+  const [appState, setAppState] = useState<AppState>(AppState.FORM);
   const [retryCount, setRetryCount] = useState(0);
   const [showInsufficientDialog, setShowInsufficientDialog] = useState(false);
-  const [inviteCode, setInviteCode] = useState<string>(localStorage.getItem('invite_code') || '');
 
   // 页面停留时间追踪
   const pageEnteredAt = useRef<number>(Date.now());
@@ -172,11 +170,6 @@ const App: React.FC = () => {
         setRetryCount(prev => prev + 1);
         setShowInsufficientDialog(true);
         setAppState(AppState.FORM);
-      } else if (msg.includes('403') || msg.includes('邀请码')) {
-        localStorage.removeItem('invite_code');
-        setInviteCode('');
-        alert('邀请码已失效，请重新输入');
-        setAppState(AppState.WELCOME);
       } else {
         alert(`评估失败：${msg}`);
         setAppState(AppState.FORM);
@@ -202,7 +195,7 @@ const App: React.FC = () => {
     return (
       <div className="flex min-h-screen bg-white font-sans text-slate-900">
         {/* Left Sidebar */}
-        <aside className="w-[400px] bg-[#2D63ED] p-12 flex flex-col relative overflow-hidden shrink-0">
+        <aside className="w-[400px] bg-[#0A66C2] p-12 flex flex-col relative overflow-hidden shrink-0">
           {/* Logo */}
           <div className="flex items-center gap-3 text-white mb-16 z-10">
             <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
@@ -318,7 +311,7 @@ const App: React.FC = () => {
             <div className="space-y-12">
               {/* Section 1: 院校信息 */}
               <div className="space-y-6">
-                <div className="flex items-center gap-3 text-[#2D63ED]">
+                <div className="flex items-center gap-3 text-[#0A66C2]">
                   <GraduationCap className="w-6 h-6" />
                   <h3 className="text-lg font-bold">院校信息</h3>
                 </div>
@@ -359,7 +352,7 @@ const App: React.FC = () => {
 
               {/* Section 2: 职场意向 */}
               <div className="space-y-6">
-                <div className="flex items-center gap-3 text-[#2D63ED]">
+                <div className="flex items-center gap-3 text-[#0A66C2]">
                   <Briefcase className="w-6 h-6" />
                   <h3 className="text-lg font-bold">职场意向</h3>
                 </div>
@@ -468,7 +461,7 @@ const App: React.FC = () => {
 
               {/* Section 3: 简历信息 */}
               <div className="space-y-6">
-                <div className="flex items-center gap-3 text-[#2D63ED]">
+                <div className="flex items-center gap-3 text-[#0A66C2]">
                   <CloudUpload className="w-6 h-6" />
                   <h3 className="text-lg font-bold">简历信息</h3>
                 </div>
@@ -476,7 +469,7 @@ const App: React.FC = () => {
                 {/* Segmented Control */}
                 <div className="relative flex bg-slate-100 rounded-xl p-1 max-w-xs">
                   <div
-                    className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#2D63ED] rounded-[10px] transition-transform duration-300 ease-out"
+                    className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#0A66C2] rounded-[10px] transition-transform duration-300 ease-out"
                     style={{ transform: resumeInputMode === 'text' ? 'translateX(calc(100% + 4px))' : 'translateX(0)' }}
                   />
                   <button
@@ -508,14 +501,14 @@ const App: React.FC = () => {
                     {formData.resumeFile ? (
                       <div className="bg-blue-50 border border-blue-100 rounded-[32px] p-5 flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 bg-[#2D63ED] rounded-2xl flex items-center justify-center text-white">
+                          <div className="w-14 h-14 bg-[#0A66C2] rounded-2xl flex items-center justify-center text-white">
                             <FileText size={24} />
                           </div>
                           <div className="flex flex-col overflow-hidden">
                             <span className="text-sm font-bold text-slate-900 truncate max-w-[300px]">
                               {formData.resumeFileName}
                             </span>
-                            <span className="text-xs text-[#2D63ED] font-medium mt-0.5">已上传附件</span>
+                            <span className="text-xs text-[#0A66C2] font-medium mt-0.5">已上传附件</span>
                           </div>
                         </div>
                         <button
@@ -529,7 +522,7 @@ const App: React.FC = () => {
                       <label className="group cursor-pointer block">
                         <div className={`border-2 border-dashed ${hasError('resumeSource') ? 'border-rose-300' : 'border-slate-200'} rounded-[32px] p-16 flex flex-col items-center justify-center text-center`}>
                           <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                            <CloudUpload className="w-8 h-8 text-[#2D63ED]" />
+                            <CloudUpload className="w-8 h-8 text-[#0A66C2]" />
                           </div>
                           <h4 className="text-xl font-bold text-slate-900 mb-2">点击或拖拽简历文件至此</h4>
                           <p className="text-slate-400 mb-8">支持 PDF, Word 格式，大小不超过 10MB</p>
@@ -585,8 +578,6 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (appState) {
-      case AppState.WELCOME:
-        return <WelcomeView onStart={() => setAppState(AppState.FORM)} inviteCode={inviteCode} onInviteSuccess={(code) => { setInviteCode(code); localStorage.setItem('invite_code', code); }} />;
       case AppState.LOADING:
         return (
           <div className="min-h-screen bg-blue-50 flex flex-col items-center justify-center p-6 text-center">
