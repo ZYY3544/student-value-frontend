@@ -19,6 +19,12 @@ interface ChatWidgetProps {
     salaryRange: string;
     jobTitle: string;
     jobFunction: string;
+    educationLevel: string;
+    major: string;
+    city: string;
+    industry: string;
+    companyType: string;
+    targetCompany: string;
   };
   resumeText: string;
   apiBase?: string;

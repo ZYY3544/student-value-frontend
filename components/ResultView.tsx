@@ -298,6 +298,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           salaryRange: result.personValue || '',
           jobTitle: inputData.jobTitle,
           jobFunction: inputData.jobFunction,
+          educationLevel: inputData.educationLevel,
+          major: inputData.major,
+          city: inputData.city,
+          industry: inputData.industry,
+          companyType: inputData.companyType,
+          targetCompany: inputData.targetCompany || '',
         }}
         resumeText={result.resumeText || inputData.resumeText}
         apiBase="https://student-value-backend.onrender.com"

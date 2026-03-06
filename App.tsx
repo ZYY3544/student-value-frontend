@@ -207,10 +207,10 @@ const App: React.FC = () => {
           {/* Hero Card */}
           <div className="bg-white/10 rounded-[40px] p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
             <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
-              开启你的价值测评
+              开启测评
             </h1>
             <p className="text-white/80 text-lg mb-12 leading-relaxed">
-              通过 AI 驱动的深度测评，解锁你的职业潜能，几分钟内即可获取市场价值报告。
+              通过 AI 驱动的深度测评，解锁你的职业潜能，几分钟内即可获取校招身价报告。
             </p>
 
             {/* Feature List */}
