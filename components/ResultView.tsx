@@ -112,8 +112,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [result.abilities]);
 
   const salaryNumbers = useMemo(() => {
-    const match = result.personValue?.match(/(\d+)\s*k?\s*[-～~]\s*(\d+)/);
-    if (match) return [parseInt(match[1]), parseInt(match[2])];
+    const match = result.personValue?.match(/(\d+\.?\d*)\s*k?\s*[-～~]\s*(\d+\.?\d*)/);
+    if (match) return [parseFloat(match[1]), parseFloat(match[2])];
     return [0, 0];
   }, [result.personValue]);
 
