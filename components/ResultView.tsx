@@ -71,9 +71,10 @@ const CircularProgress: React.FC<{
   );
 };
 
-function getSalaryCompDesc(val: number): string {
-  if (val >= 50) return `你超过了${val}%的同届候选人，继续加油！`;
-  return `你超过了${val}%的同届候选人，继续努力！`;
+function getJobMatchDesc(val: number): string {
+  if (val >= 70) return '你的简历与目标岗位高度匹配，优势明显！';
+  if (val >= 50) return '你的简历与目标岗位基本匹配，仍有提升空间。';
+  return '你的简历与目标岗位匹配度偏低，建议针对性优化。';
 }
 
 function getResumeHealthDesc(val: number): string {
@@ -126,7 +127,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         <div className="px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-10">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-[#0A66C2] rounded-lg flex items-center justify-center">
                 <BarChart3 className="text-white w-5 h-5" />
               </div>
               <span className="text-xl font-bold tracking-tight text-gray-800">Campus Talent Valuation</span>
@@ -135,10 +136,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               {['Dashboard', 'Reports', 'Career Path', 'Community'].map((item) => (
                 <button
                   key={item}
-                  className={`text-sm font-medium relative py-5 ${item === 'Dashboard' ? 'text-blue-600' : 'text-gray-500'}`}
+                  className={`text-sm font-medium relative py-5 ${item === 'Dashboard' ? 'text-[#0A66C2]' : 'text-gray-500'}`}
                 >
                   {item}
-                  {item === 'Dashboard' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
+                  {item === 'Dashboard' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0A66C2]" />}
                 </button>
               ))}
             </nav>
@@ -168,7 +169,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <span className="text-xs font-bold text-blue-600 tracking-widest uppercase mb-1 block">CAMPUS REPORT</span>
+            <span className="text-xs font-bold text-[#0A66C2] tracking-widest uppercase mb-1 block">CAMPUS REPORT</span>
             <h1 className="text-4xl font-bold text-gray-900">校招身价报告</h1>
           </div>
           <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm">
@@ -183,17 +184,17 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             <div>
               <p className="text-gray-500 font-medium mb-3">预计年薪估值</p>
               <div className="flex items-baseline gap-2 mb-6">
-                <span className="text-6xl font-black text-blue-600">
+                <span className="text-6xl font-black text-[#0A66C2]">
                   ¥ {salaryNumbers[0]}k ~ {salaryNumbers[1]}k
                 </span>
               </div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100/50 rounded-full text-blue-700 text-sm font-bold">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100/50 rounded-full text-[#0A66C2] text-sm font-bold">
                 <TrendingUp className="w-4 h-4" />
                 等级：{result.levelTag}
               </div>
             </div>
 
-            <div className="bg-blue-600 rounded-3xl p-8 text-white text-center shadow-xl shadow-blue-200/50">
+            <div className="bg-[#0A66C2] rounded-3xl p-8 text-white text-center shadow-xl shadow-blue-200/50">
               <p className="text-sm font-medium opacity-90 mb-1">超越全国毕业生</p>
               <div className="flex items-baseline justify-center gap-1">
                 <span className="text-5xl font-black">{salaryCompetitiveness}</span>
@@ -214,9 +215,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         <div className="grid grid-cols-2 gap-6 mb-8">
           <CircularProgress
             score={salaryCompetitiveness}
-            label="薪酬竞争力"
-            description={getSalaryCompDesc(salaryCompetitiveness)}
-            color="#3b82f6"
+            label="岗位匹配度"
+            description={getJobMatchDesc(salaryCompetitiveness)}
+            color="#0A66C2"
           />
           <CircularProgress
             score={resumeHealthScore}
@@ -232,7 +233,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-              <Users className="text-blue-600 w-6 h-6" />
+              <Users className="text-[#0A66C2] w-6 h-6" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">核心胜任力画像</h2>
           </div>
@@ -243,8 +244,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                   <PolarGrid stroke="#e5e7eb" />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} />
-                  <Radar name="能力值" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} dot={false} activeDot={{ r: 5, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
-                  <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#3b82f6] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
+                  <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={false} activeDot={{ r: 5, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
+                  <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
                 </RadarChart>
               </ResponsiveContainer>
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-400 font-medium italic">
@@ -257,10 +258,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 <div key={idx} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-gray-700">{item.label}</span>
-                    <span className="text-sm font-bold text-blue-600">{item.score}</span>
+                    <span className="text-sm font-bold text-[#0A66C2]">{item.score}</span>
                   </div>
                   <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-blue-500" style={{ width: `${Math.min(item.rawScore * 10, 100)}%` }} />
+                    <div className="h-full rounded-full bg-[#0A66C2]" style={{ width: `${Math.min(item.rawScore * 10, 100)}%` }} />
                   </div>
                 </div>
               ))}
@@ -268,25 +269,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           </div>
         </div>
 
-        {/* 各能力得分释义 */}
-        <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
-          <div className="flex flex-col mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">各能力得分释义</h2>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">SCORE DEFINITIONS</p>
-          </div>
-
-          <div className="space-y-6">
-            {competencyDetails.map((item, idx) => (
-              <div key={idx}>
-                <div className="flex items-baseline gap-3 mb-1">
-                  <span className="font-bold text-gray-900 text-base">{item.label}</span>
-                  <span className="text-gray-500 text-sm font-semibold">{item.score}分</span>
-                </div>
-                <p className="text-sm text-gray-500 leading-relaxed"><span className="font-medium">{item.tag}:</span> {item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* 右侧 Chat - 固定不滚动 */}
