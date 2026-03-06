@@ -81,7 +81,7 @@ const formatContent = (text: string) => {
 };
 
 const MAX_INPUT_LENGTH = 2000;
-const QUICK_CHIPS = ['模拟面试', '修改自我介绍', '润色项目背景'];
+const QUICK_CHIPS = ['解读报告', '润色项目经历', '模拟面试'];
 
 export const ChatWidget: React.FC<ChatWidgetProps> = ({
   assessmentContext,
