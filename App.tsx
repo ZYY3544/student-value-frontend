@@ -283,9 +283,14 @@ const App: React.FC = () => {
             &copy; 2025 校园人才估值平台. 版权所有。
           </div>
 
-          {/* Background Decoration */}
+          {/* Background Decoration - 浮动 Logo */}
           <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl"></div>
+          <Diamond className="absolute top-[15%] right-[12%] w-10 h-10 text-white/[0.07] animate-float" />
+          <Diamond className="absolute top-[40%] left-[8%] w-7 h-7 text-white/[0.05] animate-float-soft" style={{ animationDelay: '1s' }} />
+          <Diamond className="absolute bottom-[25%] right-[25%] w-14 h-14 text-white/[0.06] animate-float" style={{ animationDelay: '2s' }} />
+          <Diamond className="absolute bottom-[10%] left-[20%] w-8 h-8 text-white/[0.04] animate-float-soft" style={{ animationDelay: '0.5s' }} />
+          <Diamond className="absolute top-[65%] right-[8%] w-6 h-6 text-white/[0.05] animate-float" style={{ animationDelay: '1.5s' }} />
         </aside>
 
         {/* Main Content */}
