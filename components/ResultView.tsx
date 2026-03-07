@@ -53,7 +53,7 @@ const CircularProgress: React.FC<{
       <div className="relative w-24 h-24 flex-shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={45} paddingAngle={0} dataKey="value" startAngle={90} endAngle={-270}>
+            <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={45} paddingAngle={0} dataKey="value" startAngle={90} endAngle={-270} isAnimationActive={false}>
               {data.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={colors[index]} stroke="none" />
               ))}
