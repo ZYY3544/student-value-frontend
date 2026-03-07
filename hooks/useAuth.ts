@@ -5,6 +5,11 @@ import type { User, Session } from '@supabase/supabase-js';
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [emailJustConfirmed, setEmailJustConfirmed] = useState(false);
+
+  const clearEmailConfirmed = useCallback(() => {
+    setEmailJustConfirmed(false);
+  }, []);
 
   useEffect(() => {
     // 获取当前 session
@@ -15,8 +20,17 @@ export function useAuth() {
 
     // 监听 auth 状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event: string, session: Session | null) => {
+      (event: string, session: Session | null) => {
         setUser(session?.user ?? null);
+
+        // 检测邮箱确认事件：用户点击确认链接后自动登录
+        if (event === 'SIGNED_IN') {
+          const hash = window.location.hash;
+          if (hash.includes('type=signup') || hash.includes('type=email')) {
+            setEmailJustConfirmed(true);
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        }
       }
     );
 
@@ -40,5 +54,5 @@ export function useAuth() {
     if (error) throw error;
   }, []);
 
-  return { user, loading, signUp, signIn, signOut };
+  return { user, loading, signUp, signIn, signOut, emailJustConfirmed, clearEmailConfirmed };
 }

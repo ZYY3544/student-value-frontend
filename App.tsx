@@ -4,6 +4,7 @@ import { Diamond, FileText, Loader2, Sparkles, X, ChevronDown, AlertCircle, Lock
 import { ResultView } from './components/ResultView';
 import { AuthPage } from './components/AuthPage';
 import { HistoryPage } from './components/HistoryPage';
+import { Toast } from './components/Toast';
 import { generateAssessment } from './services/geminiService';
 import { useAuth } from './hooks/useAuth';
 import { AssessmentInput, AssessmentResult, AppState } from './types';
@@ -40,7 +41,7 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
 };
 
 const App: React.FC = () => {
-  const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
+  const { user, loading: authLoading, signIn, signUp, signOut, emailJustConfirmed, clearEmailConfirmed } = useAuth();
   const [appState, setAppState] = useState<AppState>(AppState.AUTH);
   const [retryCount, setRetryCount] = useState(0);
   const [showInsufficientDialog, setShowInsufficientDialog] = useState(false);
@@ -667,6 +668,11 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen">
+      <Toast
+        message="邮箱验证成功！欢迎使用校园人才估值平台"
+        visible={emailJustConfirmed}
+        onClose={clearEmailConfirmed}
+      />
       {renderContent()}
 
       {/* 简历信息不足弹窗 */}
