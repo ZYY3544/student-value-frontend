@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu, Maximize2, Minimize2, PenLine, Square } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu, Maximize2, Minimize2, PenLine, Square, Plus } from 'lucide-react';
 
 // Types
 export interface ChatMessage {
@@ -358,6 +358,19 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
   }, []);
 
+  const handleNewChat = useCallback(async () => {
+    if (isInitializing) return;
+    // 中断正在进行的请求
+    if (abortRef.current) abortRef.current.abort();
+    setIsLoading(false);
+    setSessionId(null);
+    setMessages([]);
+    setPendingAction(null);
+    setInputValue('');
+    setError(null);
+    // initSession 会在 sessionId 变为 null 后被 useEffect 触发
+  }, [isInitializing]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       // 输入法正在组字时不发送（解决中文/日文/韩文输入法 Enter 冲突）
@@ -389,13 +402,23 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-            title={isExpanded ? '收起' : '展开'}
-          >
-            {isExpanded ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleNewChat}
+              disabled={isInitializing || isLoading}
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40"
+              title="新对话"
+            >
+              <Plus className="w-[18px] h-[18px]" />
+            </button>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              title={isExpanded ? '收起' : '展开'}
+            >
+              {isExpanded ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
+            </button>
+          </div>
         </div>
       </div>
 
