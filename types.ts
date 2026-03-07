@@ -65,6 +65,22 @@ export interface AssessmentResult {
   resumeText?: string;
 }
 
+// 简历画布（Canvas）相关类型
+export interface ResumeSection {
+  id: string;            // "section-0", "section-1"
+  type: string;          // "education" | "internship" | "project" | "skill" | "other"
+  title: string;         // "字节跳动-产品实习"
+  content: string;       // 当前内容（采纳编辑后更新）
+}
+
+export interface PendingEdit {
+  sectionId: string;
+  original: string;      // 被替换的原文
+  suggested: string;     // 建议替换为
+  rationale: string;     // 修改理由
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
 export enum AppState {
   WELCOME = 'WELCOME',
   FORM = 'FORM',

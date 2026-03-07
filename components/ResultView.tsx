@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { AssessmentResult, AssessmentInput, AbilityItem } from '../types';
+import React, { useMemo, useState, useCallback } from 'react';
+import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit } from '../types';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell, Search,
   Lightbulb, Brain, Handshake, PenTool
@@ -9,7 +9,8 @@ import {
   ResponsiveContainer, Tooltip,
   PieChart, Pie, Cell
 } from 'recharts';
-import { ChatWidget } from './ChatWidget';
+import { ChatWidget, ChatMessage } from './ChatWidget';
+import { CanvasView } from './CanvasView';
 
 interface ResultViewProps {
   result: AssessmentResult;
@@ -82,11 +83,134 @@ function getResumeHealthDesc(val: number): string {
   return '您的简历健康度有待提升，继续努力！';
 }
 
+const API_BASE = 'https://student-value-backend.onrender.com';
+
 export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset }) => {
+  // ===== 提升的聊天状态 =====
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ===== Canvas 状态 =====
+  const [viewMode, setViewMode] = useState<'report' | 'canvas'>('report');
+  const [resumeSections, setResumeSections] = useState<ResumeSection[]>([]);
+  const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
+
+  const assessmentContext = useMemo(() => ({
+    factors: result.factors || {},
+    abilities: result.abilities || {},
+    grade: result.level,
+    salaryRange: result.personValue || '',
+    jobTitle: inputData.jobTitle,
+    jobFunction: inputData.jobFunction,
+    educationLevel: inputData.educationLevel,
+    major: inputData.major,
+    city: inputData.city,
+    industry: inputData.industry,
+    companyType: inputData.companyType,
+    targetCompany: inputData.targetCompany || '',
+  }), [result, inputData]);
+
+  const resumeText = result.resumeText || inputData.resumeText;
+
+  // 进入画布模式
+  const handleEnterCanvas = useCallback(async () => {
+    if (!sessionId) return;
+    setViewMode('canvas');
+
+    // 拉取简历段落数据
+    const fetchSections = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/chat/sections?sessionId=${sessionId}`);
+        const data = await res.json();
+        if (data.success) {
+          if (data.data.status === 'ready') {
+            setResumeSections(data.data.sections);
+          } else {
+            // 还在解析中，轮询
+            setTimeout(fetchSections, 1500);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch sections:', err);
+      }
+    };
+    fetchSections();
+  }, [sessionId]);
+
+  // 处理采纳编辑
+  const handleAcceptEdit = useCallback(async (editIndex: number) => {
+    const edit = pendingEdits[editIndex];
+    if (!edit || !sessionId) return;
+
+    // 更新本地状态
+    setPendingEdits(prev => prev.map((e, i) =>
+      i === editIndex ? { ...e, status: 'accepted' as const } : e
+    ));
+
+    // 更新对应 section 的内容
+    setResumeSections(prev => prev.map(sec => {
+      if (sec.id === edit.sectionId) {
+        return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+      }
+      return sec;
+    }));
+
+    // 通知后端
+    try {
+      await fetch(`${API_BASE}/api/chat/edit-action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          sectionId: edit.sectionId,
+          action: 'accept',
+          suggestedText: edit.suggested,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to accept edit:', err);
+    }
+
+    // 短暂延迟后移除已处理的编辑
+    setTimeout(() => {
+      setPendingEdits(prev => prev.filter((_, i) => i !== editIndex));
+    }, 500);
+  }, [pendingEdits, sessionId]);
+
+  // 处理拒绝编辑
+  const handleRejectEdit = useCallback(async (editIndex: number) => {
+    const edit = pendingEdits[editIndex];
+    if (!edit || !sessionId) return;
+
+    setPendingEdits(prev => prev.map((e, i) =>
+      i === editIndex ? { ...e, status: 'rejected' as const } : e
+    ));
+
+    try {
+      await fetch(`${API_BASE}/api/chat/edit-action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          sectionId: edit.sectionId,
+          action: 'reject',
+          suggestedText: edit.suggested,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to reject edit:', err);
+    }
+
+    setTimeout(() => {
+      setPendingEdits(prev => prev.filter((_, i) => i !== editIndex));
+    }, 500);
+  }, [pendingEdits, sessionId]);
+
   const radarData = useMemo(() => {
     if (result.radarData) {
       return Object.entries(result.radarData).map(([key, val]) => ({
-        subject: key, A: +(val / 10).toFixed(1)
+        subject: key, A: +(Number(val) / 10).toFixed(1)
       }));
     }
     return [
@@ -120,6 +244,35 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const salaryCompetitiveness = result.salaryCompetitiveness ?? 50;
   const resumeHealthScore = result.resumeHealthScore ?? 50;
 
+  // 共享的 chat props
+  const chatProps = {
+    assessmentContext,
+    resumeText,
+    apiBase: API_BASE,
+    sessionId,
+    setSessionId,
+    messages,
+    setMessages,
+    isLoading,
+    setIsLoading,
+  };
+
+  // ===== Canvas 模式 =====
+  if (viewMode === 'canvas') {
+    return (
+      <CanvasView
+        {...chatProps}
+        resumeSections={resumeSections}
+        pendingEdits={pendingEdits}
+        setPendingEdits={setPendingEdits}
+        onAcceptEdit={handleAcceptEdit}
+        onRejectEdit={handleRejectEdit}
+        onExitCanvas={() => setViewMode('report')}
+      />
+    );
+  }
+
+  // ===== Report 模式（默认） =====
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#f8fafc]">
       {/* Navbar */}
@@ -271,22 +424,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
       {/* 右侧 Chat - 固定不滚动 */}
       <ChatWidget
-        assessmentContext={{
-          factors: result.factors || {},
-          abilities: result.abilities || {},
-          grade: result.level,
-          salaryRange: result.personValue || '',
-          jobTitle: inputData.jobTitle,
-          jobFunction: inputData.jobFunction,
-          educationLevel: inputData.educationLevel,
-          major: inputData.major,
-          city: inputData.city,
-          industry: inputData.industry,
-          companyType: inputData.companyType,
-          targetCompany: inputData.targetCompany || '',
-        }}
-        resumeText={result.resumeText || inputData.resumeText}
-        apiBase="https://student-value-backend.onrender.com"
+        {...chatProps}
+        onEnterCanvas={handleEnterCanvas}
       />
       </div>
     </div>

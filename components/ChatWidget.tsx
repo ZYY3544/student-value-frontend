@@ -1,12 +1,13 @@
 /**
  * ChatWidget - 简历优化助手（桌面端右侧边栏）
+ * 受控组件：核心状态由 ResultView 管理，通过 props 传入
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu, Maximize2, Minimize2 } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu, Maximize2, Minimize2, PenLine } from 'lucide-react';
 
 // Types
-interface ChatMessage {
+export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
@@ -28,10 +29,18 @@ interface ChatWidgetProps {
   };
   resumeText: string;
   apiBase?: string;
+  // 受控状态
+  sessionId: string | null;
+  setSessionId: (id: string | null) => void;
+  messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  isLoading: boolean;
+  setIsLoading: (v: boolean) => void;
+  onEnterCanvas?: () => void;
 }
 
 // Markdown 渲染
-const formatContent = (text: string) => {
+export const formatContent = (text: string) => {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
 
@@ -112,15 +121,58 @@ const CHIP_INTROS: Record<string, string> = {
     '你有没有特别想了解的方向？比如要不要换赛道、怎么选行业之类的，都可以聊～',
 };
 
+// SSE 流解析工具函数（供 ChatWidget 和 CanvasChat 复用）
+export async function parseSseStream(
+  response: Response,
+  onText: (fullText: string) => void,
+  onEdit?: (edit: { sectionId: string; original: string; suggested: string; rationale: string }) => void,
+) {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        if (event.type === 'text') {
+          fullText += event.content;
+          onText(fullText);
+        } else if (event.type === 'edit' && onEdit) {
+          onEdit({
+            sectionId: event.sectionId,
+            original: event.original,
+            suggested: event.suggested,
+            rationale: event.rationale,
+          });
+        }
+      } catch { /* Skip invalid JSON */ }
+    }
+  }
+}
+
 export const ChatWidget: React.FC<ChatWidgetProps> = ({
   assessmentContext,
   resumeText,
   apiBase = '',
+  sessionId,
+  setSessionId,
+  messages,
+  setMessages,
+  isLoading,
+  setIsLoading,
+  onEnterCanvas,
 }) => {
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -230,15 +282,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
     const intro = CHIP_INTROS[chip];
     if (!intro) {
-      // 无引导语的 chip，直接发送
       return;
     }
 
-    // 显示用户消息
     setMessages(prev => [...prev, { role: 'user', content: chip }]);
-    // 打字机效果显示引导语
     typewriterEffect(intro);
-    // 记录待执行的动作
     setPendingAction(chip);
   }, [isLoading, isTyping, sessionId, typewriterEffect]);
 
@@ -246,7 +294,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || isTyping || !sessionId) return;
 
-    // 如果有待执行的动作，拼接 [ACTION:xxx] 前缀发给后端
     const messageToSend = pendingAction
       ? `[ACTION:${pendingAction}] ${text}`
       : text;
@@ -276,34 +323,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullText = '';
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === 'text') {
-              fullText += event.content;
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', content: fullText };
-                return updated;
-              });
-            }
-          } catch { /* Skip invalid JSON */ }
-        }
-      }
+      await parseSseStream(res, (fullText) => {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: fullText };
+          return updated;
+        });
+      });
     } catch (err: any) {
       console.error('Send failed:', err);
       setMessages(prev => {
@@ -441,6 +467,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               {chip}
             </button>
           ))}
+          {onEnterCanvas && (
+            <button
+              onClick={onEnterCanvas}
+              disabled={isLoading || isInitializing || isTyping || !sessionId}
+              className="px-3 py-1.5 bg-blue-50 rounded-full text-xs font-semibold text-blue-600 hover:bg-blue-100 disabled:opacity-50 transition-colors flex items-center gap-1"
+            >
+              <PenLine className="w-3 h-3" />
+              简历工作台
+            </button>
+          )}
         </div>
       </div>
     </div>
