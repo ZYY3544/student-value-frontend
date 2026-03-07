@@ -435,54 +435,48 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area — Gemini 风格统一容器 */}
-      <div className="p-4 bg-white border-t border-gray-50">
-        <div className="bg-gray-50 rounded-2xl border border-gray-100 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
-          {/* 输入行 */}
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH))}
-              onKeyDown={handleKeyDown}
-              placeholder="询问 AI 如何提升简历身价..."
-              disabled={isLoading || isInitializing || isTyping}
-              className="w-full bg-transparent border-none pl-5 pr-14 py-3.5 text-sm outline-none disabled:text-gray-400"
-            />
+      {/* Input Area */}
+      <div className="p-6 bg-white border-t border-gray-50">
+        <div className="relative mb-4">
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH))}
+            onKeyDown={handleKeyDown}
+            placeholder="询问 AI 如何提升简历身价..."
+            disabled={isLoading || isInitializing || isTyping}
+            className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:bg-gray-100 disabled:text-gray-400"
+          />
+          <button
+            onClick={() => sendMessage()}
+            disabled={!inputValue.trim() || isLoading || isInitializing}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:shadow-none transition-colors"
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          {QUICK_CHIPS.map((chip) => (
             <button
-              onClick={() => sendMessage()}
-              disabled={!inputValue.trim() || isLoading || isInitializing}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white disabled:bg-gray-300 transition-colors"
+              key={chip}
+              onClick={() => handleChipClick(chip)}
+              disabled={isLoading || isInitializing || isTyping || !sessionId || !!pendingAction}
+              className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600 disabled:opacity-50 transition-colors"
             >
-              {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              {chip}
             </button>
-          </div>
-          {/* 工具栏行 */}
-          <div className="flex items-center justify-between px-3 pb-2.5">
-            <div className="flex items-center gap-1.5">
-              {QUICK_CHIPS.map((chip) => (
-                <button
-                  key={chip}
-                  onClick={() => handleChipClick(chip)}
-                  disabled={isLoading || isInitializing || isTyping || !sessionId || !!pendingAction}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-gray-500 hover:bg-gray-200/60 disabled:opacity-40 transition-colors"
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
-            {onEnterCanvas && (
-              <button
-                onClick={onEnterCanvas}
-                disabled={isLoading || isInitializing || isTyping || !sessionId}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-40 transition-colors"
-              >
-                <PenLine className="w-3 h-3" />
-                工作台
-              </button>
-            )}
-          </div>
+          ))}
+          {onEnterCanvas && (
+            <button
+              onClick={onEnterCanvas}
+              disabled={isLoading || isInitializing || isTyping || !sessionId}
+              className="ml-auto flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition-colors"
+            >
+              <PenLine className="w-3 h-3" />
+              简历画布
+            </button>
+          )}
         </div>
       </div>
     </div>
