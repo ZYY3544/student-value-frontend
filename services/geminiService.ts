@@ -14,7 +14,7 @@ const USE_MOCK = false;
 // API 超时时间（毫秒）
 const API_TIMEOUT = 120000;
 
-export const generateAssessment = async (input: AssessmentInput, retryCount: number = 0, pageDurations?: { welcomeS?: number; formS?: number }): Promise<AssessmentResult> => {
+export const generateAssessment = async (input: AssessmentInput, retryCount: number = 0, pageDurations?: { welcomeS?: number; formS?: number }, userId?: string): Promise<AssessmentResult> => {
   // 如果是模拟模式，返回模拟数据
   if (USE_MOCK) {
     return mockAssessment(input);
@@ -46,6 +46,7 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
       retryCount: retryCount,
       welcomeS: pageDurations?.welcomeS,
       formS: pageDurations?.formS,
+      userId: userId,
     }),
     signal: AbortSignal.timeout(API_TIMEOUT),
   });

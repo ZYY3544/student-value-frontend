@@ -1,8 +1,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Diamond, Bell, User, FileText, Loader2, Sparkles, X, ChevronDown, AlertCircle, Lock, GraduationCap, Briefcase, CloudUpload, Zap, BarChart3, TrendingUp } from 'lucide-react';
+import { Diamond, FileText, Loader2, Sparkles, X, ChevronDown, AlertCircle, Lock, GraduationCap, Briefcase, CloudUpload, Zap, BarChart3, TrendingUp, LogOut, Clock } from 'lucide-react';
 import { ResultView } from './components/ResultView';
+import { AuthPage } from './components/AuthPage';
+import { HistoryPage } from './components/HistoryPage';
 import { generateAssessment } from './services/geminiService';
+import { useAuth } from './hooks/useAuth';
 import { AssessmentInput, AssessmentResult, AppState } from './types';
 
 const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
@@ -37,9 +40,20 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
 };
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>(AppState.FORM);
+  const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
+  const [appState, setAppState] = useState<AppState>(AppState.AUTH);
   const [retryCount, setRetryCount] = useState(0);
   const [showInsufficientDialog, setShowInsufficientDialog] = useState(false);
+
+  // 根据登录状态设置初始页面
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) {
+      if (appState === AppState.AUTH) setAppState(AppState.FORM);
+    } else {
+      setAppState(AppState.AUTH);
+    }
+  }, [user, authLoading]);
 
   // 页面停留时间追踪
   const pageEnteredAt = useRef<number>(Date.now());
@@ -159,10 +173,12 @@ const App: React.FC = () => {
       const data = await generateAssessment(formData, retryCount, {
         welcomeS: pageDurations.current['welcome'],
         formS: pageDurations.current['form'],
-      });
+      }, user?.id);
       if (data.logId) assessLogId.current = data.logId;
       setResult(data);
       setAppState(AppState.RESULT);
+
+      // 评估结果由后端在 /api/mini/assess 中自动存入 Supabase（传了 userId 时）
     } catch (error: unknown) {
       console.error("Assessment Error:", error);
       const msg = error instanceof Error ? error.message : "未知错误";
@@ -298,12 +314,25 @@ const App: React.FC = () => {
           <div className="max-w-4xl mx-auto">
             {/* Top Header */}
             <header className="flex justify-end gap-4 mb-12">
-              <button className="p-3 bg-white rounded-full shadow-sm">
-                <Bell className="w-5 h-5 text-slate-600" />
+              <button
+                onClick={() => setAppState(AppState.HISTORY)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-full shadow-sm text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <Clock className="w-4 h-4" />
+                历史记录
               </button>
-              <button className="p-3 bg-white rounded-full shadow-sm">
-                <User className="w-5 h-5 text-slate-600" />
-              </button>
+              {user && (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-slate-500 truncate max-w-[160px]">{user.email}</span>
+                  <button
+                    onClick={() => signOut()}
+                    className="p-2.5 bg-white rounded-full shadow-sm text-slate-400 hover:text-rose-500 transition-colors"
+                    title="退出登录"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </header>
 
             {/* Title Section */}
@@ -582,7 +611,35 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
+    if (authLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+          <Loader2 className="w-10 h-10 text-[#0A66C2] animate-spin" />
+        </div>
+      );
+    }
+
     switch (appState) {
+      case AppState.AUTH:
+        return (
+          <AuthPage
+            onAuthSuccess={() => setAppState(AppState.FORM)}
+            signIn={signIn}
+            signUp={signUp}
+          />
+        );
+      case AppState.HISTORY:
+        return user ? (
+          <HistoryPage
+            userId={user.id}
+            onBack={() => setAppState(AppState.FORM)}
+            onSelectRecord={(histResult, histInput) => {
+              setResult(histResult);
+              setFormData(histInput);
+              setAppState(AppState.RESULT);
+            }}
+          />
+        ) : null;
       case AppState.LOADING:
         return (
           <div className="min-h-screen bg-blue-50 flex flex-col items-center justify-center p-6 text-center">
@@ -601,7 +658,7 @@ const App: React.FC = () => {
           </div>
         );
       case AppState.RESULT:
-        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} />;
+        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} userId={user?.id} />;
         return renderFormContent();
       default:
         return renderFormContent();

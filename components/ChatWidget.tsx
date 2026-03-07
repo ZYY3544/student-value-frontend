@@ -37,6 +37,7 @@ interface ChatWidgetProps {
   isLoading: boolean;
   setIsLoading: (v: boolean) => void;
   onEnterCanvas?: () => void;
+  userId?: string;
 }
 
 // Markdown 渲染
@@ -171,6 +172,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   isLoading,
   setIsLoading,
   onEnterCanvas,
+  userId,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [isInitializing, setIsInitializing] = useState(false);
@@ -202,7 +204,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assessmentContext, resumeText }),
+        body: JSON.stringify({ assessmentContext, resumeText, userId }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start chat');
@@ -233,7 +235,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assessmentContext, resumeText }),
+        body: JSON.stringify({ assessmentContext, resumeText, userId }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Recovery failed');

@@ -1,5 +1,6 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit } from '../types';
+import { supabase } from '../lib/supabase';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell, Search,
   Lightbulb, Brain, Handshake, PenTool
@@ -17,6 +18,7 @@ interface ResultViewProps {
   inputData: AssessmentInput;
   assessmentType: 'CV';
   onReset: () => void;
+  userId?: string;
 }
 
 const ABILITY_TAGS: Record<string, Record<string, string>> = {
@@ -85,11 +87,42 @@ function getResumeHealthDesc(val: number): string {
 
 const API_BASE = 'https://student-value-backend.onrender.com';
 
-export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset }) => {
+export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset, userId }) => {
   // ===== 提升的聊天状态 =====
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const savedMsgCount = useRef(0);
+  const dbSessionId = useRef<string | null>(null);
+
+  // 将新消息持久化到 Supabase
+  useEffect(() => {
+    if (!userId || !sessionId || messages.length <= savedMsgCount.current) return;
+
+    const newMessages = messages.slice(savedMsgCount.current);
+    const createSessionAndSave = async () => {
+      // 首次保存时创建 chat_sessions 记录
+      if (!dbSessionId.current) {
+        const { data } = await supabase
+          .from('chat_sessions')
+          .insert({ user_id: userId, phase: 'opening' })
+          .select('id')
+          .single();
+        if (data) dbSessionId.current = data.id;
+      }
+
+      if (!dbSessionId.current) return;
+
+      const rows = newMessages.map(m => ({
+        session_id: dbSessionId.current!,
+        role: m.role,
+        content: m.content,
+      }));
+      await supabase.from('chat_messages').insert(rows);
+      savedMsgCount.current = messages.length;
+    };
+    createSessionAndSave().catch(console.error);
+  }, [messages, userId, sessionId]);
 
   // ===== Canvas 状态 =====
   const [viewMode, setViewMode] = useState<'report' | 'canvas'>('report');
@@ -255,6 +288,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     setMessages,
     isLoading,
     setIsLoading,
+    userId,
   };
 
   // ===== Canvas 模式 =====
