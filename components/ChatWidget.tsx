@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu, Maximize2, Minimize2, PenLine } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu, Maximize2, Minimize2, PenLine, Square } from 'lucide-react';
 
 // Types
 export interface ChatMessage {
@@ -180,6 +180,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef(false);
 
@@ -304,11 +305,15 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setIsLoading(true);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const res = await fetch(`${apiBase}/api/chat/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, message: messageToSend, stream: true }),
+        signal: controller.signal,
       });
 
       if (res.status === 404) {
@@ -331,6 +336,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         });
       });
     } catch (err: any) {
+      if (err.name === 'AbortError') {
+        // 用户主动中断，保留已接收的内容
+        return;
+      }
       console.error('Send failed:', err);
       setMessages(prev => {
         const updated = [...prev];
@@ -338,12 +347,21 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         return updated;
       });
     } finally {
+      abortRef.current = null;
       setIsLoading(false);
     }
   }, [apiBase, inputValue, isLoading, isTyping, sessionId, pendingAction, recoverSession]);
 
+  const handleStop = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // 输入法正在组字时不发送（解决中文/日文/韩文输入法 Enter 冲突）
+      if (e.nativeEvent.isComposing) return;
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
@@ -465,13 +483,23 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                 简历画布
               </button>
             ) : <span />}
-            <button
-              onClick={() => sendMessage()}
-              disabled={!inputValue.trim() || isLoading || isInitializing}
-              className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:shadow-none transition-colors"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
+            {isLoading ? (
+              <button
+                onClick={handleStop}
+                className="w-9 h-9 bg-gray-500 rounded-xl flex items-center justify-center text-white hover:bg-gray-600 transition-colors"
+                title="停止生成"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+              </button>
+            ) : (
+              <button
+                onClick={() => sendMessage()}
+                disabled={!inputValue.trim() || isInitializing}
+                className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:shadow-none transition-colors"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
         {/* 快捷按钮 */}
