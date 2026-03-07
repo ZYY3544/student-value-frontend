@@ -3,9 +3,49 @@
  * 按 section 分块展示，支持 diff 高亮 + 采纳/忽略
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Check, X, Loader2 } from 'lucide-react';
 import { ResumeSection, PendingEdit } from '../types';
+
+/**
+ * 清理简历文本：
+ * 1. 把单独占一行的 bullet（•·-）合并到下一行前面
+ * 2. 修复句中意外断行（上一行末尾不是标点/bullet，下一行开头不是 bullet/空行）
+ */
+function cleanResumeContent(raw: string): string {
+  const lines = raw.split('\n');
+  const merged: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+
+    // 单独的 bullet 符号（•, ·, -, *, ●, ○），合并到下一行
+    if (/^[•·\-*●○]$/.test(trimmed) && i + 1 < lines.length) {
+      const nextLine = lines[i + 1].trim();
+      if (nextLine) {
+        merged.push(`${trimmed} ${nextLine}`);
+        i++; // 跳过下一行
+        continue;
+      }
+    }
+
+    // 检测句中断行：上一行末尾不是句末标点，当前行也不是 bullet/空行开头
+    if (
+      merged.length > 0 &&
+      trimmed &&
+      !/^[•·\-*●○\d]/.test(trimmed) &&        // 当前行不是 bullet 或编号开头
+      !/[。！？.!?\n]$/.test(merged[merged.length - 1].trim()) && // 上一行不以句末标点结尾
+      !/[：:；;]$/.test(merged[merged.length - 1].trim())          // 上一行也不以冒号分号结尾
+    ) {
+      merged[merged.length - 1] = merged[merged.length - 1].trimEnd() + trimmed;
+      continue;
+    }
+
+    merged.push(lines[i]);
+  }
+
+  return merged.join('\n');
+}
 
 interface ResumePanelProps {
   sections: ResumeSection[];
@@ -75,7 +115,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
             {/* Section content */}
             <div className="px-5 py-4">
               <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                {section.content}
+                {cleanResumeContent(section.content)}
               </div>
 
               {/* Pending edits for this section */}
