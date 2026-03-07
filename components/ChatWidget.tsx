@@ -180,7 +180,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
@@ -439,15 +439,20 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       <div className="p-6 bg-white border-t border-gray-50">
         {/* 输入框容器 */}
         <div className="bg-gray-50 rounded-2xl mb-4 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={inputValue}
-            onChange={e => setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH))}
+            onChange={e => {
+              setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH));
+              // 自动调整高度
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            }}
             onKeyDown={handleKeyDown}
             placeholder="询问 AI 如何提升简历身价..."
             disabled={isLoading || isInitializing || isTyping}
-            className="w-full bg-transparent border-none pl-5 pr-14 pt-3.5 pb-1 text-sm outline-none disabled:text-gray-400"
+            rows={1}
+            className="w-full bg-transparent border-none pl-5 pr-5 pt-3.5 pb-1 text-sm outline-none disabled:text-gray-400 resize-none overflow-hidden"
           />
           <div className="flex items-center justify-between px-2 pb-2">
             {onEnterCanvas ? (
