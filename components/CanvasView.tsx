@@ -1,5 +1,5 @@
 /**
- * CanvasView - 全屏简历优化工作台
+ * CanvasView - 全屏简历画布
  * 左侧：AI 对话面板
  * 右侧：简历实时预览面板（带 diff 高亮）
  */
@@ -65,7 +65,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         <div className="h-5 w-px bg-gray-200" />
         <div className="flex items-center gap-2">
           <PenLine className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-bold text-gray-800">简历优化工作台</span>
+          <span className="text-sm font-bold text-gray-800">简历画布</span>
         </div>
         {pendingEdits.filter(e => e.status === 'pending').length > 0 && (
           <span className="ml-2 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
