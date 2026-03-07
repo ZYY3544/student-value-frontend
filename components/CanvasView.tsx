@@ -4,8 +4,8 @@
  * 右侧：简历实时预览面板（带 diff 高亮）
  */
 
-import React, { useCallback } from 'react';
-import { ArrowLeft, PenLine } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
+import { ArrowLeft, PenLine, Download, Loader2 } from 'lucide-react';
 import { ChatMessage } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel } from './ResumePanel';
@@ -46,10 +46,42 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onRejectEdit,
   onExitCanvas,
 }) => {
+  const [exporting, setExporting] = useState(false);
+
   // 处理 AI 的编辑建议
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
   }, [setPendingEdits]);
+
+  // 导出 Word
+  const handleExportWord = useCallback(async () => {
+    if (!sessionId || exporting) return;
+    setExporting(true);
+    try {
+      const res = await fetch(`${apiBase}/api/chat/resume/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: '导出失败' }));
+        throw new Error(err.error || '导出失败');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '我的简历.docx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert(e.message || '导出失败，请稍后重试');
+    } finally {
+      setExporting(false);
+    }
+  }, [sessionId, apiBase, exporting]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
@@ -72,6 +104,18 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             {pendingEdits.filter(e => e.status === 'pending').length} 条待处理
           </span>
         )}
+
+        {/* 右侧导出按钮 */}
+        <div className="ml-auto">
+          <button
+            onClick={handleExportWord}
+            disabled={exporting || resumeSections.length === 0}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#004F90] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            导出 Word
+          </button>
+        </div>
       </header>
 
       {/* Main content */}
