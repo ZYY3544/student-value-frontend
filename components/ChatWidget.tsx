@@ -431,7 +431,14 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
 
     setMessages(prev => [...prev, { role: 'user', content: chip }]);
-    typewriterEffect(intro);
+    // 先显示思考动画（三个跳动的点），2秒后再逐字打出
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    setIsTyping(true);
+    setTimeout(() => {
+      setMessages(prev => prev.slice(0, -1)); // 移除空的思考气泡
+      setIsTyping(false);
+      typewriterEffect(intro);
+    }, 2000);
     setPendingAction(chip);
   }, [isLoading, isTyping, sessionId, typewriterEffect]);
 
