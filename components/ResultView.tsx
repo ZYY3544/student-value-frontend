@@ -356,8 +356,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <span className="text-xs font-bold text-[#0A66C2] tracking-widest uppercase mb-1 block">CAMPUS REPORT</span>
-            <h1 className="text-4xl font-bold text-gray-900">校招身价报告</h1>
+            <span className="text-xs font-bold text-[#0A66C2] tracking-widest uppercase mb-1 block">ASSESSMENT REPORT</span>
+            <h1 className="text-4xl font-bold text-gray-900">评估报告</h1>
           </div>
           <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm">
             <FileText className="w-4 h-4" />

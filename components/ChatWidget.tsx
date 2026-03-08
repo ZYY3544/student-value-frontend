@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2, MoreHorizontal, Cpu, Maximize2, Minimize2, PenLine, Square, Plus } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 // Types
 export interface ChatMessage {
@@ -180,8 +181,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [chatHistory, setChatHistory] = useState<Array<{ id: string; created_at: string; firstMessage: string }>>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef(false);
@@ -193,6 +198,54 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  // 点击面板外关闭菜单
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
+  // 打开菜单时加载历史记录
+  const loadHistory = useCallback(async () => {
+    if (!userId) return;
+    setHistoryLoading(true);
+    try {
+      const { data } = await supabase
+        .from('chat_sessions')
+        .select('id, created_at, chat_messages(content, role)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (data) {
+        setChatHistory(
+          data.map((s: any) => {
+            const userMsg = s.chat_messages?.find((m: any) => m.role === 'user');
+            const firstMessage = userMsg?.content?.slice(0, 30) || '新对话';
+            return { id: s.id, created_at: s.created_at, firstMessage };
+          })
+        );
+      }
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [userId]);
+
+  const toggleMenu = useCallback(() => {
+    setMenuOpen(prev => {
+      const next = !prev;
+      if (next) loadHistory();
+      return next;
+    });
+  }, [loadHistory]);
 
   // Auto-initialize on mount
   const initSession = useCallback(async () => {
@@ -391,9 +444,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       <div className="p-6 border-b border-gray-50">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-              <Cpu className="text-white w-6 h-6" />
-            </div>
+            <button
+              onClick={toggleMenu}
+              className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 hover:bg-blue-700 transition-colors"
+              title="菜单"
+            >
+              <Menu className="text-white w-6 h-6" />
+            </button>
             <div>
               <h3 className="font-bold text-lg">简历优化助手</h3>
               <div className="flex items-center gap-1.5">
@@ -406,14 +463,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={handleNewChat}
-              disabled={isInitializing || isLoading}
-              className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40"
-              title="新对话"
-            >
-              <Plus className="w-[18px] h-[18px]" />
-            </button>
-            <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               title={isExpanded ? '收起' : '展开'}
@@ -423,6 +472,59 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Menu Panel */}
+      {menuOpen && (
+        <div className="relative">
+          <div
+            ref={menuRef}
+            className="absolute inset-x-0 top-0 z-10 bg-white border-b border-gray-200 shadow-lg rounded-b-2xl mx-2 overflow-hidden"
+          >
+            {/* 新对话按钮 */}
+            <button
+              onClick={() => { handleNewChat(); setMenuOpen(false); }}
+              disabled={isInitializing || isLoading}
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
+            >
+              <Plus className="w-4 h-4" />
+              开启新对话
+            </button>
+            <div className="border-t border-gray-100" />
+            {/* 历史对话列表 */}
+            <div className="px-5 py-3">
+              <p className="text-xs font-semibold text-gray-400 mb-2">历史对话</p>
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-4 text-gray-400 text-xs">
+                  <Loader2 size={14} className="animate-spin mr-1.5" />
+                  加载中...
+                </div>
+              ) : chatHistory.length === 0 ? (
+                <p className="text-xs text-gray-400 py-4 text-center">暂无历史对话</p>
+              ) : (
+                <div className="space-y-1 max-h-60 overflow-y-auto">
+                  {chatHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-default"
+                    >
+                      <MessageSquare className="w-4 h-4 text-gray-300 mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-400">
+                          {new Date(item.created_at).toLocaleString('zh-CN', {
+                            month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit',
+                          })}
+                        </p>
+                        <p className="text-sm text-gray-600 truncate">{item.firstMessage}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
