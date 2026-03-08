@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare, SquarePen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // 像素小猫 Logo
@@ -536,7 +536,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               disabled={isInitializing || isLoading}
               className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-[#CA7C5E] hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
             >
-              <Plus className="w-4 h-4" />
+              <SquarePen className="w-4 h-4" />
               开启新对话
             </button>
             <div className="border-t border-gray-100" />
