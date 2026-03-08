@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare, SquarePen } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare, SquarePen, Pin, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // 像素小猫 Logo
@@ -232,8 +232,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [chatHistory, setChatHistory] = useState<Array<{ id: string; created_at: string; firstMessage: string }>>([]);
+  const [chatHistory, setChatHistory] = useState<Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -255,6 +258,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
+        setActionMenuId(null);
+        setRenamingId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -268,19 +273,25 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     try {
       const { data } = await supabase
         .from('chat_sessions')
-        .select('id, created_at, chat_messages(content, role)')
+        .select('id, created_at, pinned, title, chat_messages(content, role)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (data) {
-        setChatHistory(
-          data.map((s: any) => {
-            const userMsg = s.chat_messages?.find((m: any) => m.role === 'user');
-            const firstMessage = userMsg?.content?.slice(0, 30) || '新对话';
-            return { id: s.id, created_at: s.created_at, firstMessage };
-          })
-        );
+        // 只保留有用户消息的 session
+        const withUserMsg = data.filter((s: any) => s.chat_messages?.some((m: any) => m.role === 'user'));
+        const mapped = withUserMsg.map((s: any) => {
+          const userMsg = s.chat_messages?.find((m: any) => m.role === 'user');
+          const firstMessage = userMsg?.content?.slice(0, 30) || '新对话';
+          return { id: s.id, created_at: s.created_at, firstMessage, pinned: !!s.pinned, title: s.title || null };
+        });
+        // pinned 优先，再按 created_at 降序
+        mapped.sort((a: any, b: any) => {
+          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        setChatHistory(mapped);
       }
     } catch (err) {
       console.error('Failed to load chat history:', err);
@@ -296,6 +307,28 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       return next;
     });
   }, [loadHistory]);
+
+  const handlePin = useCallback(async (id: string, currentPinned: boolean) => {
+    await supabase.from('chat_sessions').update({ pinned: !currentPinned }).eq('id', id);
+    setActionMenuId(null);
+    loadHistory();
+  }, [loadHistory]);
+
+  const handleRename = useCallback(async (id: string) => {
+    if (!renameValue.trim()) { setRenamingId(null); return; }
+    await supabase.from('chat_sessions').update({ title: renameValue.trim() }).eq('id', id);
+    setRenamingId(null);
+    setRenameValue('');
+    setActionMenuId(null);
+    loadHistory();
+  }, [renameValue, loadHistory]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    await supabase.from('chat_sessions').delete().eq('id', id);
+    setActionMenuId(null);
+    if (sessionId === id) handleNewChat();
+    loadHistory();
+  }, [loadHistory, sessionId, handleNewChat]);
 
   // Auto-initialize on mount
   const initSession = useCallback(async () => {
@@ -555,18 +588,63 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                   {chatHistory.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-default"
+                      className="group relative flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-default"
                     >
+                      {item.pinned && <span className="absolute left-1 top-1 text-[10px]">📌</span>}
                       <MessageSquare className="w-4 h-4 text-gray-300 mt-0.5 shrink-0" />
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs text-gray-400">
                           {new Date(item.created_at).toLocaleString('zh-CN', {
                             month: '2-digit', day: '2-digit',
                             hour: '2-digit', minute: '2-digit',
                           })}
                         </p>
-                        <p className="text-sm text-gray-600 truncate">{item.firstMessage}</p>
+                        {renamingId === item.id ? (
+                          <input
+                            autoFocus
+                            value={renameValue}
+                            onChange={e => setRenameValue(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleRename(item.id); }}
+                            onBlur={() => handleRename(item.id)}
+                            className="text-sm text-gray-600 w-full border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-[#CA7C5E]"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600 truncate">{item.title || item.firstMessage}</p>
+                        )}
                       </div>
+                      {/* 三点按钮 */}
+                      <button
+                        onClick={e => { e.stopPropagation(); setActionMenuId(actionMenuId === item.id ? null : item.id); }}
+                        className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 transition-all shrink-0 mt-0.5"
+                      >
+                        <MoreHorizontal className="w-3.5 h-3.5 text-gray-400" />
+                      </button>
+                      {/* 操作浮窗 */}
+                      {actionMenuId === item.id && (
+                        <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px]">
+                          <button
+                            onClick={() => handlePin(item.id, item.pinned)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+                          >
+                            <Pin className="w-3.5 h-3.5" />
+                            {item.pinned ? '取消置顶' : '置顶'}
+                          </button>
+                          <button
+                            onClick={() => { setRenamingId(item.id); setRenameValue(item.title || item.firstMessage); setActionMenuId(null); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            重命名
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            删除
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
