@@ -487,6 +487,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || isTyping || !sessionId) return;
 
+    // 画布切换意图拦截：匹配到关键词直接切换，不发后端
+    const CANVAS_KEYWORDS = ['切换到画布', '打开画布', '简历画布', '进入画布', '切换画布', '看看画布'];
+    if (onEnterCanvas && CANVAS_KEYWORDS.some(kw => text.includes(kw))) {
+      setMessages(prev => [...prev, { role: 'user', content: text }]);
+      setInputValue('');
+      typewriterEffect('好的，正在为你打开简历画布模式～');
+      onEnterCanvas();
+      return;
+    }
+
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setInputValue('');
     setIsLoading(true);
@@ -537,7 +547,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       abortRef.current = null;
       setIsLoading(false);
     }
-  }, [apiBase, inputValue, isLoading, isTyping, sessionId, recoverSession]);
+  }, [apiBase, inputValue, isLoading, isTyping, sessionId, recoverSession, onEnterCanvas, typewriterEffect]);
 
   const handleStop = useCallback(() => {
     if (abortRef.current) {
