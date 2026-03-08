@@ -91,6 +91,31 @@ interface ChatWidgetProps {
   userId?: string;
 }
 
+// 跳动省略号动画组件
+const BouncingDots: React.FC = () => (
+  <span className="inline-flex items-center gap-[2px] ml-[1px]">
+    {[0, 1, 2].map(i => (
+      <span
+        key={i}
+        className="inline-block w-[4px] h-[4px] rounded-full bg-current animate-[bounceDot_1.2s_ease-in-out_infinite]"
+        style={{ animationDelay: `${i * 0.2}s` }}
+      />
+    ))}
+    <style>{`
+      @keyframes bounceDot {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+        30% { transform: translateY(-4px); opacity: 1; }
+      }
+    `}</style>
+  </span>
+);
+
+// 检测是否是状态提示行（以 emoji 开头，以"..."结尾）
+function isStatusLine(line: string): boolean {
+  const trimmed = line.trim();
+  return /\.{3}$/.test(trimmed) && /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u.test(trimmed);
+}
+
 // Markdown 渲染
 export const formatContent = (text: string) => {
   const lines = text.split('\n');
@@ -129,6 +154,25 @@ export const formatContent = (text: string) => {
       }
       return part;
     });
+
+    // 状态提示行：把末尾 "..." 替换为跳动动画
+    if (isStatusLine(line)) {
+      const textWithoutDots = content.replace(/\.{3}$/, '');
+      const partsNoDots = textWithoutDots.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
+      const renderedNoDots = partsNoDots.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <span key={i} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
+        }
+        return part;
+      });
+      elements.push(
+        <span key={`line-${lineIdx}`} className={prefix ? 'flex items-start pl-1' : undefined}>
+          {prefix}
+          <span>{renderedNoDots}<BouncingDots /></span>
+        </span>
+      );
+      return;
+    }
 
     elements.push(
       <span key={`line-${lineIdx}`} className={prefix ? 'flex items-start pl-1' : undefined}>
