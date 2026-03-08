@@ -496,10 +496,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={toggleMenu}
-              className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors"
+              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-xl transition-colors"
               title="菜单"
             >
-              <PixelCat size={32} />
+              <Menu className="w-6 h-6 text-[#CA7C5E]" />
             </button>
             <div>
               <h3 className="font-bold text-lg">简历优化助手</h3>
