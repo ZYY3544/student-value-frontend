@@ -567,7 +567,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         <div className="relative">
           <div
             ref={menuRef}
-            className="absolute inset-x-0 top-0 z-10 bg-white border-b border-gray-200 shadow-lg rounded-b-2xl mx-2 overflow-hidden"
+            className="absolute inset-x-0 top-0 z-10 bg-white border-b border-gray-200 shadow-lg rounded-b-2xl mx-2"
           >
             {/* 新对话按钮 */}
             <button
