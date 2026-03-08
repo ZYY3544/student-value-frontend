@@ -3,7 +3,7 @@
  * 按 section 分块展示，支持 diff 高亮 + 采纳/忽略
  */
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Check, X, Loader2 } from 'lucide-react';
 import { ResumeSection, PendingEdit } from '../types';
 
@@ -70,6 +70,22 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
   onAcceptEdit,
   onRejectEdit,
 }) => {
+  // 当新 edit 出现时，自动滚动到对应 section
+  const prevEditCountRef = useRef(pendingEdits.length);
+  useEffect(() => {
+    if (pendingEdits.length > prevEditCountRef.current) {
+      // 找到最新添加的 edit 对应的 sectionId
+      const newestEdit = pendingEdits[pendingEdits.length - 1];
+      if (newestEdit?.sectionId) {
+        const el = document.getElementById(`resume-${newestEdit.sectionId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+    prevEditCountRef.current = pendingEdits.length;
+  }, [pendingEdits]);
+
   if (sections.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400">
@@ -98,6 +114,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
         return (
           <div
             key={section.id}
+            id={`resume-${section.id}`}
             className={`rounded-2xl border transition-all ${
               sectionEdits.length > 0
                 ? 'border-blue-200 shadow-md shadow-blue-50'
