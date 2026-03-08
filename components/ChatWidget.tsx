@@ -326,9 +326,15 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const handleDelete = useCallback(async (id: string) => {
     await supabase.from('chat_sessions').delete().eq('id', id);
     setActionMenuId(null);
-    if (sessionId === id) handleNewChat();
+    if (sessionId === id) {
+      setSessionId(null);
+      setMessages([]);
+      setPendingAction(null);
+      setInputValue('');
+      setError(null);
+    }
     loadHistory();
-  }, [loadHistory, sessionId, handleNewChat]);
+  }, [loadHistory, sessionId]);
 
   // Auto-initialize on mount
   const initSession = useCallback(async () => {
