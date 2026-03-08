@@ -229,7 +229,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>>([]);
@@ -329,7 +328,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (sessionId === id) {
       setSessionId(null);
       setMessages([]);
-      setPendingAction(null);
       setInputValue('');
       setError(null);
     }
@@ -439,17 +437,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       setIsTyping(false);
       typewriterEffect(intro);
     }, 2000);
-    setPendingAction(chip);
   }, [isLoading, isTyping, sessionId, typewriterEffect]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || isTyping || !sessionId) return;
-
-    const messageToSend = pendingAction
-      ? `[ACTION:${pendingAction}] ${text}`
-      : text;
-    if (pendingAction) setPendingAction(null);
 
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setInputValue('');
@@ -501,7 +493,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       abortRef.current = null;
       setIsLoading(false);
     }
-  }, [apiBase, inputValue, isLoading, isTyping, sessionId, pendingAction, recoverSession]);
+  }, [apiBase, inputValue, isLoading, isTyping, sessionId, recoverSession]);
 
   const handleStop = useCallback(() => {
     if (abortRef.current) {
@@ -776,7 +768,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             <button
               key={chip}
               onClick={() => handleChipClick(chip)}
-              disabled={isLoading || isInitializing || isTyping || !sessionId || !!pendingAction}
+              disabled={isLoading || isInitializing || isTyping || !sessionId}
               className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600 disabled:opacity-50 transition-colors"
             >
               {chip}
