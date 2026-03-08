@@ -7,6 +7,56 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+// 像素小猫 Logo
+const PixelCat: React.FC<{ size?: number }> = ({ size = 40 }) => {
+  const P = '#CA7C5E';   // 主色
+  const D = '#a8604a';   // 深色（耳内、鼻、嘴）
+  const W = '#FFFFFF';   // 白色（眼白）
+  const E = '#3d2c24';   // 眼珠
+  const _ = 'transparent';
+
+  // 14 行 × 12 列像素矩阵
+  const pixels = [
+    [_,_,P,_,_,_,_,_,_,P,_,_],
+    [_,P,D,P,_,_,_,_,P,D,P,_],
+    [_,P,P,P,P,P,P,P,P,P,P,_],
+    [P,P,P,P,P,P,P,P,P,P,P,P],
+    [P,P,W,W,P,P,P,P,W,W,P,P],
+    [P,P,W,E,P,P,P,P,W,E,P,P],
+    [P,P,P,P,P,D,D,P,P,P,P,P],
+    [P,P,P,P,D,P,P,D,P,P,P,P],
+    [P,P,P,P,P,P,P,P,P,P,P,P],
+    [_,P,P,P,P,P,P,P,P,P,P,_],
+    [_,_,P,P,P,P,P,P,P,P,_,_],
+    [_,_,P,P,_,_,_,_,P,P,_,_],
+    [_,_,P,P,_,_,_,_,P,P,_,_],
+    [_,_,D,D,_,_,_,_,D,D,_,_],
+  ];
+
+  const cols = 12;
+  const rows = 14;
+  const cellSize = size / Math.max(cols, rows);
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} xmlns="http://www.w3.org/2000/svg">
+      {pixels.map((row, r) =>
+        row.map((color, c) =>
+          color !== _ ? (
+            <rect
+              key={`${r}-${c}`}
+              x={c * cellSize + (size - cols * cellSize) / 2}
+              y={r * cellSize + (size - rows * cellSize) / 2}
+              width={cellSize}
+              height={cellSize}
+              fill={color}
+            />
+          ) : null
+        )
+      )}
+    </svg>
+  );
+};
+
 // Types
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -60,10 +110,10 @@ export const formatContent = (text: string) => {
 
     if (ulMatch) {
       content = ulMatch[1];
-      prefix = <span className="text-blue-600 mr-1.5">•</span>;
+      prefix = <span className="text-[#CA7C5E] mr-1.5">•</span>;
     } else if (olMatch) {
       content = olMatch[2];
-      prefix = <span className="text-blue-600 mr-1.5 font-bold">{olMatch[1]}.</span>;
+      prefix = <span className="text-[#CA7C5E] mr-1.5 font-bold">{olMatch[1]}.</span>;
     } else {
       content = line;
     }
@@ -71,11 +121,11 @@ export const formatContent = (text: string) => {
     const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
     const rendered = parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <span key={i} className="font-bold text-blue-600">{part.slice(2, -2)}</span>;
+        return <span key={i} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
       }
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (linkMatch) {
-        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{linkMatch[1]}</a>;
+        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-[#CA7C5E] underline break-all">{linkMatch[1]}</a>;
       }
       return part;
     });
@@ -446,10 +496,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={toggleMenu}
-              className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 hover:bg-blue-700 transition-colors"
+              className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors"
               title="菜单"
             >
-              <Menu className="text-white w-6 h-6" />
+              <PixelCat size={32} />
             </button>
             <div>
               <h3 className="font-bold text-lg">简历优化助手</h3>
@@ -484,7 +534,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             <button
               onClick={() => { handleNewChat(); setMenuOpen(false); }}
               disabled={isInitializing || isLoading}
-              className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
+              className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-[#CA7C5E] hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
             >
               <Plus className="w-4 h-4" />
               开启新对话
@@ -540,7 +590,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             <p className="text-red-500 text-sm mb-2">{error}</p>
             <button
               onClick={() => { setError(null); setSessionId(null); initSession(); }}
-              className="text-blue-600 text-sm font-medium underline"
+              className="text-[#CA7C5E] text-sm font-medium underline"
             >
               重试
             </button>
@@ -550,14 +600,14 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex-shrink-0 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-blue-600" />
+              <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center">
+                <PixelCat size={24} />
               </div>
             )}
             <div
               className={`max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === 'user'
-                  ? 'bg-blue-600 rounded-2xl p-4 text-white shadow-md'
+                  ? 'bg-[#CA7C5E] rounded-2xl p-4 text-white shadow-md'
                   : 'bg-gray-50 rounded-2xl p-4 text-gray-700 border border-gray-100'
               }`}
             >
@@ -583,7 +633,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       {/* Input Area */}
       <div className="p-6 bg-white border-t border-gray-50">
         {/* 输入框容器 */}
-        <div className="bg-gray-50 rounded-2xl mb-4 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+        <div className="bg-gray-50 rounded-2xl mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
           <textarea
             ref={inputRef}
             value={inputValue}
@@ -604,7 +654,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               <button
                 onClick={onEnterCanvas}
                 disabled={isLoading || isInitializing || isTyping || !sessionId}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-100/50 disabled:opacity-40 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-[#CA7C5E] hover:bg-[#CA7C5E]/10 disabled:opacity-40 transition-colors"
               >
                 <PenLine className="w-3 h-3" />
                 简历画布
@@ -622,7 +672,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               <button
                 onClick={() => sendMessage()}
                 disabled={!inputValue.trim() || isInitializing}
-                className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:shadow-none transition-colors"
+                className="w-9 h-9 bg-[#CA7C5E] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#CA7C5E]/30 disabled:bg-gray-300 disabled:shadow-none transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>
