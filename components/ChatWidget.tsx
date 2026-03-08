@@ -8,7 +8,7 @@ import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2,
 import { supabase } from '../lib/supabase';
 
 // 像素小猫 Logo
-const PixelCat: React.FC<{ size?: number }> = ({ size = 40 }) => {
+export const PixelCat: React.FC<{ size?: number }> = ({ size = 40 }) => {
   const P = '#CA7C5E';   // 主色
   const D = '#a8604a';   // 深色（耳内、鼻、嘴）
   const W = '#FFFFFF';   // 白色（眼白）

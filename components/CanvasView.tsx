@@ -5,8 +5,8 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { ArrowLeft, PenLine, Download, Loader2 } from 'lucide-react';
-import { ChatMessage } from './ChatWidget';
+import { ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel } from './ResumePanel';
 import { ResumeSection, PendingEdit } from '../types';
@@ -96,7 +96,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </button>
         <div className="h-5 w-px bg-gray-200" />
         <div className="flex items-center gap-2">
-          <PenLine className="w-4 h-4 text-blue-600" />
+          <PixelCat size={18} />
           <span className="text-sm font-bold text-gray-800">简历画布</span>
         </div>
         {pendingEdits.filter(e => e.status === 'pending').length > 0 && (

@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, Send, Loader2 } from 'lucide-react';
-import { ChatMessage, formatContent, parseSseStream } from './ChatWidget';
+import { Send, Loader2 } from 'lucide-react';
+import { ChatMessage, formatContent, parseSseStream, PixelCat } from './ChatWidget';
 import { PendingEdit } from '../types';
 
 interface CanvasChatProps {
@@ -112,8 +112,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
-              <div className="w-7 h-7 bg-blue-100 rounded-full flex-shrink-0 flex items-center justify-center">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center">
+                <PixelCat size={22} />
               </div>
             )}
             <div
