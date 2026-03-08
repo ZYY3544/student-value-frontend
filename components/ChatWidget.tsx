@@ -455,7 +455,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const res = await fetch(`${apiBase}/api/chat/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, message: messageToSend, stream: true }),
+        body: JSON.stringify({ sessionId, message: text, stream: true }),
         signal: controller.signal,
       });
 
