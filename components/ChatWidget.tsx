@@ -510,14 +510,29 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     )) {
       setMessages(prev => [...prev, { role: 'user', content: text }]);
       setInputValue('');
+      // 根据用户简历和评测信息生成个性化建议
+      const { jobTitle, targetCompany } = assessmentContext;
+      // 从简历中提取经历段落标题作为建议起点
+      const expMatch = resumeText.match(/(?:实习|项目|工作|经历|经验)[：:]\s*(.{2,20})/);
+      const expHint = expMatch ? expMatch[1].replace(/[,，。.、\s]+$/, '') : '';
+      let suggestion = '好的，正在为你打开简历画布模式';
+      if (expHint && jobTitle) {
+        suggestion += `，我建议先从「${expHint}」这段经历开始优化，重点突出和${jobTitle}相关的部分，你觉得呢？`;
+      } else if (jobTitle && targetCompany) {
+        suggestion += `，我建议先从和${targetCompany}${jobTitle}岗位最相关的经历开始优化，你觉得呢？`;
+      } else if (jobTitle) {
+        suggestion += `，我建议先从和${jobTitle}最相关的经历开始优化，你觉得呢？`;
+      } else {
+        suggestion += '，我们从第一段经历开始逐段优化吧～';
+      }
       // 先显示思考气泡（三个点）
       setIsLoading(true);
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
       // 短暂思考后显示回复，再延迟跳转画布
       setTimeout(() => {
         setIsLoading(false);
-        typewriterEffect('好的，正在为你打开简历画布模式～');
-        setTimeout(() => { onEnterCanvas(); }, 1500);
+        typewriterEffect(suggestion);
+        setTimeout(() => { onEnterCanvas(); }, 2000);
       }, 800);
       return;
     }
