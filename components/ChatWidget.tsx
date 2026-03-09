@@ -562,7 +562,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setIsLoading(false);
     setSessionId(null);
     setMessages([]);
-    setPendingAction(null);
     setInputValue('');
     setError(null);
     // initSession 会在 sessionId 变为 null 后被 useEffect 触发

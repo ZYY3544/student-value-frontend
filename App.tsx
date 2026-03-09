@@ -63,7 +63,6 @@ const App: React.FC = () => {
   const assessLogId = useRef<number | null>(null);
 
   const computeCurrentPage = useCallback((): string => {
-    if (appState === AppState.WELCOME) return 'welcome';
     if (appState === AppState.LOADING) return 'form';
     if (appState === AppState.RESULT) return 'result';
     return 'form';
@@ -634,9 +633,9 @@ const App: React.FC = () => {
           <HistoryPage
             userId={user.id}
             onBack={() => setAppState(AppState.FORM)}
-            onSelectRecord={(histResult, histInput) => {
+            onSelectRecord={(histResult, histInput, resumeText) => {
               setResult(histResult);
-              setFormData(histInput);
+              setFormData({ ...histInput, resumeText: resumeText || histInput.resumeText });
               setAppState(AppState.RESULT);
             }}
           />

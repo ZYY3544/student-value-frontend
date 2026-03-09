@@ -83,7 +83,6 @@ export interface PendingEdit {
 
 export enum AppState {
   AUTH = 'AUTH',
-  WELCOME = 'WELCOME',
   FORM = 'FORM',
   LOADING = 'LOADING',
   RESULT = 'RESULT',
