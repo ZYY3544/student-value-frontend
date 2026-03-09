@@ -376,53 +376,53 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               />
             </div>
           </div>
+          {/* 分隔线 */}
+          <div className="relative z-10 border-t border-gray-200 mt-8 pt-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                <Users className="text-[#0A66C2] w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">评估标准</h3>
+            </div>
+
+            <div className="grid grid-cols-3 gap-6">
+              {[
+                { title: 'Knowhow', subtitle: '知识与技能', color: '#0A66C2', keys: ['知识深度', '统筹能力', '沟通影响'] },
+                { title: 'Problem Solving', subtitle: '问题解决', color: '#7c3aed', keys: ['创新思维', '问题复杂度'] },
+                { title: 'Accountability', subtitle: '成果责任', color: '#059669', keys: ['决策自主性', '影响规模', '贡献类型'] },
+              ].map((group) => {
+                const items = group.keys.map(k => competencyDetails.find(d => d.label === k)).filter(Boolean) as typeof competencyDetails;
+                return (
+                  <div key={group.title} className="bg-gray-50/80 rounded-2xl p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-0.5">{group.title}</h3>
+                    <p className="text-xs text-gray-400 mb-6">{group.subtitle}</p>
+                    <div className="flex items-end justify-center gap-4 h-40 mb-4">
+                      {items.map((item) => (
+                        <div key={item.label} className="flex flex-col items-center gap-1 flex-1">
+                          <span className="text-sm font-bold" style={{ color: group.color }}>{item.score}</span>
+                          <div className="w-full bg-gray-200 rounded-t-lg relative" style={{ height: '120px' }}>
+                            <div
+                              className="absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-700"
+                              style={{ height: `${Math.min(item.rawScore * 10, 100)}%`, backgroundColor: group.color }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-center gap-4">
+                      {items.map((item) => (
+                        <span key={item.label} className="text-[11px] text-gray-500 font-medium flex-1 text-center">{item.label}</span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-400 font-medium italic mt-6 text-center">数据基于 AI 综合评估生成</p>
+          </div>
+
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-100/30 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
-        </div>
-
-        {/* 2. 核心胜任力画像 - HAY 三栏 */}
-        <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-              <Users className="text-[#0A66C2] w-6 h-6" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">核心胜任力画像</h2>
-          </div>
-
-          <div className="grid grid-cols-3 gap-6">
-            {[
-              { title: 'Knowhow', subtitle: '知识与技能', color: '#0A66C2', keys: ['知识深度', '统筹能力', '沟通影响'] },
-              { title: 'Problem Solving', subtitle: '问题解决', color: '#7c3aed', keys: ['创新思维', '问题复杂度'] },
-              { title: 'Accountability', subtitle: '成果责任', color: '#059669', keys: ['决策自主性', '影响规模', '贡献类型'] },
-            ].map((group) => {
-              const items = group.keys.map(k => competencyDetails.find(d => d.label === k)).filter(Boolean) as typeof competencyDetails;
-              return (
-                <div key={group.title} className="bg-gray-50 rounded-2xl p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-0.5">{group.title}</h3>
-                  <p className="text-xs text-gray-400 mb-6">{group.subtitle}</p>
-                  <div className="flex items-end justify-center gap-4 h-40 mb-4">
-                    {items.map((item) => (
-                      <div key={item.label} className="flex flex-col items-center gap-1 flex-1">
-                        <span className="text-sm font-bold" style={{ color: group.color }}>{item.score}</span>
-                        <div className="w-full bg-gray-200 rounded-t-lg relative" style={{ height: '120px' }}>
-                          <div
-                            className="absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-700"
-                            style={{ height: `${Math.min(item.rawScore * 10, 100)}%`, backgroundColor: group.color }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-center gap-4">
-                    {items.map((item) => (
-                      <span key={item.label} className="text-[11px] text-gray-500 font-medium flex-1 text-center">{item.label}</span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <p className="text-xs text-gray-400 font-medium italic mt-6 text-center">数据基于 AI 综合评估生成</p>
         </div>
 
         {/* 3. 预计月薪估值 */}
