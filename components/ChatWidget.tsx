@@ -528,11 +528,33 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       // 先显示思考气泡（三个点）
       setIsLoading(true);
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-      // 短暂思考后显示回复，再延迟跳转画布
+      // 短暂思考后，在已有的空消息上逐字填充（不追加新消息）
       setTimeout(() => {
         setIsLoading(false);
-        typewriterEffect(suggestion);
-        setTimeout(() => { onEnterCanvas(); }, 2000);
+        setIsTyping(true);
+        typingRef.current = true;
+        let i = 0;
+        const typeNext = () => {
+          if (i < suggestion.length && typingRef.current) {
+            i++;
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { role: 'assistant', content: suggestion.slice(0, i) };
+              return updated;
+            });
+            setTimeout(typeNext, 30);
+          } else {
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { role: 'assistant', content: suggestion };
+              return updated;
+            });
+            setIsTyping(false);
+            typingRef.current = false;
+            setTimeout(() => { onEnterCanvas(); }, 1500);
+          }
+        };
+        typeNext();
       }, 800);
       return;
     }
