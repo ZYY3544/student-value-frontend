@@ -361,7 +361,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
     <div className="p-6 space-y-5">
       <div className="mb-2">
         <h2 className="text-lg font-bold text-gray-800">简历内容</h2>
-        <p className="text-xs text-gray-400 mt-1">AI 的修改建议会在对应段落中高亮显示</p>
+        <p className="text-xs text-gray-400 mt-1">Sparky 的修改建议会在对应段落中高亮显示</p>
       </div>
 
       {sections.map((section) => {

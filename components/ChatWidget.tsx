@@ -353,14 +353,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [loadHistory]);
 
   const handlePin = useCallback(async (id: string, currentPinned: boolean) => {
-    await supabase.from('chat_sessions').update({ pinned: !currentPinned }).eq('id', id);
+    const { error } = await supabase.from('chat_sessions').update({ pinned: !currentPinned }).eq('id', id);
+    if (error) console.error('[handlePin] Supabase error:', error);
     setActionMenuId(null);
     loadHistory();
   }, [loadHistory]);
 
   const handleRename = useCallback(async (id: string) => {
     if (!renameValue.trim()) { setRenamingId(null); return; }
-    await supabase.from('chat_sessions').update({ title: renameValue.trim() }).eq('id', id);
+    const { error } = await supabase.from('chat_sessions').update({ title: renameValue.trim() }).eq('id', id);
+    if (error) console.error('[handleRename] Supabase error:', error);
     setRenamingId(null);
     setRenameValue('');
     setActionMenuId(null);
@@ -368,7 +370,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [renameValue, loadHistory]);
 
   const handleDelete = useCallback(async (id: string) => {
-    await supabase.from('chat_sessions').delete().eq('id', id);
+    // 先删关联的消息，再删 session
+    await supabase.from('chat_messages').delete().eq('session_id', id);
+    const { error } = await supabase.from('chat_sessions').delete().eq('id', id);
+    if (error) console.error('[handleDelete] Supabase error:', error);
     setActionMenuId(null);
     if (sessionId === id) {
       setSessionId(null);
@@ -662,7 +667,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                 <span className="text-xs font-medium text-green-600">
-                  {isInitializing ? '正在分析你的简历...' : 'AI 正在提供建议'}
+                  {isInitializing ? '正在分析你的简历...' : 'Sparky 正在提供建议'}
                 </span>
               </div>
             </div>
@@ -828,7 +833,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyDown={handleKeyDown}
-            placeholder="询问 AI 如何提升简历身价..."
+            placeholder="询问 Sparky 如何提升简历身价..."
             disabled={isLoading || isInitializing || isTyping}
             rows={1}
             className="w-full bg-transparent border-none pl-5 pr-5 pt-3.5 pb-1 text-sm outline-none disabled:text-gray-400 resize-none overflow-hidden"
