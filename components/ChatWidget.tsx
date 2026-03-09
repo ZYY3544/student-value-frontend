@@ -663,11 +663,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               <Menu className="w-6 h-6 text-[#CA7C5E]" />
             </button>
             <div>
-              <h3 className="font-bold text-lg">简历优化助手</h3>
+              <h3 className="font-bold text-lg">求职小帮手</h3>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                 <span className="text-xs font-medium text-green-600">
-                  {isInitializing ? '正在分析你的简历...' : 'Sparky 正在提供建议'}
+                  {isInitializing ? '正在分析你的简历...' : 'Sparky 正在工作'}
                 </span>
               </div>
             </div>
