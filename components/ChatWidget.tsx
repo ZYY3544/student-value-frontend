@@ -619,7 +619,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         <div className="relative">
           <div
             ref={menuRef}
-            className="absolute inset-x-0 top-0 z-10 bg-white border-b border-gray-200 shadow-lg rounded-b-2xl mx-2"
+            className="absolute inset-x-0 top-0 z-10 bg-white border-b border-gray-200 shadow-lg rounded-b-2xl mx-2 max-h-80 overflow-y-auto"
           >
             {/* 新对话按钮 */}
             <button
@@ -642,7 +642,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               ) : chatHistory.length === 0 ? (
                 <p className="text-xs text-gray-400 py-4 text-center">暂无历史对话</p>
               ) : (
-                <div className="space-y-1 max-h-60 overflow-y-auto">
+                <div className="space-y-1">
                   {chatHistory.map((item) => (
                     <div
                       key={item.id}
@@ -679,7 +679,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                       </button>
                       {/* 操作浮窗 */}
                       {actionMenuId === item.id && (
-                        <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px]">
+                        <div className="absolute right-0 bottom-full mb-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px]">
                           <button
                             onClick={() => handlePin(item.id, item.pinned)}
                             className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
