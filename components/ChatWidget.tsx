@@ -510,8 +510,15 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     )) {
       setMessages(prev => [...prev, { role: 'user', content: text }]);
       setInputValue('');
-      typewriterEffect('好的，正在为你打开简历画布模式～');
-      onEnterCanvas();
+      // 先显示思考气泡（三个点）
+      setIsLoading(true);
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      // 短暂思考后显示回复，再延迟跳转画布
+      setTimeout(() => {
+        setIsLoading(false);
+        typewriterEffect('好的，正在为你打开简历画布模式～');
+        setTimeout(() => { onEnterCanvas(); }, 1500);
+      }, 800);
       return;
     }
 
