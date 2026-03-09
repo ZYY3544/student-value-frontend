@@ -326,17 +326,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               </div>
               <span className="text-xl font-bold tracking-tight text-gray-800">Campus Talent Valuation</span>
             </div>
-            <nav className="flex items-center gap-8">
-              {['Dashboard', 'Reports', 'Career Path', 'Community'].map((item) => (
-                <button
-                  key={item}
-                  className={`text-sm font-medium relative py-5 ${item === 'Dashboard' ? 'text-[#0A66C2]' : 'text-gray-500'}`}
-                >
-                  {item}
-                  {item === 'Dashboard' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0A66C2]" />}
-                </button>
-              ))}
-            </nav>
           </div>
           <div className="flex items-center gap-6">
             <div className="relative">
