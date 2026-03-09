@@ -361,30 +361,29 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           </button>
         </div>
 
-        {/* Valuation Card */}
+        {/* 1. 个人能力评级 */}
         <div className="bg-gradient-to-br from-blue-50 to-white rounded-[40px] p-10 mb-8 border border-blue-100/50 shadow-sm relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
             <div>
-              <p className="text-gray-500 font-medium mb-3">预计月薪估值</p>
-              <div className="flex items-baseline gap-2 mb-6">
-                <span className="text-6xl font-black text-[#0A66C2]">
-                  ¥ {salaryNumbers[0]}k ~ {salaryNumbers[1]}k
-                </span>
+              <p className="text-gray-500 font-medium mb-3">基于简历的个人能力评估</p>
+              <div className="flex items-baseline gap-3 mb-4">
+                <span className="text-5xl font-black text-[#0A66C2]">Lv.{result.level}</span>
+                <span className="text-3xl font-bold text-gray-800">{result.levelTag}</span>
               </div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100/50 rounded-full text-[#0A66C2] text-sm font-bold">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100/50 rounded-full text-[#0A66C2] text-sm font-bold mb-4">
                 <TrendingUp className="w-4 h-4" />
-                等级：{result.levelTag}
+                超越 {salaryCompetitiveness}% 同届毕业生
               </div>
               {result.levelDesc && (
-                <p className="text-sm text-gray-500 leading-relaxed mt-4 max-w-lg">{result.levelDesc}</p>
+                <p className="text-sm text-gray-500 leading-relaxed mt-2 max-w-lg">{result.levelDesc}</p>
               )}
             </div>
 
             <div className="bg-[#0A66C2] rounded-3xl p-8 text-white text-center shadow-xl shadow-blue-200/50">
-              <p className="text-sm font-medium opacity-90 mb-1">能力超越同届毕业生</p>
+              <p className="text-sm font-medium opacity-90 mb-1">综合能力评分</p>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-5xl font-black">{salaryCompetitiveness}</span>
-                <span className="text-2xl font-bold">%</span>
+                <span className="text-5xl font-black">{result.level}</span>
+                <span className="text-xl font-bold opacity-70">/10</span>
               </div>
             </div>
           </div>
@@ -392,25 +391,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-100/30 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
         </div>
 
-        {/* Circular Progress */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
-          <CircularProgress
-            score={salaryCompetitiveness}
-            label="岗位匹配度"
-            description={getJobMatchDesc(salaryCompetitiveness)}
-            color="#0A66C2"
-          />
-          <CircularProgress
-            score={resumeHealthScore}
-            label="简历健康度"
-            description={getResumeHealthDesc(resumeHealthScore)}
-            color="#10b981"
-          />
-        </div>
-
-        <p className="text-xs text-gray-400 font-medium leading-relaxed mb-8">说明：以上为应届校招预估月度基本工资（单位：千元），由模型评估而成，仅供参考。薪酬受城市、行业、企业性质等市场因素影响。</p>
-
-        {/* Competency Section */}
+        {/* 2. 核心胜任力画像 */}
         <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
@@ -451,6 +432,44 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               ))}
             </div>
           </div>
+        </div>
+
+        {/* 3. 预计月薪估值 */}
+        <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+              <TrendingUp className="text-green-600 w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">预计月薪估值</h2>
+              <p className="text-xs text-gray-400 mt-0.5">基于{inputData.city} · {inputData.industry} · {inputData.jobFunction}的市场行情</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-baseline gap-2">
+              <span className="text-6xl font-black text-[#0A66C2]">
+                ¥ {salaryNumbers[0]}k ~ {salaryNumbers[1]}k
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <CircularProgress
+              score={salaryCompetitiveness}
+              label="岗位匹配度"
+              description={getJobMatchDesc(salaryCompetitiveness)}
+              color="#0A66C2"
+            />
+            <CircularProgress
+              score={resumeHealthScore}
+              label="简历健康度"
+              description={getResumeHealthDesc(resumeHealthScore)}
+              color="#10b981"
+            />
+          </div>
+
+          <p className="text-xs text-gray-400 font-medium leading-relaxed">说明：以上为应届校招预估月度基本工资（单位：千元），由模型评估而成，仅供参考。薪酬受城市、行业、企业性质等市场因素影响。</p>
         </div>
 
       </div>
