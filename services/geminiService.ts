@@ -98,6 +98,8 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
     radarData: data.radarData,
     abilitySummary: data.abilitySummary,
     salaryCompetitiveness: data.salaryCompetitiveness,
+    abilityCompetitiveness: data.abilityCompetitiveness,
+    marketSalary: data.marketSalary,
     resumeHealthScore: data.resumeHealthScore,
 
     // HAY 8因素（用于简历优化助手）
@@ -187,11 +189,14 @@ function generateWeaknesses(abilities: Abilities | undefined): string[] {
  */
 function getImprovementSuggestion(abilityName: string): string {
   const suggestions: Record<string, string> = {
-    专业力: "建议持续学习行业前沿知识，考取相关专业认证",
-    管理力: "建议主动承担项目管理职责，积累团队协调经验",
-    合作力: "建议加强跨部门沟通，拓展职场人脉网络",
-    思辨力: "建议多参与复杂问题分析，培养系统性思维",
-    创新力: "建议关注行业新趋势，尝试新的工作方法",
+    知识深度: "建议持续学习行业前沿知识，考取相关专业认证",
+    统筹能力: "建议主动承担项目管理职责，积累团队协调经验",
+    沟通影响: "建议加强跨部门沟通，拓展职场人脉网络",
+    问题复杂度: "建议多参与复杂问题分析，培养系统性思维",
+    创新思维: "建议关注行业新趋势，尝试新的工作方法",
+    决策自主性: "建议在项目中争取更多独立决策机会，积累判断经验",
+    影响规模: "建议参与跨团队项目，扩大自身工作影响范围",
+    贡献类型: "建议从辅助角色向核心产出转变，承担更多关键任务",
   };
   return suggestions[abilityName] || "建议持续提升";
 }
@@ -239,11 +244,14 @@ async function mockAssessment(input: AssessmentInput): Promise<AssessmentResult>
   ];
 
   const mockAbilities: Abilities = {
-    专业力: { score: 60 + Math.floor(Math.random() * 25), level: "medium", explanation: "具备扎实的专业基础，能够独立完成常规专业工作" },
-    管理力: { score: 50 + Math.floor(Math.random() * 25), level: "medium", explanation: "能够管理自己的工作任务，配合团队完成目标" },
-    合作力: { score: 55 + Math.floor(Math.random() * 25), level: "medium", explanation: "能够在团队内部有效沟通，配合完成协作任务" },
-    思辨力: { score: 55 + Math.floor(Math.random() * 25), level: "medium", explanation: "能够按照既定框架分析和解决问题，逻辑清晰" },
-    创新力: { score: 50 + Math.floor(Math.random() * 25), level: "medium", explanation: "能够在现有框架下完成工作，适应变化" },
+    知识深度: { score: 60 + Math.floor(Math.random() * 25), level: "medium", grade: "E", explanation: "具备扎实的专业基础，能够独立完成常规专业工作" },
+    统筹能力: { score: 50 + Math.floor(Math.random() * 25), level: "medium", grade: "II", explanation: "能够管理自己的工作任务，配合团队完成目标" },
+    沟通影响: { score: 55 + Math.floor(Math.random() * 25), level: "medium", grade: "2", explanation: "能够在团队内部有效沟通，配合完成协作任务" },
+    问题复杂度: { score: 55 + Math.floor(Math.random() * 25), level: "medium", grade: "D", explanation: "能够在清晰的框架下分析和解决问题" },
+    创新思维: { score: 50 + Math.floor(Math.random() * 25), level: "medium", grade: "3", explanation: "能够在现有框架下完成工作，学习新方法" },
+    决策自主性: { score: 45 + Math.floor(Math.random() * 25), level: "medium", grade: "C", explanation: "在明确指引下执行工作，逐步积累判断经验" },
+    影响规模: { score: 40 + Math.floor(Math.random() * 25), level: "low", grade: "2", explanation: "工作成果主要影响个人或小团队的产出" },
+    贡献类型: { score: 45 + Math.floor(Math.random() * 25), level: "medium", grade: "C", explanation: "以辅助和支持性贡献为主，协助推动业务目标" },
   };
 
   return {
@@ -255,11 +263,14 @@ async function mockAssessment(input: AssessmentInput): Promise<AssessmentResult>
     currency: "人民币",
     abilities: mockAbilities,
     radarData: {
-      专业力: mockAbilities.专业力.score,
-      管理力: mockAbilities.管理力.score,
-      合作力: mockAbilities.合作力.score,
-      思辨力: mockAbilities.思辨力.score,
-      创新力: mockAbilities.创新力.score,
+      知识深度: mockAbilities.知识深度.score,
+      统筹能力: mockAbilities.统筹能力.score,
+      沟通影响: mockAbilities.沟通影响.score,
+      问题复杂度: mockAbilities.问题复杂度.score,
+      创新思维: mockAbilities.创新思维.score,
+      决策自主性: mockAbilities.决策自主性.score,
+      影响规模: mockAbilities.影响规模.score,
+      贡献类型: mockAbilities.贡献类型.score,
     },
     abilitySummary: "您的核心优势在于专业力，建议持续深耕专业领域。",
     strengths: [

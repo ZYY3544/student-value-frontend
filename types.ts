@@ -20,25 +20,32 @@ export interface AssessmentInput {
 export interface AbilityItem {
   score: number;      // 分数 (0-100)
   level: string;      // 等级: 'high' | 'medium' | 'low'
+  grade?: string;     // 原始档位 (e.g. "E", "II", "3")
   explanation: string; // 能力解释文案
 }
 
-// 5能力维度
+// 8能力维度
 export interface Abilities {
-  专业力: AbilityItem;
-  管理力: AbilityItem;
-  合作力: AbilityItem;
-  思辨力: AbilityItem;
-  创新力: AbilityItem;
+  知识深度: AbilityItem;
+  统筹能力: AbilityItem;
+  沟通影响: AbilityItem;
+  问题复杂度: AbilityItem;
+  创新思维: AbilityItem;
+  决策自主性: AbilityItem;
+  影响规模: AbilityItem;
+  贡献类型: AbilityItem;
 }
 
 // 雷达图数据
 export interface RadarData {
-  专业力: number;
-  管理力: number;
-  合作力: number;
-  思辨力: number;
-  创新力: number;
+  知识深度: number;
+  统筹能力: number;
+  沟通影响: number;
+  问题复杂度: number;
+  创新思维: number;
+  决策自主性: number;
+  影响规模: number;
+  贡献类型: number;
 }
 
 export interface AssessmentResult {
@@ -56,7 +63,15 @@ export interface AssessmentResult {
   radarData?: RadarData;
   abilitySummary?: string;
   salaryCompetitiveness?: number;
+  abilityCompetitiveness?: number;
   resumeHealthScore?: number;
+  marketSalary?: {
+    range: string;
+    note: string;
+    city: string;
+    industry: string;
+    function: string;
+  };
   logId?: number;
 
   // HAY 8因素评估结果（用于简历优化助手）

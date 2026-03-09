@@ -15,7 +15,7 @@
 |------|------|
 | 前端 | React 19 + TypeScript + Vite + Tailwind CSS + Recharts |
 | 后端 | Python Flask + DeepSeek API + HAY 评估引擎 |
-| 核心能力 | HAY 8因素模型 → 5能力维度映射 → 薪酬计算 |
+| 核心能力 | HAY 8因素模型 → 8能力维度映射 → 薪酬计算 |
 
 ---
 
@@ -247,9 +247,11 @@
 
 - [x] ~~动态化"各维度得分定义"卡片~~ ✅ Day 2 已完成
 
-- [ ] **动态化"AI 深度评估"文案**
-  - 当前：写死的静态段落
-  - 目标：使用后端返回的 `abilitySummary` 或生成个性化内容
+- [x] ~~动态化"AI 深度评估"文案~~ ✅ 已使用后端 `abilitySummary` 动态展示
+
+- [x] ~~8维能力模型适配~~ ✅ types.ts/ResultView/geminiService 全部更新为8维
+
+- [x] ~~能力定级×市场定薪拆分~~ ✅ 后端新增 `marketSalary` + `abilityCompetitiveness`，前端适配
 
 - [ ] **简历文件解析优化**
   - 当前：仅截取 base64 前500字符
@@ -257,7 +259,7 @@
 
 ### 中优先级
 
-- [ ] 优势/劣势（strengths/weaknesses）使用后端数据
+- [x] ~~优势/劣势（strengths/weaknesses）使用后端数据~~ ✅ geminiService 已基于 abilities 动态生成
 - [ ] 错误提示优化（网络错误、后端超时等）
 
 ### 低优先级
