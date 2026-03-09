@@ -428,7 +428,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 );
               })}
             </div>
-            <p className="text-xs text-gray-400 font-medium italic mt-6 text-center">数据基于 AI 综合评估生成</p>
           </div>
 
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
