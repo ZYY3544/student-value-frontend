@@ -6,8 +6,7 @@ import {
   Lightbulb, Brain, Handshake, PenTool, Shield, Globe2, Star, Compass
 } from 'lucide-react';
 import {
-  Radar, RadarChart, PolarGrid, PolarAngleAxis,
-  ResponsiveContainer, Tooltip,
+  ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
 import { ChatWidget, ChatMessage } from './ChatWidget';
@@ -246,20 +245,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }, 500);
   }, [pendingEdits, sessionId]);
 
-  const radarData = useMemo(() => {
-    if (result.radarData) {
-      return Object.entries(result.radarData).map(([key, val]) => ({
-        subject: key, A: +(Number(val) / 10).toFixed(1)
-      }));
-    }
-    return [
-      { subject: '知识深度', A: 5.0 }, { subject: '统筹能力', A: 5.0 },
-      { subject: '沟通影响', A: 5.0 }, { subject: '问题复杂度', A: 5.0 },
-      { subject: '创新思维', A: 5.0 }, { subject: '决策自主性', A: 5.0 },
-      { subject: '影响规模', A: 5.0 }, { subject: '贡献类型', A: 5.0 },
-    ];
-  }, [result.radarData]);
-
   const competencyDetails = useMemo(() => {
     if (!result.abilities) return [];
     return Object.entries(result.abilities).map(([name, val]) => {
@@ -391,7 +376,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-100/30 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
         </div>
 
-        {/* 2. 核心胜任力画像 */}
+        {/* 2. 核心胜任力画像 - HAY 三栏 */}
         <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
@@ -403,35 +388,40 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             <p className="text-sm text-gray-500 leading-relaxed mb-8 pl-[52px]">{result.abilitySummary}</p>
           )}
 
-          <div className="grid grid-cols-2 gap-16">
-            <div className="relative h-[350px] [&_*]:!outline-none">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                  <PolarGrid stroke="#e5e7eb" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} />
-                  <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={false} activeDot={{ r: 5, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
-                  <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
-                </RadarChart>
-              </ResponsiveContainer>
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-400 font-medium italic">
-                数据基于 AI 综合评估生成
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-center gap-3">
-              {competencyDetails.map((item, idx) => (
-                <div key={idx} className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-gray-700">{item.label}</span>
-                    <span className="text-sm font-bold text-[#0A66C2]">{item.score}</span>
+          <div className="grid grid-cols-3 gap-6">
+            {[
+              { title: 'Knowhow', subtitle: '知识与技能', color: '#0A66C2', keys: ['知识深度', '统筹能力', '沟通影响'] },
+              { title: 'Problem Solving', subtitle: '问题解决', color: '#7c3aed', keys: ['创新思维', '问题复杂度'] },
+              { title: 'Accountability', subtitle: '成果责任', color: '#059669', keys: ['决策自主性', '影响规模', '贡献类型'] },
+            ].map((group) => {
+              const items = group.keys.map(k => competencyDetails.find(d => d.label === k)).filter(Boolean) as typeof competencyDetails;
+              return (
+                <div key={group.title} className="bg-gray-50 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-0.5">{group.title}</h3>
+                  <p className="text-xs text-gray-400 mb-6">{group.subtitle}</p>
+                  <div className="flex items-end justify-center gap-4 h-40 mb-4">
+                    {items.map((item) => (
+                      <div key={item.label} className="flex flex-col items-center gap-1 flex-1">
+                        <span className="text-sm font-bold" style={{ color: group.color }}>{item.score}</span>
+                        <div className="w-full bg-gray-200 rounded-t-lg relative" style={{ height: '120px' }}>
+                          <div
+                            className="absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-700"
+                            style={{ height: `${Math.min(item.rawScore * 10, 100)}%`, backgroundColor: group.color }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-[#0A66C2]" style={{ width: `${Math.min(item.rawScore * 10, 100)}%` }} />
+                  <div className="flex justify-center gap-4">
+                    {items.map((item) => (
+                      <span key={item.label} className="text-[11px] text-gray-500 font-medium flex-1 text-center">{item.label}</span>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
+          <p className="text-xs text-gray-400 font-medium italic mt-6 text-center">数据基于 AI 综合评估生成</p>
         </div>
 
         {/* 3. 预计月薪估值 */}
