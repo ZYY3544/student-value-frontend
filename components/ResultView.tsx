@@ -416,18 +416,20 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             </div>
           </div>
 
+          <p className="relative z-10 text-xs text-gray-400 mt-6 leading-relaxed">以上等级与各评估因子分数，是AI基于你的简历内容所进行的分析，并与价值评估标准进行匹配得出的结果，仅供参考。</p>
+
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-100/30 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
         </div>
 
-        {/* 3. 预计月薪估值 */}
+        {/* 3. 市场薪酬 */}
         <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
               <TrendingUp className="text-green-600 w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">预计月薪估值</h2>
+              <h2 className="text-2xl font-bold text-gray-900">市场薪酬</h2>
               <p className="text-xs text-gray-400 mt-0.5">基于{inputData.city} · {inputData.industry} · {inputData.jobFunction}的市场行情</p>
             </div>
           </div>
