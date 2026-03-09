@@ -350,13 +350,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
             <div>
-              <div className="flex items-center gap-3 mb-1">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                   <Shield className="text-[#0A66C2] w-6 h-6" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">能力等级</h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">能力等级</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">基于简历的个人能力评估</p>
+                </div>
               </div>
-              <p className="text-sm text-gray-400 mb-4 pl-[52px]">基于简历的个人能力评估</p>
               <div className="flex items-baseline gap-3 mb-4">
                 <span className="text-5xl font-black text-[#0A66C2]">Lv.{result.level}</span>
                 <span className="text-3xl font-bold text-gray-800">{result.levelTag}</span>
