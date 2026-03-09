@@ -368,7 +368,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               )}
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 w-48">
               <CircularProgress
                 score={salaryCompetitiveness}
                 label="岗位匹配度"
