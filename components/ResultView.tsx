@@ -389,7 +389,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                 <Users className="text-[#0A66C2] w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">评估标准</h3>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">评估标准</h3>
+                <p className="text-xs text-gray-400 mt-0.5">基于世界500强企业价值评估方法论</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-6">
