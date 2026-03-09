@@ -383,9 +383,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
             <div className="grid grid-cols-3 gap-6">
               {[
-                { title: 'Knowhow', subtitle: '知识与技能', color: '#0A66C2', keys: ['知识深度', '统筹能力', '沟通影响'] },
-                { title: 'Problem Solving', subtitle: '问题解决', color: '#7c3aed', keys: ['创新思维', '问题复杂度'] },
-                { title: 'Accountability', subtitle: '成果责任', color: '#059669', keys: ['决策自主性', '影响规模', '贡献类型'] },
+                { title: '知识技能', subtitle: '输入', color: '#0A66C2', keys: ['知识深度', '统筹能力', '沟通影响'] },
+                { title: '问题解决', subtitle: '过程', color: '#7c3aed', keys: ['创新思维', '问题复杂度'] },
+                { title: '产出贡献', subtitle: '输出', color: '#059669', keys: ['决策自主性', '影响规模', '贡献类型'] },
               ].map((group) => {
                 const items = group.keys.map(k => competencyDetails.find(d => d.label === k)).filter(Boolean) as typeof competencyDetails;
                 return (
