@@ -394,10 +394,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start chat');
       setSessionId(data.data.sessionId);
-      // 打字机效果逐字显示开场白
-      const greeting = data.data.greeting;
-      setMessages([]);
-      typewriterEffect(greeting);
+      if (skipGreetingRef.current) {
+        // 非首次：跳过欢迎语，直接空白对话
+        skipGreetingRef.current = false;
+        setMessages([]);
+      } else {
+        // 首次进入：打字机效果逐字显示开场白
+        const greeting = data.data.greeting;
+        setMessages([]);
+        typewriterEffect(greeting);
+      }
     } catch (err: any) {
       console.error('Chat init failed:', err);
       setError(err.message || 'Failed to connect');
@@ -556,11 +562,14 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
   }, []);
 
+  const skipGreetingRef = useRef(false);
+
   const handleNewChat = useCallback(async () => {
     if (isInitializing) return;
     // 中断正在进行的请求
     if (abortRef.current) abortRef.current.abort();
     setIsLoading(false);
+    skipGreetingRef.current = true;  // 标记跳过欢迎语
     setSessionId(null);
     setMessages([]);
     setInputValue('');
