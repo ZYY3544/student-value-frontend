@@ -356,10 +356,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 <span className="text-5xl font-black text-[#0A66C2]">Lv.{result.level}</span>
                 <span className="text-3xl font-bold text-gray-800">{result.levelTag}</span>
               </div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100/50 rounded-full text-[#0A66C2] text-sm font-bold mb-4">
-                <TrendingUp className="w-4 h-4" />
-                超越 {salaryCompetitiveness}% 同届毕业生
-              </div>
               {result.levelDesc && (
                 <p className="text-sm text-gray-500 leading-relaxed mt-2 max-w-lg">{result.levelDesc}</p>
               )}
