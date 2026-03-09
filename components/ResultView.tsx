@@ -365,11 +365,20 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               )}
             </div>
 
-            <div className="bg-[#0A66C2] rounded-3xl p-8 text-white text-center shadow-xl shadow-blue-200/50">
-              <p className="text-sm font-medium opacity-90 mb-1">综合能力评分</p>
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-5xl font-black">{result.level}</span>
-                <span className="text-xl font-bold opacity-70">/10</span>
+            <div className="flex flex-col gap-4">
+              <div className="bg-[#0A66C2] rounded-2xl px-6 py-4 text-white shadow-lg shadow-blue-200/50">
+                <p className="text-xs font-medium opacity-80 mb-1">岗位匹配度</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black">{salaryCompetitiveness}</span>
+                  <span className="text-lg font-bold opacity-70">%</span>
+                </div>
+              </div>
+              <div className="bg-emerald-600 rounded-2xl px-6 py-4 text-white shadow-lg shadow-emerald-200/50">
+                <p className="text-xs font-medium opacity-80 mb-1">简历健康度</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black">{resumeHealthScore}</span>
+                  <span className="text-lg font-bold opacity-70">%</span>
+                </div>
               </div>
             </div>
           </div>
