@@ -388,9 +388,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             </div>
             <h2 className="text-2xl font-bold text-gray-900">核心胜任力画像</h2>
           </div>
-          {result.abilitySummary && (
-            <p className="text-sm text-gray-500 leading-relaxed mb-8 pl-[52px]">{result.abilitySummary}</p>
-          )}
 
           <div className="grid grid-cols-3 gap-6">
             {[
