@@ -368,20 +368,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               )}
             </div>
 
-            <div className="flex flex-col gap-3 w-48">
-              <CircularProgress
-                score={salaryCompetitiveness}
-                label="岗位匹配度"
-                description={getJobMatchDesc(salaryCompetitiveness)}
-                color="#0A66C2"
-              />
-              <CircularProgress
-                score={resumeHealthScore}
-                label="简历健康度"
-                description={getResumeHealthDesc(resumeHealthScore)}
-                color="#10b981"
-              />
-            </div>
           </div>
           {/* 分隔线 */}
           <div className="relative z-10 border-t border-gray-200 mt-8 pt-8">
