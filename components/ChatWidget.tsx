@@ -278,6 +278,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [chatHistory, setChatHistory] = useState<Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [actionMenuPos, setActionMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
@@ -672,37 +673,20 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                       </div>
                       {/* 三点按钮 */}
                       <button
-                        onClick={e => { e.stopPropagation(); setActionMenuId(actionMenuId === item.id ? null : item.id); }}
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (actionMenuId === item.id) {
+                            setActionMenuId(null);
+                          } else {
+                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            setActionMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                            setActionMenuId(item.id);
+                          }
+                        }}
                         className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 transition-all shrink-0 mt-0.5"
                       >
                         <MoreHorizontal className="w-3.5 h-3.5 text-gray-400" />
                       </button>
-                      {/* 操作浮窗 */}
-                      {actionMenuId === item.id && (
-                        <div className="absolute right-0 bottom-full mb-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px]">
-                          <button
-                            onClick={() => handlePin(item.id, item.pinned)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
-                          >
-                            <Pin className="w-3.5 h-3.5" />
-                            {item.pinned ? '取消置顶' : '置顶'}
-                          </button>
-                          <button
-                            onClick={() => { setRenamingId(item.id); setRenameValue(item.title || item.firstMessage); setActionMenuId(null); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                            重命名
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            删除
-                          </button>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -829,6 +813,43 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           ))}
         </div>
       </div>
+
+      {/* 历史对话操作浮窗（fixed 定位，避免被 overflow 裁剪） */}
+      {actionMenuId && (
+        <>
+          <div className="fixed inset-0 z-[199]" onClick={() => setActionMenuId(null)} />
+          <div
+            className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px]"
+            style={{ top: actionMenuPos.top, right: actionMenuPos.right }}
+          >
+            {chatHistory.filter(h => h.id === actionMenuId).map(item => (
+              <div key={item.id}>
+                <button
+                  onClick={() => handlePin(item.id, item.pinned)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+                >
+                  <Pin className="w-3.5 h-3.5" />
+                  {item.pinned ? '取消置顶' : '置顶'}
+                </button>
+                <button
+                  onClick={() => { setRenamingId(item.id); setRenameValue(item.title || item.firstMessage); setActionMenuId(null); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  重命名
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  删除
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 
