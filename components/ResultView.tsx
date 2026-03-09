@@ -364,7 +364,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 <span className="text-3xl font-bold text-gray-800">{result.levelTag}</span>
               </div>
               {result.levelDesc && (
-                <p className="text-sm text-gray-500 leading-relaxed mt-2 max-w-lg">{result.levelDesc}</p>
+                <p className="text-sm text-gray-500 leading-relaxed mt-2 whitespace-nowrap">{result.levelDesc} 加油，你离马斯克就差{30 - (result.level || 0)}个级别了！</p>
               )}
             </div>
 
