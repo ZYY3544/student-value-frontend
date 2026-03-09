@@ -189,32 +189,12 @@ const MAX_INPUT_LENGTH = 2000;
 const QUICK_CHIPS = ['解读报告', '润色简历', '模拟面试', '职业规划'];
 
 // 每个快捷按钮的固定引导语（本地展示，不走后端）
-const CHIP_INTROS: Record<string, string> = {
-  '解读报告':
-    '好的！我将从以下 4 个维度来为你深度解读这份报告：\n\n' +
-    '📊 **定价总结**：你为什么值这个薪酬\n\n' +
-    '💪 **核心竞争力**：你简历中最有市场价值的亮点\n\n' +
-    '📈 **提升空间**：哪些方面加强后可以更值钱\n\n' +
-    '🎤 **面试建议**：面试时可以重点讲的故事和经历\n\n' +
-    '如果你还有其他想了解的维度，也可以一并告诉我～没有的话，我就直接开始啦！',
-  '润色简历':
-    '好的！我会仔细看你的简历内容，从以下几个方面帮你润色：\n\n' +
-    '✨ **成果量化**：把模糊的描述变成有说服力的数据\n\n' +
-    '🎯 **STAR法则**：让每段经历都有清晰的情境、任务、行动和结果\n\n' +
-    '💡 **亮点提炼**：突出最能体现你能力的关键词\n\n' +
-    '你有没有哪段经历是特别想重点润色的？或者我直接从头到尾帮你看一遍？',
-  '模拟面试':
-    '好的！我会基于你的简历内容和目标岗位，来模拟一场面试：\n\n' +
-    '🎯 **提问环节**：像真实面试官一样向你提问\n\n' +
-    '💬 **追问深挖**：根据你的回答继续追问\n\n' +
-    '📝 **复盘点评**：面试结束后给你详细反馈\n\n' +
-    '准备好了吗？如果你有想特别准备的问题方向，可以先告诉我～没有的话，我们直接开始！',
-  '职业规划':
-    '好的！我会结合你的背景和评测结果，从以下几个方面帮你梳理职业规划：\n\n' +
-    '🗺️ **赛道分析**：你当前的方向在市场上的前景如何\n\n' +
-    '📈 **成长路径**：这个岗位典型的晋升通道和关键节点\n\n' +
-    '🎯 **能力补强**：要走到下一步，你还需要积累什么\n\n' +
-    '你有没有特别想了解的方向？比如要不要换赛道、怎么选行业之类的，都可以聊～',
+// chip 对应后端的 ACTION 前缀
+const CHIP_ACTIONS: Record<string, string> = {
+  '解读报告': '[ACTION:解读报告] 请开始',
+  '润色简历': '[ACTION:润色简历] 请开始',
+  '模拟面试': '[ACTION:模拟面试] 请开始',
+  '职业规划': '[ACTION:职业规划] 请开始',
 };
 
 // SSE 流解析工具函数（供 ChatWidget 和 CanvasChat 复用）
@@ -475,27 +455,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     typeNext();
   }, []);
 
-  // 快捷按钮点击：显示固定引导语（打字机），等用户确认后再发后端
-  const handleChipClick = useCallback((chip: string) => {
-    if (isLoading || isTyping || !sessionId) return;
-
-    const intro = CHIP_INTROS[chip];
-    if (!intro) {
-      return;
-    }
-
-    setMessages(prev => [...prev, { role: 'user', content: chip }]);
-    // 先显示思考动画（三个跳动的点），2秒后再逐字打出
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-    setIsTyping(true);
-    setTimeout(() => {
-      setMessages(prev => prev.slice(0, -1)); // 移除空的思考气泡
-      setIsTyping(false);
-      typewriterEffect(intro);
-    }, 2000);
-  }, [isLoading, isTyping, sessionId, typewriterEffect]);
-
-  const sendMessage = useCallback(async (overrideText?: string) => {
+  const sendMessage = useCallback(async (overrideText?: string, displayText?: string) => {
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || isTyping || !sessionId) return;
 
@@ -509,11 +469,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       '开始改', '帮我改', '帮改', '改下',
       '写一下', '写一版', '帮我写',
     ];
+    const userDisplay = displayText || text;
     if (onEnterCanvas && (
       CANVAS_KEYWORDS.some(kw => text.includes(kw)) ||
       EDIT_RESUME_KEYWORDS.some(kw => text.includes(kw))
     )) {
-      setMessages(prev => [...prev, { role: 'user', content: text }]);
+      setMessages(prev => [...prev, { role: 'user', content: userDisplay }]);
       setInputValue('');
       // 根据用户简历和评测信息生成个性化建议
       const { jobTitle, targetCompany } = assessmentContext;
@@ -564,7 +525,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       return;
     }
 
-    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setMessages(prev => [...prev, { role: 'user', content: userDisplay }]);
     setInputValue('');
     setIsLoading(true);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
@@ -615,6 +576,22 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       setIsLoading(false);
     }
   }, [apiBase, inputValue, isLoading, isTyping, sessionId, recoverSession, onEnterCanvas, typewriterEffect]);
+
+  // 快捷按钮点击：直接发送到后端，让 Agent 回答
+  const handleChipClick = useCallback((chip: string) => {
+    if (isLoading || isTyping || !sessionId) return;
+
+    // "润色简历" 直接跳转画布模式
+    if (chip === '润色简历' && onEnterCanvas) {
+      sendMessage(chip);
+      return;
+    }
+
+    const action = CHIP_ACTIONS[chip];
+    if (!action) return;
+    // 发送 ACTION 前缀给后端，但用户界面只显示 chip 名称
+    sendMessage(action, chip);
+  }, [isLoading, isTyping, sessionId, sendMessage, onEnterCanvas]);
 
   const handleStop = useCallback(() => {
     if (abortRef.current) {
