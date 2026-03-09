@@ -119,7 +119,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             <div
               className={`max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === 'user'
-                  ? 'bg-blue-600 rounded-2xl px-4 py-3 text-white shadow-md'
+                  ? 'bg-[#CA7C5E] rounded-2xl px-4 py-3 text-white shadow-md'
                   : 'bg-gray-50 rounded-2xl px-4 py-3 text-gray-700 border border-gray-100'
               }`}
             >
@@ -128,9 +128,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                   formatContent(msg.content)
                 ) : (
                   <span className="flex items-center gap-1 text-gray-400">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '300ms' }} />
                   </span>
                 )
               ) : (
@@ -152,12 +152,12 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             onKeyDown={handleKeyDown}
             placeholder="告诉 AI 你想优化哪段简历..."
             disabled={isLoading || !sessionId}
-            className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-3.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:bg-gray-100 disabled:text-gray-400"
+            className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 transition-all disabled:bg-gray-100 disabled:text-gray-400"
           />
           <button
             onClick={sendMessage}
             disabled={!inputValue.trim() || isLoading || !sessionId}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:shadow-none transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#CA7C5E] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#CA7C5E]/30 disabled:bg-gray-300 disabled:shadow-none transition-colors"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
