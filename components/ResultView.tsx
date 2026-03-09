@@ -377,7 +377,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">评估标准</h3>
-                <p className="text-xs text-gray-400 mt-0.5">基于世界500强企业价值评估方法论</p>
+                <p className="text-xs text-gray-400 mt-0.5">对标世界500强企业价值评估方法论</p>
               </div>
             </div>
 
