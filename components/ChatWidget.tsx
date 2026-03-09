@@ -494,9 +494,20 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || isTyping || !sessionId) return;
 
-    // 画布切换意图拦截：匹配到关键词直接切换，不发后端
+    // 画布切换意图拦截：匹配到关键词直接切换到简历画布
     const CANVAS_KEYWORDS = ['切换到画布', '打开画布', '简历画布', '进入画布', '切换画布', '看看画布'];
-    if (onEnterCanvas && CANVAS_KEYWORDS.some(kw => text.includes(kw))) {
+    // 改简历意图关键词：用户想修改/优化简历内容时自动跳转画布
+    const EDIT_RESUME_KEYWORDS = [
+      '改一下', '改改', '改写', '改起来', '改简历', '改一改',
+      '优化一下', '优化这段', '优化简历', '帮我优化', '优化下',
+      '润色', '重写', '修改简历', '修改一下',
+      '开始改', '帮我改', '帮改', '改下',
+      '写一下', '写一版', '帮我写',
+    ];
+    if (onEnterCanvas && (
+      CANVAS_KEYWORDS.some(kw => text.includes(kw)) ||
+      EDIT_RESUME_KEYWORDS.some(kw => text.includes(kw))
+    )) {
       setMessages(prev => [...prev, { role: 'user', content: text }]);
       setInputValue('');
       typewriterEffect('好的，正在为你打开简历画布模式～');
