@@ -406,9 +406,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                       ))}
                     </div>
                     <div className="flex justify-center gap-4">
-                      {items.map((item) => (
-                        <span key={item.label} className="text-[11px] text-gray-500 font-medium flex-1 text-center">{item.label}</span>
-                      ))}
+                      {items.map((item) => {
+                        const displayName: Record<string, string> = { '知识深度': '知识经验', '统筹能力': '管理规划', '沟通影响': '沟通协作' };
+                        return <span key={item.label} className="text-[11px] text-gray-500 font-medium flex-1 text-center">{displayName[item.label] || item.label}</span>;
+                      })}
                     </div>
                   </div>
                 );
