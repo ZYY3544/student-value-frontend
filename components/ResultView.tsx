@@ -56,11 +56,11 @@ const CircularProgress: React.FC<{
   const colors = [color, '#f3f4f6'];
 
   return (
-    <div className="bg-white rounded-3xl p-6 flex items-center gap-6 border border-gray-100 shadow-sm">
-      <div className="relative w-24 h-24 flex-shrink-0">
+    <div className="bg-white rounded-2xl p-4 flex items-center gap-4 border border-gray-100 shadow-sm">
+      <div className="relative w-16 h-16 flex-shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={45} paddingAngle={0} dataKey="value" startAngle={90} endAngle={-270} isAnimationActive={false}>
+            <Pie data={data} cx="50%" cy="50%" innerRadius={24} outerRadius={31} paddingAngle={0} dataKey="value" startAngle={90} endAngle={-270} isAnimationActive={false}>
               {data.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={colors[index]} stroke="none" />
               ))}
@@ -68,12 +68,12 @@ const CircularProgress: React.FC<{
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-2xl font-bold text-gray-800">{score}</span>
+          <span className="text-lg font-bold text-gray-800">{score}</span>
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-lg font-bold text-gray-900 mb-1">{label}</h3>
-        <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+        <h3 className="text-sm font-bold text-gray-900 mb-0.5">{label}</h3>
+        <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -347,7 +347,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         </div>
 
         {/* 1. 个人能力评级 */}
-        <div className="bg-gradient-to-br from-blue-50 to-white rounded-[40px] p-10 mb-8 border border-blue-100/50 shadow-sm relative overflow-hidden">
+        <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
@@ -399,8 +399,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 const items = group.keys.map(k => competencyDetails.find(d => d.label === k)).filter(Boolean) as typeof competencyDetails;
                 return (
                   <div key={group.title} className="bg-gray-50/80 rounded-2xl p-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-0.5">{group.title}</h3>
-                    <p className="text-xs text-gray-400 mb-6">{group.subtitle}</p>
+                    <h3 className="text-lg font-bold text-gray-900 mb-0.5 text-center">{group.title}</h3>
+                    <p className="text-xs text-gray-400 mb-6 text-center">{group.subtitle}</p>
                     <div className="flex items-end justify-center gap-4 h-40 mb-4">
                       {items.map((item) => (
                         <div key={item.label} className="flex flex-col items-center gap-1 flex-1">
