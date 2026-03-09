@@ -362,20 +362,18 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             </div>
 
             <div className="flex flex-col gap-4">
-              <div className="bg-[#0A66C2] rounded-2xl px-6 py-4 text-white shadow-lg shadow-blue-200/50">
-                <p className="text-xs font-medium opacity-80 mb-1">岗位匹配度</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black">{salaryCompetitiveness}</span>
-                  <span className="text-lg font-bold opacity-70">%</span>
-                </div>
-              </div>
-              <div className="bg-emerald-600 rounded-2xl px-6 py-4 text-white shadow-lg shadow-emerald-200/50">
-                <p className="text-xs font-medium opacity-80 mb-1">简历健康度</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black">{resumeHealthScore}</span>
-                  <span className="text-lg font-bold opacity-70">%</span>
-                </div>
-              </div>
+              <CircularProgress
+                score={salaryCompetitiveness}
+                label="岗位匹配度"
+                description={getJobMatchDesc(salaryCompetitiveness)}
+                color="#0A66C2"
+              />
+              <CircularProgress
+                score={resumeHealthScore}
+                label="简历健康度"
+                description={getResumeHealthDesc(resumeHealthScore)}
+                color="#10b981"
+              />
             </div>
           </div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
@@ -448,21 +446,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 ¥ {salaryNumbers[0]}k ~ {salaryNumbers[1]}k
               </span>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            <CircularProgress
-              score={salaryCompetitiveness}
-              label="岗位匹配度"
-              description={getJobMatchDesc(salaryCompetitiveness)}
-              color="#0A66C2"
-            />
-            <CircularProgress
-              score={resumeHealthScore}
-              label="简历健康度"
-              description={getResumeHealthDesc(resumeHealthScore)}
-              color="#10b981"
-            />
           </div>
 
           <p className="text-xs text-gray-400 font-medium leading-relaxed">说明：以上为应届校招预估月度基本工资（单位：千元），由模型评估而成，仅供参考。薪酬受城市、行业、企业性质等市场因素影响。</p>
