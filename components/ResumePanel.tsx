@@ -391,6 +391,51 @@ const SectionEditor: React.FC<{
   );
 };
 
+/**
+ * OriginalResumePanel - 三栏布局中间的原文只读面板
+ */
+export const OriginalResumePanel: React.FC<{
+  sections: ResumeSection[];
+}> = ({ sections }) => {
+  if (sections.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-400">
+        <p className="text-sm">暂无原始简历</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 space-y-4">
+      <div className="mb-1">
+        <h2 className="text-base font-bold text-gray-800">简历原文</h2>
+        <p className="text-[11px] text-gray-400 mt-0.5">初始版本，仅供参考对比</p>
+      </div>
+
+      {sections.map((section) => {
+        const typeConfig = SECTION_TYPE_CONFIG[section.type] || SECTION_TYPE_CONFIG.other;
+
+        return (
+          <div
+            key={section.id}
+            className="rounded-xl border border-gray-100 bg-white/60"
+          >
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-50">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeConfig.bg} ${typeConfig.color}`}>
+                {typeConfig.label}
+              </span>
+              <h3 className="text-xs font-semibold text-gray-700">{section.title}</h3>
+            </div>
+            <div className="px-4 py-3 space-y-1.5">
+              {renderFormattedContent(cleanResumeContent(section.content))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const ResumePanel: React.FC<ResumePanelProps> = ({
   sections,
   pendingEdits,
@@ -430,8 +475,8 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
   return (
     <div className="p-6 space-y-5">
       <div className="mb-2">
-        <h2 className="text-lg font-bold text-gray-800">简历内容</h2>
-        <p className="text-xs text-gray-400 mt-1">点击段落右上角铅笔图标可手动编辑，修改自动保存</p>
+        <h2 className="text-base font-bold text-gray-800">优化版本</h2>
+        <p className="text-[11px] text-gray-400 mt-0.5">AI 建议会高亮显示，点击铅笔图标可手动编辑</p>
       </div>
 
       {sections.map((section) => {

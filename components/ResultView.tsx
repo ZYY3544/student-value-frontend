@@ -138,6 +138,18 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }
     return [];
   });
+  // 简历原文快照（冻结，不随编辑变化，用于三栏对比）
+  const [originalSections, setOriginalSections] = useState<ResumeSection[]>(() => {
+    if (result.resumeSections?.length) {
+      return result.resumeSections.map((sec, i) => ({
+        id: `section-${i}`,
+        type: sec.type,
+        title: sec.title,
+        content: sec.content,
+      }));
+    }
+    return [];
+  });
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
 
   const assessmentContext = useMemo(() => ({
@@ -173,6 +185,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         if (data.success) {
           if (data.data.status === 'ready') {
             setResumeSections(data.data.sections);
+            // 首次拿到时同步冻结为原文快照
+            if (originalSections.length === 0) {
+              setOriginalSections(data.data.sections.map((s: any) => ({ ...s })));
+            }
           } else {
             setTimeout(fetchSections, 1500);
           }
@@ -360,6 +376,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       <CanvasView
         {...chatProps}
         resumeSections={resumeSections}
+        originalSections={originalSections}
         pendingEdits={pendingEdits}
         setPendingEdits={setPendingEdits}
         onAcceptEdit={handleAcceptEdit}

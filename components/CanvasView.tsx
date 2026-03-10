@@ -1,14 +1,15 @@
 /**
- * CanvasView - 全屏简历画布
+ * CanvasView - 全屏简历画布（三栏布局）
  * 左侧：AI 对话面板
- * 右侧：简历实时预览面板（带 diff 高亮）
+ * 中间：简历原文（只读，供参考对比）
+ * 右侧：可编辑简历（带 diff 高亮 + 采纳/忽略）
  */
 
 import React, { useCallback, useState } from 'react';
 import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
-import { ResumePanel } from './ResumePanel';
+import { ResumePanel, OriginalResumePanel } from './ResumePanel';
 import { ResumeSection, PendingEdit } from '../types';
 
 interface CanvasViewProps {
@@ -22,6 +23,7 @@ interface CanvasViewProps {
   apiBase: string;
   // Canvas state
   resumeSections: ResumeSection[];
+  originalSections: ResumeSection[];
   pendingEdits: PendingEdit[];
   setPendingEdits: React.Dispatch<React.SetStateAction<PendingEdit[]>>;
   onAcceptEdit: (editIndex: number) => void;
@@ -41,6 +43,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   setIsLoading,
   apiBase,
   resumeSections,
+  originalSections,
   pendingEdits,
   setPendingEdits,
   onAcceptEdit,
@@ -121,10 +124,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Main content - 三栏布局 */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: Chat */}
-        <div className="w-[45%] border-r border-gray-100 flex flex-col bg-white">
+        {/* 左栏: Chat */}
+        <div className="w-[30%] min-w-[280px] border-r border-gray-100 flex flex-col bg-white">
           <CanvasChat
             sessionId={sessionId}
             messages={messages}
@@ -136,8 +139,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           />
         </div>
 
-        {/* Right: Resume preview */}
-        <div className="w-[55%] overflow-y-auto bg-gray-50/50">
+        {/* 中栏: 简历原文（只读） */}
+        <div className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100">
+          <OriginalResumePanel sections={originalSections} />
+        </div>
+
+        {/* 右栏: 可编辑简历（含 diff 高亮） */}
+        <div className="w-[35%] overflow-y-auto bg-white">
           <ResumePanel
             sections={resumeSections}
             pendingEdits={pendingEdits}
