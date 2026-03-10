@@ -152,6 +152,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   });
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
 
+  // 兜底：当 resumeSections 首次有数据时，同步冻结为原文快照
+  useEffect(() => {
+    if (originalSections.length === 0 && resumeSections.length > 0) {
+      setOriginalSections(resumeSections.map(s => ({ ...s })));
+    }
+  }, [resumeSections, originalSections.length]);
+
   const assessmentContext = useMemo(() => ({
     factors: result.factors || {},
     abilities: result.abilities || {},
