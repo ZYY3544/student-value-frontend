@@ -24,28 +24,22 @@ export interface AbilityItem {
   explanation: string; // 能力解释文案
 }
 
-// 8能力维度
+// 5能力维度
 export interface Abilities {
-  知识深度: AbilityItem;
-  统筹能力: AbilityItem;
-  沟通影响: AbilityItem;
-  问题复杂度: AbilityItem;
-  创新思维: AbilityItem;
-  决策自主性: AbilityItem;
-  影响规模: AbilityItem;
-  贡献类型: AbilityItem;
+  专业力: AbilityItem;
+  管理力: AbilityItem;
+  合作力: AbilityItem;
+  思辨力: AbilityItem;
+  创新力: AbilityItem;
 }
 
 // 雷达图数据
 export interface RadarData {
-  知识深度: number;
-  统筹能力: number;
-  沟通影响: number;
-  问题复杂度: number;
-  创新思维: number;
-  决策自主性: number;
-  影响规模: number;
-  贡献类型: number;
+  专业力: number;
+  管理力: number;
+  合作力: number;
+  思辨力: number;
+  创新力: number;
 }
 
 export interface AssessmentResult {

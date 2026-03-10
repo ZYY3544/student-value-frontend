@@ -3,7 +3,7 @@ import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingE
 import { supabase } from '../lib/supabase';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell, Search,
-  Lightbulb, Brain, Handshake, PenTool, Shield, Globe2, Star, Compass
+  Lightbulb, Brain, Handshake, PenTool, Shield
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -21,25 +21,19 @@ interface ResultViewProps {
 }
 
 const ABILITY_TAGS: Record<string, Record<string, string>> = {
-  知识深度: { high: '博学多才', medium: '稳扎稳打', low: '积蓄力量' },
-  统筹能力: { high: '统筹大局', medium: '团队骨干', low: '初出茅庐' },
-  沟通影响: { high: '团队粘合', medium: '默契搭档', low: '配合协作' },
-  问题复杂度: { high: '迎难而上', medium: '条理清晰', low: '按部就班' },
-  创新思维: { high: '开拓先锋', medium: '持续改进', low: '学习成长' },
-  决策自主性: { high: '独当一面', medium: '有章有法', low: '稳步前行' },
-  影响规模: { high: '影响深远', medium: '局部影响', low: '个人贡献' },
-  贡献类型: { high: '核心产出', medium: '协同贡献', low: '辅助支持' },
+  专业力: { high: '博学多才', medium: '稳扎稳打', low: '积蓄力量' },
+  管理力: { high: '统筹大局', medium: '团队骨干', low: '初出茅庐' },
+  合作力: { high: '团队粘合', medium: '默契搭档', low: '配合协作' },
+  思辨力: { high: '迎难而上', medium: '条理清晰', low: '按部就班' },
+  创新力: { high: '开拓先锋', medium: '持续改进', low: '学习成长' },
 };
 
 const ABILITY_ICONS: Record<string, React.ReactNode> = {
-  知识深度: <PenTool size={20} />,
-  统筹能力: <Target size={20} />,
-  沟通影响: <Handshake size={20} />,
-  问题复杂度: <Brain size={20} />,
-  创新思维: <Lightbulb size={20} />,
-  决策自主性: <Compass size={20} />,
-  影响规模: <Globe2 size={20} />,
-  贡献类型: <Star size={20} />,
+  专业力: <PenTool size={20} />,
+  管理力: <Target size={20} />,
+  合作力: <Handshake size={20} />,
+  思辨力: <Brain size={20} />,
+  创新力: <Lightbulb size={20} />,
 };
 
 // 环形进度组件
@@ -383,9 +377,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
             <div className="grid grid-cols-3 gap-6">
               {[
-                { title: '知识技能', subtitle: '输入', color: '#0A66C2', keys: ['知识深度', '统筹能力', '沟通影响'] },
-                { title: '问题解决', subtitle: '过程', color: '#7c3aed', keys: ['问题复杂度', '创新思维'] },
-                { title: '产出贡献', subtitle: '输出', color: '#059669', keys: ['决策自主性', '影响规模', '贡献类型'] },
+                { title: '知识技能', subtitle: '输入', color: '#0A66C2', keys: ['专业力', '管理力'] },
+                { title: '问题解决', subtitle: '过程', color: '#7c3aed', keys: ['思辨力', '创新力'] },
+                { title: '产出贡献', subtitle: '输出', color: '#059669', keys: ['合作力'] },
               ].map((group) => {
                 const items = group.keys.map(k => competencyDetails.find(d => d.label === k)).filter(Boolean) as typeof competencyDetails;
                 return (
@@ -406,10 +400,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                       ))}
                     </div>
                     <div className="flex justify-center gap-4">
-                      {items.map((item) => {
-                        const displayName: Record<string, string> = { '知识深度': '知识经验', '统筹能力': '管理规划', '沟通影响': '沟通协作', '问题复杂度': '挑战难度', '决策自主性': '决策自由', '贡献类型': '贡献角色' };
-                        return <span key={item.label} className="text-[11px] text-gray-500 font-medium flex-1 text-center">{displayName[item.label] || item.label}</span>;
-                      })}
+                      {items.map((item) => (
+                        <span key={item.label} className="text-[11px] text-gray-500 font-medium flex-1 text-center">{item.label}</span>
+                      ))}
                     </div>
                   </div>
                 );
