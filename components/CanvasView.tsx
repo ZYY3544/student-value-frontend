@@ -55,12 +55,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
   }, [setPendingEdits]);
 
-  // 导出 Word
-  const handleExportWord = useCallback(async () => {
+  // 导出 PDF
+  const handleExportPdf = useCallback(async () => {
     if (!sessionId || exporting) return;
     setExporting(true);
     try {
-      const res = await fetch(`${apiBase}/api/chat/resume/export`, {
+      const res = await fetch(`${apiBase}/api/chat/resume/export-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
@@ -73,7 +73,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = '我的简历.docx';
+      a.download = '我的简历.pdf';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -84,6 +84,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       setExporting(false);
     }
   }, [sessionId, apiBase, exporting]);
+
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
@@ -110,12 +111,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         {/* 右侧导出按钮 */}
         <div className="ml-auto">
           <button
-            onClick={handleExportWord}
+            onClick={handleExportPdf}
             disabled={exporting || resumeSections.length === 0}
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#004F90] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            导出 Word
+            导出 PDF
           </button>
         </div>
       </header>
