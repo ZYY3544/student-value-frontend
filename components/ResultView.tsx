@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import {
   ResponsiveContainer,
-  PieChart, Pie, Cell
+  PieChart, Pie, Cell,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, Tooltip
 } from 'recharts';
 import { ChatWidget, ChatMessage } from './ChatWidget';
 import { CanvasView } from './CanvasView';
@@ -254,6 +255,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     });
   }, [result.abilities]);
 
+  const radarData = useMemo(() => {
+    return competencyDetails.map(item => ({
+      subject: item.label,
+      A: item.rawScore,
+    }));
+  }, [competencyDetails]);
+
   const salaryNumbers = useMemo(() => {
     const match = result.personValue?.match(/(\d+\.?\d*)\s*k?\s*[-～~]\s*(\d+\.?\d*)/);
     if (match) return [parseFloat(match[1]), parseFloat(match[2])];
@@ -365,48 +373,41 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           </div>
           {/* 分隔线 */}
           <div className="relative z-10 border-t border-gray-200 mt-8 pt-8">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                 <Users className="text-[#0A66C2] w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">评估标准</h3>
+                <h3 className="text-2xl font-bold text-gray-900">核心胜任力画像</h3>
                 <p className="text-xs text-gray-400 mt-0.5">对标世界500强企业价值评估方法论</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
-              {[
-                { title: '知识技能', subtitle: '输入', color: '#0A66C2', keys: ['专业力', '管理力'] },
-                { title: '问题解决', subtitle: '过程', color: '#7c3aed', keys: ['思辨力', '创新力'] },
-                { title: '产出贡献', subtitle: '输出', color: '#059669', keys: ['合作力'] },
-              ].map((group) => {
-                const items = group.keys.map(k => competencyDetails.find(d => d.label === k)).filter(Boolean) as typeof competencyDetails;
-                return (
-                  <div key={group.title} className="bg-gray-50/80 rounded-2xl p-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-0.5 text-center">{group.title}</h3>
-                    <p className="text-xs text-gray-400 mb-6 text-center">{group.subtitle}</p>
-                    <div className="flex items-end justify-center gap-4 h-40 mb-4">
-                      {items.map((item) => (
-                        <div key={item.label} className="flex flex-col items-center gap-1 flex-1">
-                          <span className="text-sm font-bold" style={{ color: group.color }}>{item.score}</span>
-                          <div className="w-full bg-gray-200 rounded-t-lg relative" style={{ height: '120px' }}>
-                            <div
-                              className="absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-700"
-                              style={{ height: `${Math.min(item.rawScore * 10, 100)}%`, backgroundColor: group.color }}
-                            />
-                          </div>
-                        </div>
-                      ))}
+            <div className="grid grid-cols-2 gap-16">
+              <div className="relative h-[350px] [&_*]:!outline-none">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                    <PolarGrid stroke="#e5e7eb" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} />
+                    <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={false} activeDot={{ r: 5, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
+                    <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="flex flex-col justify-center gap-3">
+                {competencyDetails.map((item, idx) => (
+                  <div key={idx} className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                      <span className="text-sm font-bold text-[#0A66C2]">{item.score}</span>
                     </div>
-                    <div className="flex justify-center gap-4">
-                      {items.map((item) => (
-                        <span key={item.label} className="text-[11px] text-gray-500 font-medium flex-1 text-center">{item.label}</span>
-                      ))}
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-[#0A66C2]" style={{ width: `${Math.min(item.rawScore * 10, 100)}%` }} />
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
 
