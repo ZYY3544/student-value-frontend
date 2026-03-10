@@ -3,8 +3,8 @@
  * 按 section 分块展示，支持内联 diff 高亮 + 采纳/忽略
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Check, X, Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Check, X, Loader2, Pencil, Eye } from 'lucide-react';
 import { ResumeSection, PendingEdit } from '../types';
 
 /**
@@ -52,6 +52,7 @@ interface ResumePanelProps {
   pendingEdits: PendingEdit[];
   onAcceptEdit: (editIndex: number) => void;
   onRejectEdit: (editIndex: number) => void;
+  onContentChange: (sectionId: string, content: string) => void;
 }
 
 // 段落类型 → 中文标签 + 颜色
@@ -324,17 +325,68 @@ const FallbackEditCard: React.FC<{
   </div>
 );
 
+/**
+ * 单个段落编辑区域
+ */
+const SectionEditor: React.FC<{
+  section: ResumeSection;
+  onContentChange: (sectionId: string, content: string) => void;
+  onDone: () => void;
+}> = ({ section, onContentChange, onDone }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 自动调整高度
+  const adjustHeight = useCallback(() => {
+    const ta = textareaRef.current;
+    if (ta) {
+      ta.style.height = 'auto';
+      ta.style.height = `${ta.scrollHeight}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustHeight();
+    textareaRef.current?.focus();
+  }, [adjustHeight]);
+
+  return (
+    <div className="relative">
+      <textarea
+        ref={textareaRef}
+        defaultValue={section.content}
+        onChange={(e) => {
+          onContentChange(section.id, e.target.value);
+          adjustHeight();
+        }}
+        className="w-full text-sm text-gray-600 leading-relaxed bg-transparent border-none outline-none resize-none focus:ring-0 p-0"
+        spellCheck={false}
+      />
+      <button
+        onClick={onDone}
+        className="absolute top-0 right-0 flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 transition-colors"
+        title="完成编辑"
+      >
+        <Eye className="w-3.5 h-3.5" />
+        预览
+      </button>
+    </div>
+  );
+};
+
 export const ResumePanel: React.FC<ResumePanelProps> = ({
   sections,
   pendingEdits,
   onAcceptEdit,
   onRejectEdit,
+  onContentChange,
 }) => {
-  // 当新 edit 出现时，自动滚动到对应 section
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+
+  // 当新 edit 出现时，自动滚动到对应 section + 退出编辑模式
   const prevEditCountRef = useRef(pendingEdits.length);
   useEffect(() => {
     if (pendingEdits.length > prevEditCountRef.current) {
-      // 找到最新添加的 edit 对应的 sectionId
+      setEditingSectionId(null);
       const newestEdit = pendingEdits[pendingEdits.length - 1];
       if (newestEdit?.sectionId) {
         const el = document.getElementById(`resume-${newestEdit.sectionId}`);
@@ -361,16 +413,17 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
     <div className="p-6 space-y-5">
       <div className="mb-2">
         <h2 className="text-lg font-bold text-gray-800">简历内容</h2>
-        <p className="text-xs text-gray-400 mt-1">Sparky 的修改建议会在对应段落中高亮显示</p>
+        <p className="text-xs text-gray-400 mt-1">点击段落右上角铅笔图标可手动编辑，修改自动保存</p>
       </div>
 
       {sections.map((section) => {
         const typeConfig = SECTION_TYPE_CONFIG[section.type] || SECTION_TYPE_CONFIG.other;
-        // 找到这个 section 的所有 pending edits
         const sectionEdits = pendingEdits
           .map((edit, idx) => ({ edit, idx }))
           .filter(({ edit }) => edit.sectionId === section.id && edit.status === 'pending');
 
+        const isEditing = editingSectionId === section.id;
+        const hasPendingEdits = sectionEdits.length > 0;
         const cleanedContent = cleanResumeContent(section.content);
 
         return (
@@ -378,9 +431,11 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
             key={section.id}
             id={`resume-${section.id}`}
             className={`rounded-2xl border transition-all ${
-              sectionEdits.length > 0
+              hasPendingEdits
                 ? 'border-blue-200 shadow-md shadow-blue-50'
-                : 'border-gray-100 shadow-sm'
+                : isEditing
+                  ? 'border-blue-300 shadow-md ring-1 ring-blue-100'
+                  : 'border-gray-100 shadow-sm'
             }`}
           >
             {/* Section header */}
@@ -389,11 +444,29 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                 {typeConfig.label}
               </span>
               <h3 className="text-sm font-semibold text-gray-800">{section.title}</h3>
+              {/* 编辑按钮（有 pending edits 时隐藏） */}
+              {!hasPendingEdits && !isEditing && (
+                <button
+                  onClick={() => setEditingSectionId(section.id)}
+                  className="ml-auto p-1 text-gray-300 hover:text-blue-500 transition-colors"
+                  title="编辑此段落"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {/* Section content with inline diff */}
+            {/* Section content */}
             <div className="px-5 py-4">
-              {renderContentWithInlineDiff(cleanedContent, sectionEdits, onAcceptEdit, onRejectEdit)}
+              {isEditing ? (
+                <SectionEditor
+                  section={section}
+                  onContentChange={onContentChange}
+                  onDone={() => setEditingSectionId(null)}
+                />
+              ) : (
+                renderContentWithInlineDiff(cleanedContent, sectionEdits, onAcceptEdit, onRejectEdit)
+              )}
             </div>
           </div>
         );

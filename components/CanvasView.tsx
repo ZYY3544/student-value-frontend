@@ -26,6 +26,7 @@ interface CanvasViewProps {
   setPendingEdits: React.Dispatch<React.SetStateAction<PendingEdit[]>>;
   onAcceptEdit: (editIndex: number) => void;
   onRejectEdit: (editIndex: number) => void;
+  onSectionContentChange: (sectionId: string, content: string) => void;
   onExitCanvas: () => void;
   // Not needed but passed through
   assessmentContext?: any;
@@ -44,6 +45,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   setPendingEdits,
   onAcceptEdit,
   onRejectEdit,
+  onSectionContentChange,
   onExitCanvas,
 }) => {
   const [exporting, setExporting] = useState(false);
@@ -140,6 +142,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             pendingEdits={pendingEdits}
             onAcceptEdit={onAcceptEdit}
             onRejectEdit={onRejectEdit}
+            onContentChange={onSectionContentChange}
           />
         </div>
       </div>

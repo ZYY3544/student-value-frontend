@@ -199,6 +199,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           sectionId: edit.sectionId,
           action: 'accept',
           suggestedText: edit.suggested,
+          originalText: edit.original,
         }),
       });
     } catch (err) {
@@ -239,6 +240,30 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       setPendingEdits(prev => prev.filter((_, i) => i !== editIndex));
     }, 500);
   }, [pendingEdits, sessionId]);
+
+  // 手动编辑简历段落 + 自动保存
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSectionContentChange = useCallback((sectionId: string, newContent: string) => {
+    // 立即更新本地状态
+    setResumeSections(prev => prev.map(sec =>
+      sec.id === sectionId ? { ...sec, content: newContent } : sec
+    ));
+
+    // 去抖保存到后端（1.5秒）
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      if (!sessionId) return;
+      try {
+        await fetch(`${API_BASE}/api/chat/section-update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, sectionId, content: newContent }),
+        });
+      } catch (err) {
+        console.error('Auto-save section failed:', err);
+      }
+    }, 1500);
+  }, [sessionId]);
 
   const competencyDetails = useMemo(() => {
     if (!result.abilities) return [];
@@ -295,6 +320,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         setPendingEdits={setPendingEdits}
         onAcceptEdit={handleAcceptEdit}
         onRejectEdit={handleRejectEdit}
+        onSectionContentChange={handleSectionContentChange}
         onExitCanvas={() => setViewMode('report')}
       />
     );
