@@ -194,10 +194,40 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       i === editIndex ? { ...e, status: 'accepted' as const } : e
     ));
 
-    // 更新对应 section 的内容
+    // 取消 pending auto-save，避免覆盖
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
+    // 更新对应 section 的内容（支持模糊匹配）
     setResumeSections(prev => prev.map(sec => {
       if (sec.id === edit.sectionId) {
-        return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+        // 精确匹配
+        if (sec.content.includes(edit.original)) {
+          return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+        }
+        // 模糊匹配：忽略空白差异
+        const normalize = (s: string) => s.split(/\s+/).join(' ');
+        const normalizedContent = normalize(sec.content);
+        const normalizedOriginal = normalize(edit.original);
+        if (normalizedContent.includes(normalizedOriginal)) {
+          // 找到最佳匹配区间并替换
+          const lines = sec.content.split('\n');
+          for (let start = 0; start < lines.length; start++) {
+            for (let end = start; end < Math.min(start + 10, lines.length); end++) {
+              const candidate = lines.slice(start, end + 1).join('\n');
+              if (normalize(candidate) === normalizedOriginal) {
+                const pos = sec.content.indexOf(candidate);
+                if (pos !== -1) {
+                  return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + candidate.length) };
+                }
+              }
+            }
+          }
+        }
+        // 匹配失败不替换，保留原内容
+        return sec;
       }
       return sec;
     }));

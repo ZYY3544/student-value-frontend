@@ -143,12 +143,30 @@ function renderContentWithInlineDiff(
   const matched: Match[] = [];
   const unmatched: { edit: PendingEdit; idx: number }[] = [];
 
+  const normalize = (s: string) => s.split(/\s+/).join(' ');
+
   for (const { edit, idx } of sectionEdits) {
     const pos = content.indexOf(edit.original);
     if (pos !== -1) {
       matched.push({ start: pos, end: pos + edit.original.length, edit, idx });
     } else {
-      unmatched.push({ edit, idx });
+      // 模糊匹配：忽略空白差异
+      const normOriginal = normalize(edit.original);
+      let found = false;
+      // 滑动窗口搜索
+      for (let i = 0; i < content.length && !found; i++) {
+        for (let len = normOriginal.length; len <= normOriginal.length + 50; len++) {
+          const candidate = content.slice(i, i + len);
+          if (normalize(candidate) === normOriginal) {
+            matched.push({ start: i, end: i + len, edit, idx });
+            found = true;
+            break;
+          }
+        }
+      }
+      if (!found) {
+        unmatched.push({ edit, idx });
+      }
     }
   }
 
@@ -424,7 +442,6 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
 
         const isEditing = editingSectionId === section.id;
         const hasPendingEdits = sectionEdits.length > 0;
-        const cleanedContent = cleanResumeContent(section.content);
 
         return (
           <div
@@ -465,7 +482,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                   onDone={() => setEditingSectionId(null)}
                 />
               ) : (
-                renderContentWithInlineDiff(cleanedContent, sectionEdits, onAcceptEdit, onRejectEdit)
+                renderContentWithInlineDiff(section.content, sectionEdits, onAcceptEdit, onRejectEdit)
               )}
             </div>
           </div>
