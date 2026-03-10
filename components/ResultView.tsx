@@ -126,7 +126,18 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
   // ===== Canvas 状态 =====
   const [viewMode, setViewMode] = useState<'report' | 'canvas'>('report');
-  const [resumeSections, setResumeSections] = useState<ResumeSection[]>([]);
+  const [resumeSections, setResumeSections] = useState<ResumeSection[]>(() => {
+    // 从评测结果预加载简历段落
+    if (result.resumeSections?.length) {
+      return result.resumeSections.map((sec, i) => ({
+        id: `section-${i}`,
+        type: sec.type,
+        title: sec.title,
+        content: sec.content,
+      }));
+    }
+    return [];
+  });
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
 
   const assessmentContext = useMemo(() => ({
@@ -151,6 +162,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     if (!sessionId) return;
     setViewMode('canvas');
 
+    // 如果 sections 已经从后端预拆分拿到了，直接用
+    if (resumeSections.length > 0) return;
+
     // 拉取简历段落数据
     const fetchSections = async () => {
       try {
@@ -160,7 +174,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           if (data.data.status === 'ready') {
             setResumeSections(data.data.sections);
           } else {
-            // 还在解析中，轮询
             setTimeout(fetchSections, 1500);
           }
         }
@@ -169,7 +182,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       }
     };
     fetchSections();
-  }, [sessionId]);
+  }, [sessionId, resumeSections.length]);
 
   // 处理采纳编辑
   const handleAcceptEdit = useCallback(async (editIndex: number) => {
@@ -300,6 +313,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const chatProps = {
     assessmentContext,
     resumeText,
+    resumeSections: result.resumeSections,
     apiBase: API_BASE,
     sessionId,
     setSessionId,

@@ -79,6 +79,7 @@ interface ChatWidgetProps {
     targetCompany: string;
   };
   resumeText: string;
+  resumeSections?: { type: string; title: string; content: string }[];
   apiBase?: string;
   // 受控状态
   sessionId: string | null;
@@ -239,6 +240,7 @@ export async function parseSseStream(
 export const ChatWidget: React.FC<ChatWidgetProps> = ({
   assessmentContext,
   resumeText,
+  resumeSections: preloadedSections,
   apiBase = '',
   sessionId,
   setSessionId,
@@ -374,7 +376,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assessmentContext, resumeText, userId }),
+        body: JSON.stringify({ assessmentContext, resumeText, userId, resumeSections: preloadedSections }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start chat');
@@ -411,7 +413,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assessmentContext, resumeText, userId }),
+        body: JSON.stringify({ assessmentContext, resumeText, userId, resumeSections: preloadedSections }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Recovery failed');

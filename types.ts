@@ -72,6 +72,8 @@ export interface AssessmentResult {
   factors?: Record<string, string>;
   // 解析后的简历文本（用于聊天 Agent）
   resumeText?: string;
+  // 预拆分的简历段落（评测阶段并行生成）
+  resumeSections?: { type: string; title: string; content: string }[];
 }
 
 // 简历画布（Canvas）相关类型

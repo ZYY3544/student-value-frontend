@@ -106,6 +106,8 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
     factors: data.factors,
     // 解析后的简历文本（用于聊天 Agent）
     resumeText: data.resumeText,
+    // 预拆分的简历段落
+    resumeSections: data.resumeSections,
 
     // 生成优劣势（基于能力数据）
     strengths: generateStrengths(data.abilities, input),
