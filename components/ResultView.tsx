@@ -422,14 +422,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
               <div className="flex flex-col justify-center gap-3">
                 {competencyDetails.map((item, idx) => (
-                  <div key={idx} className="space-y-1.5">
-                    <div className="flex justify-between items-center">
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-gray-700">{item.label}</span>
-                      <span className="text-sm font-bold text-[#0A66C2]">{item.score}</span>
+                      <span className="text-xs font-medium text-[#0A66C2] bg-blue-50 px-2 py-0.5 rounded-full">{item.tag}</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-[#0A66C2]" style={{ width: `${Math.min(item.rawScore * 10, 100)}%` }} />
-                    </div>
+                    <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
                   </div>
                 ))}
               </div>
