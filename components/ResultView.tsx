@@ -403,7 +403,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 <Users className="text-[#0A66C2] w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">核心胜任力画像</h3>
+                <h3 className="text-2xl font-bold text-gray-900">核心能力画像</h3>
                 <p className="text-xs text-gray-400 mt-0.5">对标世界500强企业价值评估方法论</p>
               </div>
             </div>

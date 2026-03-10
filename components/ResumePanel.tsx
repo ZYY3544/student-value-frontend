@@ -448,7 +448,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
               {!hasPendingEdits && !isEditing && (
                 <button
                   onClick={() => setEditingSectionId(section.id)}
-                  className="ml-auto p-1 text-gray-300 hover:text-blue-500 transition-colors"
+                  className="ml-auto p-1 text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
                   title="编辑此段落"
                 >
                   <Pencil className="w-3.5 h-3.5" />
