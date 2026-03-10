@@ -388,7 +388,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 </div>
               </div>
               <div className="flex items-baseline gap-3 mb-4">
-                <span className="text-5xl font-black text-[#0A66C2]">{result.levelTag}</span>
+                <span className="text-3xl font-bold text-[#0A66C2]">{result.levelTag}</span>
               </div>
               {result.levelDesc && (
                 <p className="text-sm text-gray-500 leading-relaxed mt-2">{result.levelDesc}</p>
