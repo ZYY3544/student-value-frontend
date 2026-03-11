@@ -1,10 +1,10 @@
 /**
  * ResumePanel - 画布模式右侧简历预览面板
- * 按 section 分块展示，支持内联 diff 高亮 + 采纳/忽略
+ * Word 式 diff 高亮（绿增/红删），自由编辑，三态循环：diff → editing → clean
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Check, X, Loader2, Pencil, Eye } from 'lucide-react';
+import { Pencil, Eye, FileText } from 'lucide-react';
 import { ResumeSection, PendingEdit } from '../types';
 
 /**
@@ -49,11 +49,13 @@ function cleanResumeContent(raw: string): string {
 
 interface ResumePanelProps {
   sections: ResumeSection[];
+  originalSections: ResumeSection[];
   pendingEdits: PendingEdit[];
-  onAcceptEdit: (editIndex: number) => void;
-  onRejectEdit: (editIndex: number) => void;
   onContentChange: (sectionId: string, content: string) => void;
 }
+
+// 每个 section 的显示模态
+type SectionMode = 'diff' | 'editing' | 'clean';
 
 // 段落类型 → 中文标签 + 颜色
 const SECTION_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -126,51 +128,80 @@ function renderFormattedContent(text: string, keyPrefix = ''): React.ReactNode[]
 }
 
 /**
- * 内联 Diff 渲染：在正文中高亮被修改的片段
+ * Word 式修订标记组件（无操作按钮，hover 显示修改理由）
  */
-function renderContentWithInlineDiff(
+const DiffMark: React.FC<{
+  original: string;
+  suggested: string;
+  rationale: string;
+}> = ({ original, suggested, rationale }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <span className="inline">
+      {/* 删除的原文 */}
+      <span className="bg-red-50 text-red-400 line-through decoration-red-300 rounded px-0.5 text-sm">
+        {original}
+      </span>
+      {/* 新增的文本 */}
+      <span
+        className="relative bg-green-50 text-green-700 border-b-2 border-green-300 rounded px-0.5 text-sm cursor-help"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        {suggested}
+        {showTooltip && rationale && (
+          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg whitespace-pre-wrap max-w-xs z-50 pointer-events-none">
+            {rationale}
+            <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-800" />
+          </span>
+        )}
+      </span>
+    </span>
+  );
+};
+
+/**
+ * 渲染带 diff 高亮的内容
+ * 在已应用的内容中查找 suggested 文本，标记为绿色；original 显示为红色删除线
+ */
+function renderContentWithDiff(
   content: string,
   sectionEdits: { edit: PendingEdit; idx: number }[],
-  onAcceptEdit: (idx: number) => void,
-  onRejectEdit: (idx: number) => void,
 ): React.ReactNode {
   if (sectionEdits.length === 0) {
     return <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>;
   }
 
-  // 找到每个 edit 的 original 在 content 中的位置
+  // 在 content 中查找每个 edit 的 suggested 文本位置
   type Match = { start: number; end: number; edit: PendingEdit; idx: number };
   const matched: Match[] = [];
-  const unmatched: { edit: PendingEdit; idx: number }[] = [];
-
   const normalize = (s: string) => s.split(/\s+/).join(' ');
 
   for (const { edit, idx } of sectionEdits) {
-    const pos = content.indexOf(edit.original);
+    // 精确匹配 suggested
+    const pos = content.indexOf(edit.suggested);
     if (pos !== -1) {
-      matched.push({ start: pos, end: pos + edit.original.length, edit, idx });
+      matched.push({ start: pos, end: pos + edit.suggested.length, edit, idx });
     } else {
       // 模糊匹配：忽略空白差异
-      const normOriginal = normalize(edit.original);
+      const normSuggested = normalize(edit.suggested);
       let found = false;
-      // 滑动窗口搜索
       for (let i = 0; i < content.length && !found; i++) {
-        for (let len = normOriginal.length; len <= normOriginal.length + 50; len++) {
+        for (let len = normSuggested.length; len <= normSuggested.length + 50; len++) {
+          if (i + len > content.length) break;
           const candidate = content.slice(i, i + len);
-          if (normalize(candidate) === normOriginal) {
+          if (normalize(candidate) === normSuggested) {
             matched.push({ start: i, end: i + len, edit, idx });
             found = true;
             break;
           }
         }
       }
-      if (!found) {
-        unmatched.push({ edit, idx });
-      }
+      // 找不到则跳过（用户可能已手动修改）
     }
   }
 
-  // 按位置排序
   matched.sort((a, b) => a.start - b.start);
 
   // 去除重叠
@@ -179,19 +210,21 @@ function renderContentWithInlineDiff(
     const last = nonOverlapping[nonOverlapping.length - 1];
     if (!last || m.start >= last.end) {
       nonOverlapping.push(m);
-    } else {
-      unmatched.push({ edit: m.edit, idx: m.idx });
     }
   }
 
-  // 切分文本为片段
+  // 没有可匹配的 diff，渲染为普通内容
+  if (nonOverlapping.length === 0) {
+    return <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>;
+  }
+
+  // 切分文本为 plain + diff 片段
   const fragments: React.ReactNode[] = [];
   let cursor = 0;
 
   for (let i = 0; i < nonOverlapping.length; i++) {
     const m = nonOverlapping[i];
 
-    // 普通文本片段
     if (cursor < m.start) {
       const plainText = content.slice(cursor, m.start);
       fragments.push(
@@ -201,22 +234,18 @@ function renderContentWithInlineDiff(
       );
     }
 
-    // 被编辑的片段 — 内联 diff
     fragments.push(
-      <InlineDiffMark
+      <DiffMark
         key={`diff-${i}`}
         original={m.edit.original}
         suggested={m.edit.suggested}
         rationale={m.edit.rationale}
-        onAccept={() => onAcceptEdit(m.idx)}
-        onReject={() => onRejectEdit(m.idx)}
       />
     );
 
     cursor = m.end;
   }
 
-  // 剩余文本
   if (cursor < content.length) {
     const remaining = content.slice(cursor);
     fragments.push(
@@ -226,122 +255,8 @@ function renderContentWithInlineDiff(
     );
   }
 
-  return (
-    <div className="space-y-2">
-      {fragments}
-
-      {/* 匹配不上的 edit 降级为底部独立卡片 */}
-      {unmatched.map(({ edit, idx }) => (
-        <FallbackEditCard
-          key={`fallback-${idx}`}
-          edit={edit}
-          onAccept={() => onAcceptEdit(idx)}
-          onReject={() => onRejectEdit(idx)}
-        />
-      ))}
-    </div>
-  );
+  return <div className="space-y-2">{fragments}</div>;
 }
-
-/**
- * 内联 Diff 标记组件
- */
-const InlineDiffMark: React.FC<{
-  original: string;
-  suggested: string;
-  rationale: string;
-  onAccept: () => void;
-  onReject: () => void;
-}> = ({ original, suggested, rationale, onAccept, onReject }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  return (
-    <span className="inline">
-      {/* 删除线原文 */}
-      <span className="bg-red-50 text-red-500 line-through decoration-red-300 rounded px-0.5">
-        {original}
-      </span>
-      {/* 建议文本 */}
-      <span
-        className="relative bg-green-50 text-green-700 border-b-2 border-green-300 rounded px-0.5 cursor-help"
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-      >
-        {suggested}
-        {/* Tooltip */}
-        {showTooltip && (
-          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg whitespace-pre-wrap max-w-xs z-50 pointer-events-none">
-            {rationale}
-            <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-800" />
-          </span>
-        )}
-      </span>
-      {/* 操作按钮 */}
-      <span className="inline-flex items-center gap-0.5 ml-1 align-middle">
-        <button
-          onClick={onAccept}
-          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
-          title="采纳"
-        >
-          <Check className="w-3 h-3" />
-        </button>
-        <button
-          onClick={onReject}
-          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors"
-          title="忽略"
-        >
-          <X className="w-3 h-3" />
-        </button>
-      </span>
-    </span>
-  );
-};
-
-/**
- * 降级卡片：当 edit 的 original 在 content 中找不到时使用
- */
-const FallbackEditCard: React.FC<{
-  edit: PendingEdit;
-  onAccept: () => void;
-  onReject: () => void;
-}> = ({ edit, onAccept, onReject }) => (
-  <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/30 overflow-hidden">
-    <div className="p-4 space-y-3">
-      <div>
-        <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">原文</span>
-        <p className="text-sm text-red-600 line-through mt-1 leading-relaxed bg-red-50 rounded-lg px-3 py-2">
-          {edit.original}
-        </p>
-      </div>
-      <div>
-        <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">建议改为</span>
-        <p className="text-sm text-green-700 mt-1 leading-relaxed bg-green-50 rounded-lg px-3 py-2 font-medium">
-          {edit.suggested}
-        </p>
-      </div>
-      <p className="text-xs text-gray-500 italic">
-        修改理由：{edit.rationale}
-      </p>
-    </div>
-    <div className="flex border-t border-blue-100">
-      <button
-        onClick={onAccept}
-        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
-      >
-        <Check className="w-4 h-4" />
-        采纳
-      </button>
-      <div className="w-px bg-blue-100" />
-      <button
-        onClick={onReject}
-        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors"
-      >
-        <X className="w-4 h-4" />
-        忽略
-      </button>
-    </div>
-  </div>
-);
 
 /**
  * 单个段落编辑区域
@@ -385,7 +300,7 @@ const SectionEditor: React.FC<{
         title="完成编辑"
       >
         <Eye className="w-3.5 h-3.5" />
-        预览
+        完成编辑
       </button>
     </div>
   );
@@ -436,22 +351,33 @@ export const OriginalResumePanel: React.FC<{
   );
 };
 
+/**
+ * ResumePanel - 右栏优化版本面板
+ * 三态循环：diff（查看修改）→ editing（编辑）→ clean（干净预览）→ diff ...
+ */
 export const ResumePanel: React.FC<ResumePanelProps> = ({
   sections,
+  originalSections,
   pendingEdits,
-  onAcceptEdit,
-  onRejectEdit,
   onContentChange,
 }) => {
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [sectionModes, setSectionModes] = useState<Record<string, SectionMode>>({});
 
-  // 当新 edit 出现时，自动滚动到对应 section + 退出编辑模式
+  const getSectionMode = useCallback((sectionId: string): SectionMode => {
+    return sectionModes[sectionId] || 'diff';
+  }, [sectionModes]);
+
+  const setSectionMode = useCallback((sectionId: string, mode: SectionMode) => {
+    setSectionModes(prev => ({ ...prev, [sectionId]: mode }));
+  }, []);
+
+  // 当新 AI edit 到达时，将对应 section 重置为 diff 模式并滚动到位
   const prevEditCountRef = useRef(pendingEdits.length);
   useEffect(() => {
     if (pendingEdits.length > prevEditCountRef.current) {
-      setEditingSectionId(null);
       const newestEdit = pendingEdits[pendingEdits.length - 1];
       if (newestEdit?.sectionId) {
+        setSectionMode(newestEdit.sectionId, 'diff');
         const el = document.getElementById(`resume-${newestEdit.sectionId}`);
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -459,14 +385,16 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
       }
     }
     prevEditCountRef.current = pendingEdits.length;
-  }, [pendingEdits]);
+  }, [pendingEdits, setSectionMode]);
 
-  if (sections.length === 0) {
+  // AI 尚未提供任何建议时，显示占位提示
+  if (pendingEdits.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-400" />
-          <p className="text-sm">正在解析简历结构...</p>
+          <FileText className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+          <p className="text-sm font-medium text-gray-400">优化版本</p>
+          <p className="text-xs text-gray-300 mt-1">与 AI 对话后，优化建议将在此显示</p>
         </div>
       </div>
     );
@@ -476,26 +404,26 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
     <div className="p-6 space-y-5">
       <div className="mb-2">
         <h2 className="text-base font-bold text-gray-800">优化版本</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">AI 建议会高亮显示，点击铅笔图标可手动编辑</p>
+        <p className="text-[11px] text-gray-400 mt-0.5">绿色为新增内容，红色删除线为原文，点击铅笔可编辑</p>
       </div>
 
       {sections.map((section) => {
         const typeConfig = SECTION_TYPE_CONFIG[section.type] || SECTION_TYPE_CONFIG.other;
         const sectionEdits = pendingEdits
           .map((edit, idx) => ({ edit, idx }))
-          .filter(({ edit }) => edit.sectionId === section.id && edit.status === 'pending');
+          .filter(({ edit }) => edit.sectionId === section.id);
 
-        const isEditing = editingSectionId === section.id;
-        const hasPendingEdits = sectionEdits.length > 0;
+        const mode = getSectionMode(section.id);
+        const hasEdits = sectionEdits.length > 0;
 
         return (
           <div
             key={section.id}
             id={`resume-${section.id}`}
             className={`rounded-2xl border transition-all ${
-              hasPendingEdits
+              mode === 'diff' && hasEdits
                 ? 'border-blue-200 shadow-md shadow-blue-50'
-                : isEditing
+                : mode === 'editing'
                   ? 'border-blue-300 shadow-md ring-1 ring-blue-100'
                   : 'border-gray-100 shadow-sm'
             }`}
@@ -506,12 +434,20 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                 {typeConfig.label}
               </span>
               <h3 className="text-sm font-semibold text-gray-800">{section.title}</h3>
-              {/* 编辑按钮（有 pending edits 时隐藏） */}
-              {!hasPendingEdits && !isEditing && (
+              {/* 铅笔按钮：diff/clean 模式下显示 */}
+              {mode !== 'editing' && (
                 <button
-                  onClick={() => setEditingSectionId(section.id)}
+                  onClick={() => {
+                    if (mode === 'clean') {
+                      // clean → diff（颜色恢复）
+                      setSectionMode(section.id, 'diff');
+                    } else {
+                      // diff → editing（进入编辑）
+                      setSectionMode(section.id, 'editing');
+                    }
+                  }}
                   className="ml-auto p-1 text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
-                  title="编辑此段落"
+                  title={mode === 'clean' ? '查看修改' : '编辑此段落'}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
@@ -520,14 +456,18 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
 
             {/* Section content */}
             <div className="px-5 py-4">
-              {isEditing ? (
+              {mode === 'editing' ? (
                 <SectionEditor
                   section={section}
                   onContentChange={onContentChange}
-                  onDone={() => setEditingSectionId(null)}
+                  onDone={() => setSectionMode(section.id, 'clean')}
                 />
+              ) : mode === 'diff' && hasEdits ? (
+                renderContentWithDiff(section.content, sectionEdits)
               ) : (
-                renderContentWithInlineDiff(section.content, sectionEdits, onAcceptEdit, onRejectEdit)
+                <div className="space-y-2">
+                  {renderFormattedContent(cleanResumeContent(section.content))}
+                </div>
               )}
             </div>
           </div>

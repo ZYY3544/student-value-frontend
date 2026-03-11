@@ -207,23 +207,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     fetchSections();
   }, [sessionId, resumeSections.length]);
 
-  // 处理采纳编辑
-  const handleAcceptEdit = useCallback(async (editIndex: number) => {
-    const edit = pendingEdits[editIndex];
-    if (!edit || !sessionId) return;
-
-    // 更新本地状态
-    setPendingEdits(prev => prev.map((e, i) =>
-      i === editIndex ? { ...e, status: 'accepted' as const } : e
-    ));
-
+  // AI 编辑建议：自动应用到内容 + 存储 diff 元数据
+  const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     // 取消 pending auto-save，避免覆盖
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
 
-    // 更新对应 section 的内容（支持模糊匹配）
+    // 立即应用编辑到 section 内容
     setResumeSections(prev => prev.map(sec => {
       if (sec.id === edit.sectionId) {
         // 精确匹配
@@ -235,7 +227,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         const normalizedContent = normalize(sec.content);
         const normalizedOriginal = normalize(edit.original);
         if (normalizedContent.includes(normalizedOriginal)) {
-          // 找到最佳匹配区间并替换
           const lines = sec.content.split('\n');
           for (let start = 0; start < lines.length; start++) {
             for (let end = start; end < Math.min(start + 10, lines.length); end++) {
@@ -249,15 +240,17 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             }
           }
         }
-        // 匹配失败不替换，保留原内容
         return sec;
       }
       return sec;
     }));
 
+    // 存储 diff 元数据（用于 diff 高亮渲染）
+    setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
+
     // 通知后端
-    try {
-      await fetch(`${API_BASE}/api/chat/edit-action`, {
+    if (sessionId) {
+      fetch(`${API_BASE}/api/chat/edit-action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -267,45 +260,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           suggestedText: edit.suggested,
           originalText: edit.original,
         }),
-      });
-    } catch (err) {
-      console.error('Failed to accept edit:', err);
+      }).catch(err => console.error('Failed to notify edit:', err));
     }
-
-    // 短暂延迟后移除已处理的编辑
-    setTimeout(() => {
-      setPendingEdits(prev => prev.filter((_, i) => i !== editIndex));
-    }, 500);
-  }, [pendingEdits, sessionId]);
-
-  // 处理拒绝编辑
-  const handleRejectEdit = useCallback(async (editIndex: number) => {
-    const edit = pendingEdits[editIndex];
-    if (!edit || !sessionId) return;
-
-    setPendingEdits(prev => prev.map((e, i) =>
-      i === editIndex ? { ...e, status: 'rejected' as const } : e
-    ));
-
-    try {
-      await fetch(`${API_BASE}/api/chat/edit-action`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          sectionId: edit.sectionId,
-          action: 'reject',
-          suggestedText: edit.suggested,
-        }),
-      });
-    } catch (err) {
-      console.error('Failed to reject edit:', err);
-    }
-
-    setTimeout(() => {
-      setPendingEdits(prev => prev.filter((_, i) => i !== editIndex));
-    }, 500);
-  }, [pendingEdits, sessionId]);
+  }, [sessionId]);
 
   // 手动编辑简历段落 + 自动保存
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -385,9 +342,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         resumeSections={resumeSections}
         originalSections={originalSections}
         pendingEdits={pendingEdits}
-        setPendingEdits={setPendingEdits}
-        onAcceptEdit={handleAcceptEdit}
-        onRejectEdit={handleRejectEdit}
+        onEditSuggestion={handleEditSuggestion}
         onSectionContentChange={handleSectionContentChange}
         onExitCanvas={() => setViewMode('report')}
       />

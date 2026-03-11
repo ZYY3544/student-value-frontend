@@ -2,7 +2,7 @@
  * CanvasView - 全屏简历画布（三栏布局）
  * 左侧：AI 对话面板
  * 中间：简历原文（只读，供参考对比）
- * 右侧：可编辑简历（带 diff 高亮 + 采纳/忽略）
+ * 右侧：优化版本（Word 式 diff 高亮 + 自由编辑）
  */
 
 import React, { useCallback, useRef, useState } from 'react';
@@ -25,9 +25,7 @@ interface CanvasViewProps {
   resumeSections: ResumeSection[];
   originalSections: ResumeSection[];
   pendingEdits: PendingEdit[];
-  setPendingEdits: React.Dispatch<React.SetStateAction<PendingEdit[]>>;
-  onAcceptEdit: (editIndex: number) => void;
-  onRejectEdit: (editIndex: number) => void;
+  onEditSuggestion: (edit: Omit<PendingEdit, 'status'>) => void;
   onSectionContentChange: (sectionId: string, content: string) => void;
   onExitCanvas: () => void;
   // Not needed but passed through
@@ -45,9 +43,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   resumeSections,
   originalSections,
   pendingEdits,
-  setPendingEdits,
-  onAcceptEdit,
-  onRejectEdit,
+  onEditSuggestion,
   onSectionContentChange,
   onExitCanvas,
 }) => {
@@ -70,10 +66,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     requestAnimationFrame(() => { isSyncing.current = false; });
   }, []);
 
-  // 处理 AI 的编辑建议
+  // AI 编辑建议：直接转发给 ResultView 处理（自动应用 + 存储 diff 元数据）
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
-    setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
-  }, [setPendingEdits]);
+    onEditSuggestion(edit);
+  }, [onEditSuggestion]);
 
   // 导出 PDF
   const handleExportPdf = useCallback(async () => {
@@ -122,11 +118,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           <PixelCat size={18} />
           <span className="text-sm font-bold text-gray-800">简历画布</span>
         </div>
-        {pendingEdits.filter(e => e.status === 'pending').length > 0 && (
-          <span className="ml-2 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-            {pendingEdits.filter(e => e.status === 'pending').length} 条待处理
-          </span>
-        )}
+        {/* 待处理 badge 已移除：编辑自动应用，无需逐条处理 */}
 
         {/* 右侧按钮组 */}
         <div className="ml-auto flex items-center gap-2">
@@ -183,9 +175,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         >
           <ResumePanel
             sections={resumeSections}
+            originalSections={originalSections}
             pendingEdits={pendingEdits}
-            onAcceptEdit={onAcceptEdit}
-            onRejectEdit={onRejectEdit}
             onContentChange={onSectionContentChange}
           />
         </div>
