@@ -128,7 +128,55 @@ function renderFormattedContent(text: string, keyPrefix = ''): React.ReactNode[]
 }
 
 /**
- * Word 式修订标记组件（无操作按钮，hover 显示修改理由）
+ * 字符级 LCS diff：对比 original 和 suggested，只标记真正变化的部分
+ */
+interface DiffPart { type: 'same' | 'del' | 'add'; text: string }
+
+function computeCharDiff(original: string, suggested: string): DiffPart[] {
+  const a = [...original];
+  const b = [...suggested];
+  const m = a.length, n = b.length;
+
+  // LCS 动态规划
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+
+  // 回溯生成 diff
+  const raw: { type: 'same' | 'del' | 'add'; char: string }[] = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
+      raw.unshift({ type: 'same', char: a[i - 1] });
+      i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      raw.unshift({ type: 'add', char: b[j - 1] });
+      j--;
+    } else {
+      raw.unshift({ type: 'del', char: a[i - 1] });
+      i--;
+    }
+  }
+
+  // 合并连续同类型字符
+  const merged: DiffPart[] = [];
+  for (const r of raw) {
+    if (merged.length > 0 && merged[merged.length - 1].type === r.type) {
+      merged[merged.length - 1].text += r.char;
+    } else {
+      merged.push({ type: r.type, text: r.char });
+    }
+  }
+  return merged;
+}
+
+/**
+ * Word 式修订标记组件：细粒度 diff，只高亮真正变化的字符
  */
 const DiffMark: React.FC<{
   original: string;
@@ -136,27 +184,30 @@ const DiffMark: React.FC<{
   rationale: string;
 }> = ({ original, suggested, rationale }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const parts = computeCharDiff(original, suggested);
 
   return (
-    <span className="inline">
-      {/* 删除的原文 */}
-      <span className="bg-red-50 text-red-400 line-through decoration-red-300 rounded px-0.5 text-sm">
-        {original}
-      </span>
-      {/* 新增的文本 */}
-      <span
-        className="relative bg-green-50 text-green-700 border-b-2 border-green-300 rounded px-0.5 text-sm cursor-help"
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-      >
-        {suggested}
-        {showTooltip && rationale && (
-          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg whitespace-pre-wrap max-w-xs z-50 pointer-events-none">
-            {rationale}
-            <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-800" />
-          </span>
-        )}
-      </span>
+    <span
+      className="inline relative cursor-help"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      {parts.map((p, i) =>
+        p.type === 'same' ? (
+          <span key={i} className="text-sm text-gray-600">{p.text}</span>
+        ) : p.type === 'del' ? (
+          <span key={i} className="bg-red-50 text-red-400 line-through decoration-red-300 rounded px-0.5 text-sm">{p.text}</span>
+        ) : (
+          <span key={i} className="bg-green-50 text-green-700 border-b-2 border-green-300 rounded px-0.5 text-sm">{p.text}</span>
+        )
+      )}
+      {/* Tooltip 显示修改理由 */}
+      {showTooltip && rationale && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg whitespace-pre-wrap max-w-xs z-50 pointer-events-none">
+          {rationale}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-800" />
+        </span>
+      )}
     </span>
   );
 };
