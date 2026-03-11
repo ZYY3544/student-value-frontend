@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useRef, useState } from 'react';
-import { ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
@@ -52,6 +52,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onExitCanvas,
 }) => {
   const [exporting, setExporting] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(true);
   const originalRef = useRef<HTMLDivElement>(null);
   const optimizedRef = useRef<HTMLDivElement>(null);
   const isSyncing = useRef(false);
@@ -127,8 +128,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           </span>
         )}
 
-        {/* 右侧导出按钮 */}
-        <div className="ml-auto">
+        {/* 右侧按钮组 */}
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => setShowOriginal(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            title={showOriginal ? '隐藏原文' : '显示原文'}
+          >
+            {showOriginal ? <PanelLeftClose className="w-3.5 h-3.5" /> : <PanelLeft className="w-3.5 h-3.5" />}
+            {showOriginal ? '隐藏原文' : '显示原文'}
+          </button>
           <button
             onClick={handleExportPdf}
             disabled={exporting || resumeSections.length === 0}
@@ -143,7 +152,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       {/* Main content - 三栏布局 */}
       <div className="flex-1 flex overflow-hidden">
         {/* 左栏: Chat */}
-        <div className="w-[30%] min-w-[280px] border-r border-gray-100 flex flex-col bg-white">
+        <div className={`${showOriginal ? 'w-[30%]' : 'w-[40%]'} min-w-[280px] border-r border-gray-100 flex flex-col bg-white transition-all duration-300`}>
           <CanvasChat
             sessionId={sessionId}
             messages={messages}
@@ -156,19 +165,21 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
 
         {/* 中栏: 简历原文（只读） */}
-        <div
-          ref={originalRef}
-          onScroll={() => handleScroll('original')}
-          className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100"
-        >
-          <OriginalResumePanel sections={originalSections} />
-        </div>
+        {showOriginal && (
+          <div
+            ref={originalRef}
+            onScroll={() => handleScroll('original')}
+            className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100"
+          >
+            <OriginalResumePanel sections={originalSections} />
+          </div>
+        )}
 
         {/* 右栏: 可编辑简历（含 diff 高亮） */}
         <div
           ref={optimizedRef}
           onScroll={() => handleScroll('optimized')}
-          className="w-[35%] overflow-y-auto bg-white"
+          className={`${showOriginal ? 'w-[35%]' : 'w-[60%]'} overflow-y-auto bg-white transition-all duration-300`}
         >
           <ResumePanel
             sections={resumeSections}
