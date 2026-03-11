@@ -406,8 +406,8 @@ export const OriginalResumePanel: React.FC<{
   }
 
   return (
-    <div className="p-5 space-y-4">
-      <div className="mb-1">
+    <div className="p-6 space-y-5">
+      <div className="mb-2">
         <h2 className="text-base font-bold text-gray-800">简历原文</h2>
         <p className="text-[11px] text-gray-400 mt-0.5">初始版本，仅供参考对比</p>
       </div>
@@ -418,15 +418,15 @@ export const OriginalResumePanel: React.FC<{
         return (
           <div
             key={section.id}
-            className="rounded-xl border border-gray-100 bg-white/60"
+            className="rounded-2xl border border-gray-100 bg-white/60"
           >
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-50">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeConfig.bg} ${typeConfig.color}`}>
                 {typeConfig.label}
               </span>
-              <h3 className="text-xs font-semibold text-gray-700">{section.title}</h3>
+              <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
             </div>
-            <div className="px-4 py-3 space-y-1.5">
+            <div className="px-5 py-4 space-y-2">
               {renderFormattedContent(cleanResumeContent(section.content))}
             </div>
           </div>

@@ -5,7 +5,7 @@
  * 右侧：可编辑简历（带 diff 高亮 + 采纳/忽略）
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
@@ -52,6 +52,22 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onExitCanvas,
 }) => {
   const [exporting, setExporting] = useState(false);
+  const originalRef = useRef<HTMLDivElement>(null);
+  const optimizedRef = useRef<HTMLDivElement>(null);
+  const isSyncing = useRef(false);
+
+  // 同步滚动：按滚动百分比对齐
+  const handleScroll = useCallback((source: 'original' | 'optimized') => {
+    if (isSyncing.current) return;
+    isSyncing.current = true;
+    const from = source === 'original' ? originalRef.current : optimizedRef.current;
+    const to = source === 'original' ? optimizedRef.current : originalRef.current;
+    if (from && to) {
+      const ratio = from.scrollTop / (from.scrollHeight - from.clientHeight || 1);
+      to.scrollTop = ratio * (to.scrollHeight - to.clientHeight || 1);
+    }
+    requestAnimationFrame(() => { isSyncing.current = false; });
+  }, []);
 
   // 处理 AI 的编辑建议
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
@@ -140,12 +156,20 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
 
         {/* 中栏: 简历原文（只读） */}
-        <div className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100">
+        <div
+          ref={originalRef}
+          onScroll={() => handleScroll('original')}
+          className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100"
+        >
           <OriginalResumePanel sections={originalSections} />
         </div>
 
         {/* 右栏: 可编辑简历（含 diff 高亮） */}
-        <div className="w-[35%] overflow-y-auto bg-white">
+        <div
+          ref={optimizedRef}
+          onScroll={() => handleScroll('optimized')}
+          className="w-[35%] overflow-y-auto bg-white"
+        >
           <ResumePanel
             sections={resumeSections}
             pendingEdits={pendingEdits}
