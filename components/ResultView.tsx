@@ -351,7 +351,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
   // ===== Report 模式（默认） =====
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#f8fafc]">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#f8fafc] print-area">
       {/* Navbar */}
       <header className="bg-white border-b border-gray-100 flex-shrink-0 z-50">
         <div className="px-8 h-16 flex items-center justify-between">
@@ -384,14 +384,17 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       {/* Main area */}
       <div className="flex-1 flex overflow-hidden">
       {/* 左侧内容 - 可滚动 */}
-      <div className="flex-1 overflow-y-auto p-8 pr-4">
+      <div className="flex-1 overflow-y-auto p-8 pr-4 print-area">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <span className="text-xs font-bold text-[#0A66C2] tracking-widest uppercase mb-1 block">ASSESSMENT REPORT</span>
             <h1 className="text-4xl font-bold text-gray-900">评估报告</h1>
           </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors no-print"
+          >
             <FileText className="w-4 h-4" />
             导出 PDF
           </button>
@@ -489,10 +492,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       </div>
 
       {/* 右侧 Chat - 固定不滚动 */}
+      <div data-no-print>
       <ChatWidget
         {...chatProps}
         onEnterCanvas={handleEnterCanvas}
       />
+      </div>
       </div>
     </div>
   );

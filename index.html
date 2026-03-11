@@ -200,6 +200,26 @@
         color: rgba(17, 14, 12, 0.2);
       }
 
+      /* 打印/导出 PDF 样式 */
+      @media print {
+        /* 隐藏不需要打印的元素 */
+        header, .no-print, [data-no-print] { display: none !important; }
+        /* 报告区域铺满 */
+        body { background: white !important; }
+        .print-area {
+          overflow: visible !important;
+          height: auto !important;
+          padding: 0 !important;
+        }
+        .print-area > * {
+          break-inside: avoid;
+        }
+        /* 去掉圆角阴影，节省墨水 */
+        .print-area div {
+          box-shadow: none !important;
+        }
+      }
+
     </style>
 </head>
   <body>
