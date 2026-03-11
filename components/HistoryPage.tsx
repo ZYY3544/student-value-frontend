@@ -117,12 +117,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ userId, onSelectRecord
               <Sparkles className="w-8 h-8 text-[#0A66C2]" />
             </div>
             <h3 className="text-xl font-bold text-slate-700 mb-2">暂无评估记录</h3>
-            <p className="text-slate-400 text-sm mb-6">完成一次测评后，记录会显示在这里</p>
+            <p className="text-slate-400 text-sm mb-6">完成一次评估后，记录会显示在这里</p>
             <button
               onClick={onBack}
               className="px-6 py-3 bg-[#0A66C2] text-white rounded-xl font-semibold text-sm hover:bg-[#084d94] transition-colors"
             >
-              开始测评
+              开始评估
             </button>
           </div>
         ) : (

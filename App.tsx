@@ -223,7 +223,7 @@ const App: React.FC = () => {
           {/* Hero Card */}
           <div className="bg-white/10 rounded-[40px] p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
             <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
-              开启测评
+              开启评估
             </h1>
             <p className="text-white/80 text-lg mb-12 leading-relaxed">
               融合500强企业标配的价值评估体系与行业头部最新的薪酬数据库，结合独家AI简历Agent，不仅能够精准核算您的市场价值，并由专业AI深度拆解您的优劣势，生成最能打动HR的专属简历定制方案。
@@ -241,7 +241,7 @@ const App: React.FC = () => {
                 <div className="bg-white/10 p-2 rounded-lg">
                   <BarChart3 className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium">专业身价报告</span>
+                <span className="text-sm font-medium">专业竞争力报告</span>
               </div>
               <div className="flex items-center gap-4 text-white/60">
                 <div className="bg-white/10 p-2 rounded-lg">
@@ -338,7 +338,7 @@ const App: React.FC = () => {
             {/* Title Section */}
             <section className="mb-12">
               <h2 className="text-3xl font-bold text-slate-900 mb-2">个人专业信息</h2>
-              <p className="text-slate-500">填写下方详细信息，为您生成专属人才身价报告。</p>
+              <p className="text-slate-500">填写下方详细信息，为您生成专属竞争力报告。</p>
             </section>
 
             {/* Form Sections */}
@@ -596,7 +596,7 @@ const App: React.FC = () => {
                 onClick={handleSubmit}
                 className="w-full bg-[#FFC12D] text-slate-900 py-6 rounded-2xl font-bold text-xl flex items-center justify-center gap-3 shadow-lg shadow-amber-200 active:scale-[0.98] transition-all"
               >
-                生成测评报告
+                生成评估报告
                 <Zap className="w-6 h-6 fill-slate-900" />
               </button>
               <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
@@ -652,7 +652,7 @@ const App: React.FC = () => {
                 <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在匹配校招薪酬数据...</h2>
                 <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在分析院校竞争力...</h2>
                 <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在解码能力画像...</h2>
-                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">报告已就绪，即将揭晓你的校招身价...</h2>
+                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">报告已就绪，即将揭晓你的校招竞争力...</h2>
               </div>
             </div>
           </div>

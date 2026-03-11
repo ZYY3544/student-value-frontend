@@ -811,7 +811,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyDown={handleKeyDown}
-            placeholder="询问 Sparky 如何提升简历身价..."
+            placeholder="询问 Sparky 如何提升简历竞争力..."
             disabled={isLoading || isInitializing || isTyping}
             rows={1}
             className="w-full bg-transparent border-none pl-5 pr-5 pt-3.5 pb-1 text-sm outline-none disabled:text-gray-400 resize-none overflow-hidden"
