@@ -135,7 +135,7 @@ function renderContentWithInlineDiff(
   onRejectEdit: (idx: number) => void,
 ): React.ReactNode {
   if (sectionEdits.length === 0) {
-    return <div className="space-y-2">{renderFormattedContent(content)}</div>;
+    return <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>;
   }
 
   // 找到每个 edit 的 original 在 content 中的位置
@@ -196,7 +196,7 @@ function renderContentWithInlineDiff(
       const plainText = content.slice(cursor, m.start);
       fragments.push(
         <React.Fragment key={`plain-${i}`}>
-          {renderFormattedContent(plainText, `plain-${i}-`)}
+          {renderFormattedContent(cleanResumeContent(plainText), `plain-${i}-`)}
         </React.Fragment>
       );
     }
@@ -221,7 +221,7 @@ function renderContentWithInlineDiff(
     const remaining = content.slice(cursor);
     fragments.push(
       <React.Fragment key="tail">
-        {renderFormattedContent(remaining, 'tail-')}
+        {renderFormattedContent(cleanResumeContent(remaining), 'tail-')}
       </React.Fragment>
     );
   }
