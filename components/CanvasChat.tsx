@@ -16,6 +16,8 @@ interface CanvasChatProps {
   setIsLoading: (v: boolean) => void;
   apiBase: string;
   onEditSuggestion: (edit: Omit<PendingEdit, 'status'>) => void;
+  externalMessage?: string | null;
+  onExternalMessageConsumed?: () => void;
 }
 
 const MAX_INPUT_LENGTH = 2000;
@@ -28,6 +30,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   setIsLoading,
   apiBase,
   onEditSuggestion,
+  externalMessage,
+  onExternalMessageConsumed,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -40,12 +44,12 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const sendMessage = useCallback(async () => {
-    const text = inputValue.trim().slice(0, MAX_INPUT_LENGTH);
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || !sessionId) return;
 
     setMessages(prev => [...prev, { role: 'user', content: text }]);
-    setInputValue('');
+    if (!overrideText) setInputValue('');
     setIsLoading(true);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -94,6 +98,17 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       setIsLoading(false);
     }
   }, [apiBase, inputValue, isLoading, sessionId, onEditSuggestion]);
+
+  // 外部消息注入（选中文本快捷操作）
+  const sendMessageRef = useRef(sendMessage);
+  sendMessageRef.current = sendMessage;
+
+  useEffect(() => {
+    if (externalMessage) {
+      sendMessageRef.current(externalMessage);
+      onExternalMessageConsumed?.();
+    }
+  }, [externalMessage, onExternalMessageConsumed]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -155,7 +170,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 transition-all disabled:bg-gray-100 disabled:text-gray-400"
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!inputValue.trim() || isLoading || !sessionId}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#CA7C5E] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#CA7C5E]/30 disabled:bg-gray-300 disabled:shadow-none transition-colors"
           >
