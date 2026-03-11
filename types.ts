@@ -74,6 +74,8 @@ export interface AssessmentResult {
   resumeText?: string;
   // 预拆分的简历段落（评测阶段并行生成）
   resumeSections?: { type: string; title: string; content: string }[];
+  // Sparky 开场白（评估阶段预生成）
+  greeting?: string;
 }
 
 // 简历画布（Canvas）相关类型

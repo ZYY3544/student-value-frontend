@@ -332,6 +332,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     isLoading,
     setIsLoading,
     userId,
+    preloadedGreeting: result.greeting,
   };
 
   // ===== Canvas 模式 =====

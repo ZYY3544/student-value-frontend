@@ -90,6 +90,7 @@ interface ChatWidgetProps {
   setIsLoading: (v: boolean) => void;
   onEnterCanvas?: () => void;
   userId?: string;
+  preloadedGreeting?: string;
 }
 
 // 跳动省略号动画组件
@@ -249,6 +250,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   setIsLoading,
   onEnterCanvas,
   userId,
+  preloadedGreeting,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [isInitializing, setIsInitializing] = useState(false);
@@ -371,32 +373,44 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setIsInitializing(true);
     setError(null);
 
+    // 如果有预生成的开场白，先立即显示打字机效果
+    if (preloadedGreeting && !skipGreetingRef.current) {
+      setMessages([]);
+      typewriterEffect(preloadedGreeting);
+    }
+
     try {
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assessmentContext, resumeText, userId, resumeSections: preloadedSections }),
+        body: JSON.stringify({
+          assessmentContext, resumeText, userId,
+          resumeSections: preloadedSections,
+          greeting: preloadedGreeting,  // 传给后端，跳过 DiagnosisAgent 调用
+        }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start chat');
       setSessionId(data.data.sessionId);
-      if (skipGreetingRef.current) {
-        // 非首次：跳过欢迎语，直接空白对话
-        skipGreetingRef.current = false;
-        setMessages([]);
-      } else {
-        // 首次进入：打字机效果逐字显示开场白
-        const greeting = data.data.greeting;
-        setMessages([]);
-        typewriterEffect(greeting);
+      if (!preloadedGreeting) {
+        // 没有预生成开场白时，用后端返回的
+        if (skipGreetingRef.current) {
+          skipGreetingRef.current = false;
+          setMessages([]);
+        } else {
+          const greeting = data.data.greeting;
+          setMessages([]);
+          typewriterEffect(greeting);
+        }
       }
+      skipGreetingRef.current = false;
     } catch (err: any) {
       console.error('Chat init failed:', err);
       setError(err.message || 'Failed to connect');
     } finally {
       setIsInitializing(false);
     }
-  }, [apiBase, assessmentContext, resumeText, sessionId]);
+  }, [apiBase, assessmentContext, resumeText, sessionId, preloadedGreeting]);
 
   useEffect(() => {
     initSession();
