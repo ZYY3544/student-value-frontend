@@ -89,6 +89,7 @@ interface ChatWidgetProps {
   isLoading: boolean;
   setIsLoading: (v: boolean) => void;
   onEnterCanvas?: () => void;
+  onSectionsReady?: (sections: { id: string; type: string; title: string; content: string }[]) => void;
   userId?: string;
   preloadedGreeting?: string;
 }
@@ -249,6 +250,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   isLoading,
   setIsLoading,
   onEnterCanvas,
+  onSectionsReady,
   userId,
   preloadedGreeting,
 }) => {
@@ -392,6 +394,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start chat');
       setSessionId(data.data.sessionId);
+      // 如果后端返回了 sections，直接传给父组件
+      if (data.data.sections?.length && onSectionsReady) {
+        onSectionsReady(data.data.sections);
+      }
       if (!preloadedGreeting) {
         // 没有预生成开场白时，用后端返回的
         if (skipGreetingRef.current) {

@@ -319,6 +319,22 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const salaryCompetitiveness = result.abilityCompetitiveness ?? result.salaryCompetitiveness ?? 50;
   const resumeHealthScore = result.resumeHealthScore ?? 50;
 
+  // 当 /chat/start 返回 sections 时，直接更新状态（无需轮询）
+  const handleSectionsReady = useCallback((sections: { id: string; type: string; title: string; content: string }[]) => {
+    if (sections.length > 0 && resumeSections.length === 0) {
+      const mapped = sections.map((s, i) => ({
+        id: s.id || `section-${i}`,
+        type: s.type,
+        title: s.title,
+        content: s.content,
+      }));
+      setResumeSections(mapped);
+      if (originalSections.length === 0) {
+        setOriginalSections(mapped.map(s => ({ ...s })));
+      }
+    }
+  }, [resumeSections.length, originalSections.length]);
+
   // 共享的 chat props
   const chatProps = {
     assessmentContext,
@@ -333,6 +349,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     setIsLoading,
     userId,
     preloadedGreeting: result.greeting,
+    onSectionsReady: handleSectionsReady,
   };
 
   // ===== Canvas 模式 =====
