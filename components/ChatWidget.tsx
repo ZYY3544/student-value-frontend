@@ -930,7 +930,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         />
         {/* 居中悬浮对话框 */}
         <div className="fixed inset-0 z-[101] flex items-center justify-center p-8 pointer-events-none">
-          <div className="w-full max-w-5xl h-[90vh] pointer-events-auto">
+          <div className="w-full max-w-7xl h-[95vh] pointer-events-auto">
             {chatContent}
           </div>
         </div>
