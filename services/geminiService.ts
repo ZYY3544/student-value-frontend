@@ -88,13 +88,15 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
     jobValue: data.salaryRange,
     personValue: data.salaryRange,
     currency: "人民币",
+    salaryRange: data.salaryRange,
 
     // 职级和标签
     level: data.level,
+    abilityScore: data.abilityScore,
     levelTag: data.levelTag,
     levelDesc: data.levelDesc,
 
-    // 能力分析（付费内容）
+    // 能力分析
     abilities: data.abilities,
     radarData: data.radarData,
     abilitySummary: data.abilitySummary,
@@ -103,12 +105,21 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
     marketSalary: data.marketSalary,
     resumeHealthScore: data.resumeHealthScore,
 
+    // Part 2: 简历表达力诊断
+    resumeExpression: data.resumeExpression,
+
+    // Part 3: 岗位竞争力对比
+    jobComparisons: data.jobComparisons,
+    recommendedJob: data.recommendedJob,
+
     // HAY 8因素（用于简历优化助手）
     factors: data.factors,
     // 解析后的简历文本（用于聊天 Agent）
     resumeText: data.resumeText,
     // 预拆分的简历段落
     resumeSections: data.resumeSections,
+    // 开场白
+    greeting: data.greeting,
 
     // 生成优劣势（基于能力数据）
     strengths: generateStrengths(data.abilities, input),
