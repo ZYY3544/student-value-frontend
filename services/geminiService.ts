@@ -38,6 +38,7 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
       industry: input.industry,
       jobTitle: input.jobTitle,
       jobFunction: input.jobFunction,
+      jobFunctions: input.jobFunctions?.length ? input.jobFunctions : undefined,
       resumeText: resumeText,
       educationLevel: input.educationLevel,
       major: input.major,

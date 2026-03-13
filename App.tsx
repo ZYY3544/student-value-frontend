@@ -526,6 +526,51 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* 对比职能（选填，最多2个） */}
+                {formData.jobFunction && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-slate-700">对比职能 <span className="text-slate-400 font-normal">（选填，报告会对比不同岗位赛道的竞争力）</span></label>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(formData.jobFunctions || []).map((fn, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1.5 bg-blue-50 text-[#0A66C2] text-sm font-medium px-3 py-2 rounded-xl border border-blue-100">
+                          {fn}
+                          <button
+                            onClick={() => {
+                              const updated = (formData.jobFunctions || []).filter((_, i) => i !== idx);
+                              handleInputChange('jobFunctions', updated);
+                            }}
+                            className="text-blue-400 hover:text-rose-500 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                      {(formData.jobFunctions || []).length < 2 && (
+                        <div className="relative">
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                const current = formData.jobFunctions || [];
+                                handleInputChange('jobFunctions', [...current, e.target.value]);
+                              }
+                            }}
+                            className="appearance-none bg-white border border-dashed border-slate-300 text-sm text-slate-500 rounded-xl py-2 pl-3 pr-8 outline-none hover:border-[#0A66C2] transition-colors cursor-pointer"
+                          >
+                            <option value="" disabled>+ 添加对比职能</option>
+                            {FUNCTIONS.filter(f => f !== formData.jobFunction && !(formData.jobFunctions || []).includes(f)).map(f => (
+                              <option key={f} value={f}>{f}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Section 3: 简历信息 */}
