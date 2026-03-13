@@ -163,7 +163,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     factors: result.factors || {},
     abilities: result.abilities || {},
     grade: result.level,
-    salaryRange: result.personValue || '',
+    salaryRange: result.salaryRange || result.personValue || '',
     jobTitle: inputData.jobTitle,
     jobFunction: inputData.jobFunction,
     educationLevel: inputData.educationLevel,
@@ -311,10 +311,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [competencyDetails]);
 
   const salaryNumbers = useMemo(() => {
-    const match = result.personValue?.match(/(\d+\.?\d*)\s*k?\s*[-～~]\s*(\d+\.?\d*)/);
+    const salaryStr = result.salaryRange || result.personValue || '';
+    const match = salaryStr.match(/(\d+\.?\d*)\s*k?\s*[-～~]\s*(\d+\.?\d*)/);
     if (match) return [parseFloat(match[1]), parseFloat(match[2])];
     return [0, 0];
-  }, [result.personValue]);
+  }, [result.salaryRange, result.personValue]);
 
   const salaryCompetitiveness = result.abilityCompetitiveness ?? result.salaryCompetitiveness ?? 50;
   const resumeHealthScore = result.resumeHealthScore ?? 50;
