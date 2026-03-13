@@ -372,15 +372,42 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   // Auto-initialize on mount
   const initSession = useCallback(async () => {
     if (sessionId) return;
-    setIsInitializing(true);
     setError(null);
 
-    // 如果有预生成的开场白，先立即显示打字机效果
+    // 有预生成开场白 → 立即显示，不显示 loading spinner
     if (preloadedGreeting && !skipGreetingRef.current) {
       setMessages([]);
       typewriterEffect(preloadedGreeting);
+      // /chat/start 在后台静默完成，不阻塞 UI
+      fetch(`${apiBase}/api/chat/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assessmentContext, resumeText, userId,
+          resumeSections: preloadedSections,
+          greeting: preloadedGreeting,
+        }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setSessionId(data.data.sessionId);
+            if (data.data.sections?.length && onSectionsReady) {
+              onSectionsReady(data.data.sections);
+            }
+          } else {
+            console.error('Chat init failed:', data.error);
+          }
+        })
+        .catch(err => {
+          console.error('Chat init failed:', err);
+          setError('连接失败，请刷新重试');
+        });
+      return;
     }
 
+    // 没有预生成开场白 → 走原来的同步流程，显示 loading
+    setIsInitializing(true);
     try {
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
@@ -388,26 +415,21 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         body: JSON.stringify({
           assessmentContext, resumeText, userId,
           resumeSections: preloadedSections,
-          greeting: preloadedGreeting,  // 传给后端，跳过 DiagnosisAgent 调用
         }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start chat');
       setSessionId(data.data.sessionId);
-      // 如果后端返回了 sections，直接传给父组件
       if (data.data.sections?.length && onSectionsReady) {
         onSectionsReady(data.data.sections);
       }
-      if (!preloadedGreeting) {
-        // 没有预生成开场白时，用后端返回的
-        if (skipGreetingRef.current) {
-          skipGreetingRef.current = false;
-          setMessages([]);
-        } else {
-          const greeting = data.data.greeting;
-          setMessages([]);
-          typewriterEffect(greeting);
-        }
+      if (skipGreetingRef.current) {
+        skipGreetingRef.current = false;
+        setMessages([]);
+      } else {
+        const greeting = data.data.greeting;
+        setMessages([]);
+        typewriterEffect(greeting);
       }
       skipGreetingRef.current = false;
     } catch (err: any) {
