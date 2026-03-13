@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit } from '../types';
+import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit, ResumeExpression, JobComparison } from '../types';
 import { supabase } from '../lib/supabase';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell, Search,
@@ -434,6 +434,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               </div>
               <div className="flex items-baseline gap-3 mb-4">
                 <span className="text-3xl font-bold text-[#0A66C2]">{result.levelTag}</span>
+                {result.abilityScore != null && (
+                  <span className="text-lg font-semibold text-gray-400">{result.abilityScore}分</span>
+                )}
               </div>
               {result.levelDesc && (
                 <p className="text-sm text-gray-500 leading-relaxed mt-2">{result.levelDesc}</p>
@@ -485,7 +488,127 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-100/30 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
         </div>
 
-        {/* 3. 市场薪酬 */}
+        {/* 2. 简历表达力诊断 */}
+        {result.resumeExpression && (
+          <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                  <FileText className="text-amber-600 w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">简历表达力</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">衡量简历的写作质量，可通过改写提升</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-4xl font-black text-amber-500">{result.resumeExpression.overallScore}</span>
+                <span className="text-sm text-gray-400 ml-1">/ 100</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(result.resumeExpression.dimensions).map(([name, dim]: [string, { score: number; level: string; tip: string }]) => (
+                <div key={name} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-semibold text-gray-700">{name}</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        dim.level === 'high' ? 'bg-green-100 text-green-700' :
+                        dim.level === 'medium' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-600'
+                      }`}>{dim.score}分</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${
+                          dim.level === 'high' ? 'bg-green-500' :
+                          dim.level === 'medium' ? 'bg-amber-500' :
+                          'bg-red-400'
+                        }`}
+                        style={{ width: `${dim.score}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{dim.tip}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 3. 岗位竞争力对比 */}
+        {result.jobComparisons && result.jobComparisons.length > 0 && (
+          <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                <Target className="text-purple-600 w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">岗位竞争力对比</h2>
+                <p className="text-xs text-gray-400 mt-0.5">同一份简历在不同岗位赛道上的匹配情况</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {result.jobComparisons.map((job, idx) => (
+                <div key={idx} className={`p-5 rounded-2xl border ${idx === 0 ? 'border-[#0A66C2]/30 bg-blue-50/30' : 'border-gray-100 bg-gray-50'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-bold text-gray-800">{job.jobFunction}</span>
+                      {idx === 0 && <span className="text-xs bg-[#0A66C2] text-white px-2 py-0.5 rounded-full">当前目标</span>}
+                    </div>
+                    <span className="text-lg font-black text-[#0A66C2]">{job.salaryRange}</span>
+                  </div>
+                  <div className="flex items-center gap-6 mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-500">匹配度</span>
+                        <span className="text-xs font-bold text-gray-700">{job.matchScore}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="h-2 rounded-full bg-[#0A66C2] transition-all" style={{ width: `${job.matchScore}%` }} />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-500">竞争力</span>
+                        <span className="text-xs font-bold text-gray-700">超过{job.competitiveness}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${job.competitiveness}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                  {(job.strengths.length > 0 || job.gaps.length > 0) && (
+                    <div className="flex gap-4 text-xs">
+                      {job.strengths.length > 0 && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <span className="font-medium">优势:</span> {job.strengths.join('、')}
+                        </div>
+                      )}
+                      {job.gaps.length > 0 && (
+                        <div className="flex items-center gap-1 text-amber-600">
+                          <span className="font-medium">差距:</span> {job.gaps.join('、')}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {result.recommendedJob && (
+              <div className="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-100">
+                <p className="text-sm text-purple-700">
+                  <span className="font-bold">推荐探索：</span>根据你的能力结构，<span className="font-bold">{result.recommendedJob}</span> 可能也是一个值得考虑的方向。
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 4. 市场薪酬 */}
         <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
