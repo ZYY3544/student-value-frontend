@@ -608,28 +608,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           </div>
         )}
 
-        {/* 4. 市场薪酬 */}
-        <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-              <TrendingUp className="text-green-600 w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">市场薪酬</h2>
-              <p className="text-xs text-gray-400 mt-0.5">基于{inputData.city} · {inputData.industry} · {inputData.jobFunction}的市场行情</p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-baseline gap-2">
-              <span className="text-6xl font-black text-[#0A66C2]">
-                ¥ {salaryNumbers[0]}k ~ {salaryNumbers[1]}k
-              </span>
-            </div>
-          </div>
-
-          <p className="text-xs text-gray-400 font-medium leading-relaxed">说明：以上为应届校招预估月度基本工资（单位：千元），由模型评估而成，仅供参考。薪酬受城市、行业、企业性质等市场因素影响。</p>
-        </div>
 
       </div>
 
