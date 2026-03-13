@@ -4,10 +4,28 @@ import { Diamond, FileText, Loader2, Sparkles, X, ChevronDown, AlertCircle, Lock
 import { ResultView } from './components/ResultView';
 import { AuthPage } from './components/AuthPage';
 import { HistoryPage } from './components/HistoryPage';
-import { Toast } from './components/Toast';
 import { generateAssessment } from './services/geminiService';
-import { useAuth } from './hooks/useAuth';
 import { AssessmentInput, AssessmentResult, AppState } from './types';
+
+const INVITE_CODE_TTL = 24 * 3600 * 1000; // 24h in ms
+
+function getStoredAuth(): { code: string; userId: string } | null {
+  const code = localStorage.getItem('invite_code');
+  const time = localStorage.getItem('invite_code_time');
+  if (!code || !time) return null;
+  if (Date.now() - parseInt(time) > INVITE_CODE_TTL) {
+    localStorage.removeItem('invite_code');
+    localStorage.removeItem('invite_code_time');
+    localStorage.removeItem('anon_user_id');
+    return null;
+  }
+  let userId = localStorage.getItem('anon_user_id');
+  if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem('anon_user_id', userId);
+  }
+  return { code, userId };
+}
 
 const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
 const INDUSTRIES = ["互联网", "高科技", "金融", "大健康", "汽车", "消费品", "新零售", "地产", "泛娱乐", "教育", "农业", "通用行业"];
@@ -41,20 +59,41 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
 };
 
 const App: React.FC = () => {
-  const { user, loading: authLoading, signIn, signUp, signOut, emailJustConfirmed, clearEmailConfirmed } = useAuth();
+  const [auth, setAuth] = useState<{ code: string; userId: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [appState, setAppState] = useState<AppState>(AppState.AUTH);
   const [retryCount, setRetryCount] = useState(0);
   const [showInsufficientDialog, setShowInsufficientDialog] = useState(false);
 
-  // 根据登录状态设置初始页面
+  // 根据 localStorage 验证码状态设置初始页面
+  useEffect(() => {
+    const stored = getStoredAuth();
+    setAuth(stored);
+    setAuthLoading(false);
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
-    if (user) {
+    if (auth) {
       if (appState === AppState.AUTH) setAppState(AppState.FORM);
     } else {
       setAppState(AppState.AUTH);
     }
-  }, [user, authLoading]);
+  }, [auth, authLoading]);
+
+  const handleAuthSuccess = () => {
+    const stored = getStoredAuth();
+    setAuth(stored);
+    setAppState(AppState.FORM);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('invite_code');
+    localStorage.removeItem('invite_code_time');
+    localStorage.removeItem('anon_user_id');
+    setAuth(null);
+    setAppState(AppState.AUTH);
+  };
 
   // 页面停留时间追踪
   const pageEnteredAt = useRef<number>(Date.now());
@@ -173,12 +212,10 @@ const App: React.FC = () => {
       const data = await generateAssessment(formData, retryCount, {
         welcomeS: pageDurations.current['welcome'],
         formS: pageDurations.current['form'],
-      }, user?.id);
+      }, auth?.userId);
       if (data.logId) assessLogId.current = data.logId;
       setResult(data);
       setAppState(AppState.RESULT);
-
-      // 评估结果由后端在 /api/mini/assess 中自动存入 Supabase（传了 userId 时）
     } catch (error: unknown) {
       console.error("Assessment Error:", error);
       const msg = error instanceof Error ? error.message : "未知错误";
@@ -321,17 +358,15 @@ const App: React.FC = () => {
                 <Clock className="w-4 h-4" />
                 历史记录
               </button>
-              {user && (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-500 truncate max-w-[160px]">{user.email}</span>
-                  <button
-                    onClick={() => signOut()}
-                    className="p-2.5 bg-white rounded-full shadow-sm text-slate-400 hover:text-rose-500 transition-colors"
-                    title="退出登录"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </div>
+              {auth && (
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-full shadow-sm text-sm font-medium text-slate-400 hover:text-rose-500 transition-colors"
+                  title="退出登录"
+                >
+                  <LogOut className="w-4 h-4" />
+                  退出
+                </button>
               )}
             </header>
 
@@ -623,15 +658,13 @@ const App: React.FC = () => {
       case AppState.AUTH:
         return (
           <AuthPage
-            onAuthSuccess={() => setAppState(AppState.FORM)}
-            signIn={signIn}
-            signUp={signUp}
+            onAuthSuccess={handleAuthSuccess}
           />
         );
       case AppState.HISTORY:
-        return user ? (
+        return auth ? (
           <HistoryPage
-            userId={user.id}
+            userId={auth.userId}
             onBack={() => setAppState(AppState.FORM)}
             onSelectRecord={(histResult, histInput, resumeText) => {
               setResult(histResult);
@@ -658,7 +691,7 @@ const App: React.FC = () => {
           </div>
         );
       case AppState.RESULT:
-        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} userId={user?.id} />;
+        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} userId={auth?.userId} />;
         return renderFormContent();
       default:
         return renderFormContent();
@@ -667,11 +700,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <Toast
-        message="邮箱验证成功！欢迎使用校园人才估值平台"
-        visible={emailJustConfirmed}
-        onClose={clearEmailConfirmed}
-      />
       {renderContent()}
 
       {/* 简历信息不足弹窗 */}

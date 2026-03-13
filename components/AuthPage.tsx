@@ -1,69 +1,51 @@
 import React, { useState } from 'react';
-import { Sparkles, Diamond, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, Diamond, Loader2, KeyRound } from 'lucide-react';
+
+const API_BASE = 'https://student-value-backend.onrender.com';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string) => Promise<any>;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, signIn, signUp }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccessMsg('');
 
-    if (!email.trim()) { setError('请输入邮箱地址'); return; }
-    if (!password) { setError('请输入密码'); return; }
-    if (password.length < 6) { setError('密码至少6位'); return; }
-
-    if (mode === 'register' && password !== confirmPassword) {
-      setError('两次密码不一致');
-      return;
-    }
+    if (!code.trim()) { setError('请输入验证码'); return; }
 
     setLoading(true);
     try {
-      if (mode === 'login') {
-        await signIn(email, password);
-        onAuthSuccess();
-      } else {
-        const data = await signUp(email, password);
-        // Supabase 默认需要邮箱验证
-        if (data.user && !data.session) {
-          setSuccessMsg('注册成功！请查收验证邮件后登录。');
-          setMode('login');
-          setPassword('');
-          setConfirmPassword('');
-        } else {
-          onAuthSuccess();
-        }
+      const res = await fetch(`${API_BASE}/api/mini/verify-invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: code.trim() }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        setError(data.error || '验证码无效');
+        return;
       }
-    } catch (err: any) {
-      const msg = err?.message || '操作失败';
-      if (msg.includes('Invalid login credentials')) setError('邮箱或密码错误');
-      else if (msg.includes('User already registered')) setError('该邮箱已注册');
-      else if (msg.includes('Email not confirmed')) setError('请先验证邮箱');
-      else setError(msg);
+
+      // 验证通过，存到 localStorage
+      localStorage.setItem('invite_code', code.trim().toUpperCase());
+      localStorage.setItem('invite_code_time', Date.now().toString());
+      onAuthSuccess();
+    } catch {
+      setError('网络错误，请稍后重试');
     } finally {
       setLoading(false);
     }
   };
 
-  const inputClass = "w-full bg-white border border-slate-200 text-sm text-slate-900 rounded-2xl py-4 pl-12 pr-5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300";
-
   return (
     <div className="flex min-h-screen bg-white font-sans text-slate-900">
-      {/* Left Sidebar - 与表单页一致 */}
+      {/* Left Sidebar */}
       <aside className="w-[400px] bg-[#0A66C2] p-12 flex flex-col relative overflow-hidden shrink-0">
         <div className="flex items-center gap-3 text-white mb-16 z-10">
           <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
@@ -74,7 +56,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, signIn, signU
 
         <div className="bg-white/10 rounded-[40px] p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
           <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
-            {mode === 'login' ? '欢迎回来' : '加入我们'}
+            开始估值
           </h1>
           <p className="text-white/80 text-lg mb-12 leading-relaxed">
             融合500强企业标配的价值评估体系与行业头部最新的薪酬数据库，精准核算您的市场价值。
@@ -83,15 +65,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, signIn, signU
           <div className="space-y-6 mt-auto">
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm">评估记录云端保存，随时查看</span>
+              <span className="text-sm">输入验证码即可使用</span>
             </div>
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm">AI 对话历史自动同步</span>
+              <span className="text-sm">验证码有效期 24 小时</span>
             </div>
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm">多设备登录，数据不丢失</span>
+              <span className="text-sm">AI 简历诊断 + 薪酬估值</span>
             </div>
           </div>
         </div>
@@ -111,82 +93,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, signIn, signU
       {/* Main Content */}
       <main className="flex-1 bg-[#F8FAFC] flex items-center justify-center p-12">
         <div className="w-full max-w-md">
-          {/* Tab 切换 */}
-          <div className="relative flex bg-slate-100 rounded-xl p-1 mb-10">
-            <div
-              className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-[#0A66C2] rounded-[10px] transition-transform duration-300 ease-out"
-              style={{ transform: mode === 'register' ? 'translateX(calc(100% + 4px))' : 'translateX(0)' }}
-            />
-            <button
-              onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); }}
-              className={`relative z-10 flex-1 py-3 text-sm font-semibold rounded-[10px] transition-colors duration-200 ${mode === 'login' ? 'text-white' : 'text-slate-400'}`}
-            >
-              登录
-            </button>
-            <button
-              onClick={() => { setMode('register'); setError(''); setSuccessMsg(''); }}
-              className={`relative z-10 flex-1 py-3 text-sm font-semibold rounded-[10px] transition-colors duration-200 ${mode === 'register' ? 'text-white' : 'text-slate-400'}`}
-            >
-              注册
-            </button>
-          </div>
-
-          <h2 className="text-3xl font-bold text-slate-900 mb-2">
-            {mode === 'login' ? '登录账号' : '创建账号'}
-          </h2>
-          <p className="text-slate-500 mb-8">
-            {mode === 'login' ? '登录后查看历史评估记录和对话' : '注册后即可使用完整功能'}
-          </p>
-
-          {successMsg && (
-            <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3 mb-6">
-              {successMsg}
-            </div>
-          )}
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">输入验证码</h2>
+          <p className="text-slate-500 mb-8">请输入您收到的验证码以开始使用</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+              <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
               <input
-                type="email"
-                placeholder="邮箱地址"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                className={inputClass}
+                type="text"
+                placeholder="请输入验证码"
+                value={code}
+                onChange={(e) => { setCode(e.target.value); setError(''); }}
+                className="w-full bg-white border border-slate-200 text-sm text-slate-900 rounded-2xl py-4 pl-12 pr-5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300 uppercase tracking-widest text-center text-lg font-mono"
                 autoFocus
+                autoComplete="off"
               />
             </div>
-
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="密码（至少6位）"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                className={inputClass + ' pr-12'}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-
-            {mode === 'register' && (
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="确认密码"
-                  value={confirmPassword}
-                  onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
-                  className={inputClass}
-                />
-              </div>
-            )}
 
             {error && (
               <p className="text-sm text-rose-500 font-semibold text-center animate-pulse">{error}</p>
@@ -200,10 +122,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, signIn, signU
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  {mode === 'login' ? '登录中...' : '注册中...'}
+                  验证中...
                 </>
               ) : (
-                mode === 'login' ? '登录' : '注册'
+                '开始使用'
               )}
             </button>
           </form>
