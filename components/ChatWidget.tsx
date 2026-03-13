@@ -272,6 +272,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef(false);
+  // 用于等待 sessionId 就绪的 promise
+  const sessionReadyRef = useRef<{ resolve: (id: string) => void } | null>(null);
+  const sessionPromiseRef = useRef<Promise<string> | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -378,6 +381,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (preloadedGreeting && !skipGreetingRef.current) {
       setMessages([]);
       typewriterEffect(preloadedGreeting);
+      // 创建 promise，让 sendMessage 可以等待 sessionId
+      sessionPromiseRef.current = new Promise<string>((resolve) => {
+        sessionReadyRef.current = { resolve };
+      });
       // /chat/start 在后台静默完成，不阻塞 UI
       fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
@@ -392,6 +399,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         .then(data => {
           if (data.success) {
             setSessionId(data.data.sessionId);
+            // 通知等待中的 sendMessage
+            sessionReadyRef.current?.resolve(data.data.sessionId);
+            sessionReadyRef.current = null;
             if (data.data.sections?.length && onSectionsReady) {
               onSectionsReady(data.data.sections);
             }
@@ -500,7 +510,22 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
   const sendMessage = useCallback(async (overrideText?: string, displayText?: string) => {
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
-    if (!text || isLoading || isTyping || !sessionId) return;
+    if (!text || isLoading || isTyping) return;
+
+    // 如果 sessionId 还没到，等待后台 /chat/start 完成（最多15秒）
+    let activeSessionId = sessionId;
+    if (!activeSessionId && sessionPromiseRef.current) {
+      try {
+        activeSessionId = await Promise.race([
+          sessionPromiseRef.current,
+          new Promise<string>((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000)),
+        ]);
+      } catch {
+        setError('会话初始化超时，请刷新重试');
+        return;
+      }
+    }
+    if (!activeSessionId) return;
 
     // 画布切换意图拦截：匹配到关键词直接切换到简历画布
     const CANVAS_KEYWORDS = ['切换到画布', '打开画布', '简历画布', '进入画布', '切换画布', '看看画布'];
@@ -580,7 +605,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const res = await fetch(`${apiBase}/api/chat/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, message: text, stream: true }),
+        body: JSON.stringify({ sessionId: activeSessionId, message: text, stream: true }),
         signal: controller.signal,
       });
 
@@ -862,7 +887,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             {onEnterCanvas ? (
               <button
                 onClick={onEnterCanvas}
-                disabled={isLoading || isInitializing || isTyping || !sessionId}
+                disabled={isLoading || isInitializing || isTyping}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-[#CA7C5E] hover:bg-[#CA7C5E]/10 disabled:opacity-40 transition-colors"
               >
                 <PenLine className="w-3 h-3" />
@@ -894,7 +919,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             <button
               key={chip}
               onClick={() => handleChipClick(chip)}
-              disabled={isLoading || isInitializing || isTyping || !sessionId}
+              disabled={isLoading || isInitializing || isTyping}
               className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600 disabled:opacity-50 transition-colors"
             >
               {chip}
