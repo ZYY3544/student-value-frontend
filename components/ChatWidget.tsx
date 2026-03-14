@@ -177,6 +177,17 @@ export const formatContent = (text: string) => {
       return;
     }
 
+    // 独占一行的加粗标题（如 **岗位匹配总结**）渲染为 block + 上间距
+    const isBoldHeading = !prefix && /^\*\*[^*]+\*\*$/.test(line.trim());
+    if (isBoldHeading) {
+      elements.push(
+        <div key={`line-${lineIdx}`} className="mt-3 mb-1 font-bold text-[#CA7C5E]">
+          {line.trim().slice(2, -2)}
+        </div>
+      );
+      return;
+    }
+
     elements.push(
       <span key={`line-${lineIdx}`} className={prefix ? 'flex items-start pl-1' : undefined}>
         {prefix}
