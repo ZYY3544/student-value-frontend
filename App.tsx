@@ -62,8 +62,6 @@ const App: React.FC = () => {
   const [auth, setAuth] = useState<{ code: string; userId: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [appState, setAppState] = useState<AppState>(AppState.AUTH);
-  const [retryCount, setRetryCount] = useState(0);
-  const [showInsufficientDialog, setShowInsufficientDialog] = useState(false);
 
   // 根据 localStorage 验证码状态设置初始页面
   useEffect(() => {
@@ -209,7 +207,7 @@ const App: React.FC = () => {
 
     setAppState(AppState.LOADING);
     try {
-      const data = await generateAssessment(formData, retryCount, {
+      const data = await generateAssessment(formData, {
         welcomeS: pageDurations.current['welcome'],
         formS: pageDurations.current['form'],
       }, auth?.userId);
@@ -219,14 +217,8 @@ const App: React.FC = () => {
     } catch (error: unknown) {
       console.error("Assessment Error:", error);
       const msg = error instanceof Error ? error.message : "未知错误";
-      if (msg === 'insufficient_input') {
-        setRetryCount(prev => prev + 1);
-        setShowInsufficientDialog(true);
-        setAppState(AppState.FORM);
-      } else {
-        alert(`评估失败：${msg}`);
-        setAppState(AppState.FORM);
-      }
+      alert(`评估失败：${msg}`);
+      setAppState(AppState.FORM);
     }
   };
 
@@ -747,25 +739,6 @@ const App: React.FC = () => {
     <div className="min-h-screen">
       {renderContent()}
 
-      {/* 简历信息不足弹窗 */}
-      {showInsufficientDialog && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center pb-20 p-6">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInsufficientDialog(false)}></div>
-          <div className="bg-white w-full max-w-sm rounded-[24px] overflow-hidden shadow-2xl relative z-10 animate-slide-up p-8 flex flex-col items-center">
-            <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mb-5">
-              <AlertCircle className="w-7 h-7 text-amber-500" />
-            </div>
-            <h3 className="text-lg font-black text-slate-800 mb-2">简历信息不足</h3>
-            <p className="text-xs text-slate-400 text-center leading-5 mb-6">检测到您提交的简历信息较少，可能影响评估准确性，建议补充后重新提交。</p>
-            <button onClick={() => setShowInsufficientDialog(false)} className="w-full py-3.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold rounded-xl active:scale-95 transition-all">
-              我知道了，去补充
-            </button>
-            <button onClick={() => { setShowInsufficientDialog(false); handleSubmit(); }} className="w-full py-2.5 mt-2 text-slate-400 text-sm font-medium active:scale-95 transition-all">
-              暂不补充，继续生成
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

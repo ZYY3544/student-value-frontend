@@ -14,7 +14,7 @@ const USE_MOCK = false;
 // API 超时时间（毫秒）
 const API_TIMEOUT = 120000;
 
-export const generateAssessment = async (input: AssessmentInput, retryCount: number = 0, pageDurations?: { welcomeS?: number; formS?: number }, userId?: string): Promise<AssessmentResult> => {
+export const generateAssessment = async (input: AssessmentInput, pageDurations?: { welcomeS?: number; formS?: number }, userId?: string): Promise<AssessmentResult> => {
   // 如果是模拟模式，返回模拟数据
   if (USE_MOCK) {
     return mockAssessment(input);
@@ -44,7 +44,6 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
       major: input.major,
       companyType: input.companyType,
       targetCompany: input.targetCompany,
-      retryCount: retryCount,
       welcomeS: pageDurations?.welcomeS,
       formS: pageDurations?.formS,
       userId: userId,
@@ -58,10 +57,7 @@ export const generateAssessment = async (input: AssessmentInput, retryCount: num
       const errorData = await response.json();
       errorMsg = errorData.error || errorMsg;
     } catch {}
-    if (response.status === 422 && errorMsg === 'insufficient_input') {
-      throw new Error('insufficient_input');
-    }
-    if (response.status === 403) {
+if (response.status === 403) {
       throw new Error(`403: ${errorMsg}`);
     }
     throw new Error(errorMsg);
