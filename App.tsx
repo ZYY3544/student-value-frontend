@@ -522,30 +522,33 @@ const App: React.FC = () => {
                 {/* 对比职能（选填，固定2个下拉） */}
                 <div className="space-y-3">
                     <label className="text-sm font-semibold text-slate-700">对比职能 <span className="text-slate-400 font-normal">（选填，报告会对比不同岗位赛道的竞争力）</span></label>
-                    <div className="grid grid-cols-2 gap-4">
-                      {[0, 1].map((idx) => (
-                        <div key={idx} className="relative">
-                          <select
-                            value={(formData.jobFunctions || [])[idx] || ''}
-                            onChange={(e) => {
-                              const current = [...(formData.jobFunctions || [])];
-                              if (e.target.value) {
-                                current[idx] = e.target.value;
-                              } else {
-                                current.splice(idx, 1);
-                              }
-                              handleInputChange('jobFunctions', current.filter(Boolean));
-                            }}
-                            className={`${selectClass('_none')} text-sm`}
-                          >
-                            <option value="">对比职能 {idx + 1}</option>
-                            {FUNCTIONS.filter(f => f !== formData.jobFunction && (f === (formData.jobFunctions || [])[idx] || !(formData.jobFunctions || []).includes(f))).map(f => (
-                              <option key={f} value={f}>{f}</option>
-                            ))}
-                          </select>
-                          <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-2 gap-8">
+                      <div className="grid grid-cols-2 gap-3">
+                        {[0, 1].map((idx) => (
+                          <div key={idx} className="relative">
+                            <select
+                              value={(formData.jobFunctions || [])[idx] || ''}
+                              onChange={(e) => {
+                                const current = [...(formData.jobFunctions || [])];
+                                if (e.target.value) {
+                                  current[idx] = e.target.value;
+                                } else {
+                                  current.splice(idx, 1);
+                                }
+                                handleInputChange('jobFunctions', current.filter(Boolean));
+                              }}
+                              className={`${selectClass('_none')} ${(formData.jobFunctions || [])[idx] ? 'text-slate-900' : 'text-slate-300'}`}
+                            >
+                              <option value="">对比职能 {idx + 1}</option>
+                              {FUNCTIONS.filter(f => f !== formData.jobFunction && (f === (formData.jobFunctions || [])[idx] || !(formData.jobFunctions || []).includes(f))).map(f => (
+                                <option key={f} value={f} className="text-slate-900">{f}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                          </div>
+                        ))}
+                      </div>
+                      <div></div>
                     </div>
                   </div>
               </div>
