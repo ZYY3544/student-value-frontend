@@ -556,7 +556,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-base font-bold text-gray-800">{job.jobFunction}</span>
-                      {idx === 0 && <span className="text-xs bg-[#0A66C2] text-white px-2 py-0.5 rounded-full">当前目标</span>}
+                      {idx === 0 && <span className="text-xs bg-[#0A66C2] text-white px-2 py-0.5 rounded-full">目标方向</span>}
                     </div>
                     <span className="text-lg font-black text-[#0A66C2]">{job.salaryRange}</span>
                   </div>

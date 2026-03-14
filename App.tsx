@@ -511,7 +511,7 @@ const App: React.FC = () => {
                               style={{ color: currentVal ? undefined : '#cbd5e1' }}
                               className={selectClass(idx === 0 ? 'jobFunction' : '_none')}
                             >
-                              <option value="" disabled={idx === 0} hidden={idx === 0}>职业方向 {idx + 1}</option>
+                              <option value="" disabled={idx === 0} hidden={idx === 0}>{idx === 0 ? '目标方向' : `可选方向 ${idx}`}</option>
                               {FUNCTIONS.filter(f => f === currentVal || !allSelected.includes(f)).map(f => (
                                 <option key={f} value={f}>{f}</option>
                               ))}
