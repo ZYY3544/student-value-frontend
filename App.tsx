@@ -631,7 +631,7 @@ const App: React.FC = () => {
               </button>
               <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
                 <Lock className="w-4 h-4" />
-                <span>您的数据已加密处理，仅用于 AI 引擎分析生成报告，确保隐私安全。</span>
+                <span>您的数据已加密保护，仅用于本次分析与报告生成。我们承诺不将您的个人信息用于任何 AI 模型训练，全方位保障隐私安全。</span>
               </div>
             </div>
           </div>
