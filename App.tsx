@@ -183,7 +183,6 @@ const App: React.FC = () => {
     if (!formData.jobFunction) newErrors.push('jobFunction');
     if (!formData.educationLevel) newErrors.push('educationLevel');
     if (!formData.major.trim()) newErrors.push('major');
-    if (!formData.companyType) newErrors.push('companyType');
 
     if (!formData.resumeFile && !formData.resumeText.trim()) {
       newErrors.push('resumeSource');
@@ -227,7 +226,7 @@ const App: React.FC = () => {
 
     // 计算步骤进度
     const step1Done = !!(formData.educationLevel && formData.major.trim());
-    const step2Done = !!(formData.city && formData.industry && formData.companyType && formData.jobTitle.trim() && formData.jobFunction);
+    const step2Done = !!(formData.city && formData.industry && formData.jobTitle.trim() && formData.jobFunction);
     const step3Done = !!(formData.resumeFile || formData.resumeText.trim());
     const currentStep = !step1Done ? 1 : !step2Done ? 2 : !step3Done ? 3 : 0;
 
@@ -458,36 +457,6 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <label className="text-sm font-semibold text-slate-700">企业性质</label>
-                      {hasError('companyType') && <span className="text-xs text-rose-500 font-semibold">请选择</span>}
-                    </div>
-                    <div className="relative">
-                      <select
-                        value={formData.companyType}
-                        onChange={(e) => handleInputChange('companyType', e.target.value)}
-                        style={{ color: formData.companyType ? undefined : '#94a3b8' }}
-                        className={selectClass('companyType')}
-                      >
-                        <option value="" disabled hidden>请选择类型</option>
-                        {COMPANY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">意向企业</label>
-                    <input
-                      type="text"
-                      placeholder="例如：腾讯（选填）"
-                      value={formData.targetCompany}
-                      onChange={(e) => handleInputChange('targetCompany', e.target.value)}
-                      className={inputClass('')}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
                       <label className="text-sm font-semibold text-slate-700">意向岗位</label>
                       {hasError('jobTitle') && <span className="text-xs text-rose-500 font-semibold">必填项</span>}
                     </div>
@@ -500,57 +469,61 @@ const App: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <label className="text-sm font-semibold text-slate-700">所属职能</label>
-                      {hasError('jobFunction') && <span className="text-xs text-rose-500 font-semibold">请选择</span>}
-                    </div>
-                    <div className="relative">
-                      <select
-                        value={formData.jobFunction}
-                        onChange={(e) => handleInputChange('jobFunction', e.target.value)}
-                        style={{ color: formData.jobFunction ? undefined : '#94a3b8' }}
-                        className={selectClass('jobFunction')}
-                      >
-                        <option value="" disabled hidden>请选择职能</option>
-                        {FUNCTIONS.map(f => <option key={f} value={f}>{f}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-                    </div>
+                    <label className="text-sm font-semibold text-slate-700">意向企业</label>
+                    <input
+                      type="text"
+                      placeholder="例如：腾讯（选填）"
+                      value={formData.targetCompany}
+                      onChange={(e) => handleInputChange('targetCompany', e.target.value)}
+                      className={inputClass('')}
+                    />
                   </div>
                 </div>
 
-                {/* 对比职能（选填，固定2个下拉） */}
-                <div className="space-y-3">
-                    <label className="text-sm font-semibold text-slate-700">对比职能 <span className="text-slate-400 font-normal">（选填，报告会对比不同岗位赛道的竞争力）</span></label>
-                    <div className="grid grid-cols-2 gap-8">
-                      <div className="grid grid-cols-2 gap-3">
-                        {[0, 1].map((idx) => (
+                {/* 职业方向：3个短下拉框，第1个=jobFunction，第2/3个=jobFunctions */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-semibold text-slate-700">职业方向 <span className="text-slate-400 font-normal">（至少选一个，报告会对比不同赛道的竞争力）</span></label>
+                    {hasError('jobFunction') && <span className="text-xs text-rose-500 font-semibold">请至少选一个</span>}
+                  </div>
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-3 gap-2">
+                      {[0, 1, 2].map((idx) => {
+                        const allSelected = [formData.jobFunction, ...(formData.jobFunctions || [])];
+                        const currentVal = idx === 0 ? formData.jobFunction : (formData.jobFunctions || [])[idx - 1] || '';
+                        return (
                           <div key={idx} className="relative">
                             <select
-                              value={(formData.jobFunctions || [])[idx] || ''}
+                              value={currentVal}
                               onChange={(e) => {
-                                const current = [...(formData.jobFunctions || [])];
-                                if (e.target.value) {
-                                  current[idx] = e.target.value;
+                                if (idx === 0) {
+                                  handleInputChange('jobFunction', e.target.value);
                                 } else {
-                                  current.splice(idx, 1);
+                                  const current = [...(formData.jobFunctions || [])];
+                                  if (e.target.value) {
+                                    current[idx - 1] = e.target.value;
+                                  } else {
+                                    current.splice(idx - 1, 1);
+                                  }
+                                  handleInputChange('jobFunctions', current.filter(Boolean));
                                 }
-                                handleInputChange('jobFunctions', current.filter(Boolean));
                               }}
-                              className={`${selectClass('_none')} ${(formData.jobFunctions || [])[idx] ? 'text-slate-900' : 'text-slate-300'}`}
+                              style={{ color: currentVal ? undefined : '#cbd5e1' }}
+                              className={selectClass(idx === 0 ? 'jobFunction' : '_none')}
                             >
-                              <option value="">对比职能 {idx + 1}</option>
-                              {FUNCTIONS.filter(f => f !== formData.jobFunction && (f === (formData.jobFunctions || [])[idx] || !(formData.jobFunctions || []).includes(f))).map(f => (
-                                <option key={f} value={f} className="text-slate-900">{f}</option>
+                              <option value="" disabled={idx === 0} hidden={idx === 0}>职业方向 {idx + 1}</option>
+                              {FUNCTIONS.filter(f => f === currentVal || !allSelected.includes(f)).map(f => (
+                                <option key={f} value={f}>{f}</option>
                               ))}
                             </select>
-                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                           </div>
-                        ))}
-                      </div>
-                      <div></div>
+                        );
+                      })}
                     </div>
+                    <div></div>
                   </div>
+                </div>
               </div>
 
               {/* Section 3: 简历信息 */}
