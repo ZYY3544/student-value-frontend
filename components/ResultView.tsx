@@ -87,7 +87,51 @@ function getResumeHealthDesc(val: number): string {
 
 const API_BASE = 'https://student-value-backend.onrender.com';
 
+const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
+const INDUSTRIES = ["互联网", "高科技", "金融", "大健康", "汽车", "消费品", "新零售", "地产", "泛娱乐", "教育", "农业", "通用行业"];
+
 export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset, userId }) => {
+  // ===== 岗位对比筛选状态 =====
+  const [filterCity, setFilterCity] = useState(inputData.city);
+  const [filterIndustry, setFilterIndustry] = useState(inputData.industry);
+  const [filteredComparisons, setFilteredComparisons] = useState(result.jobComparisons || []);
+  const [salaryLoading, setSalaryLoading] = useState(false);
+
+  // 城市/行业变化时重新查询薪酬
+  useEffect(() => {
+    if (filterCity === inputData.city && filterIndustry === inputData.industry) {
+      setFilteredComparisons(result.jobComparisons || []);
+      return;
+    }
+    const functions = (result.jobComparisons || []).map(j => j.jobFunction);
+    if (!functions.length) return;
+
+    setSalaryLoading(true);
+    fetch(`${API_BASE}/api/mini/salary-query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grade: result.level,
+        functions,
+        city: filterCity,
+        industry: filterIndustry,
+        schoolTier: result.schoolTier || '普通本科',
+        educationLevel: inputData.educationLevel,
+      }),
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          setFilteredComparisons((result.jobComparisons || []).map(job => ({
+            ...job,
+            salaryRange: res.data[job.jobFunction] || job.salaryRange,
+          })));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setSalaryLoading(false));
+  }, [filterCity, filterIndustry]);
+
   // ===== 提升的聊天状态 =====
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -540,18 +584,36 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         {/* 3. 岗位竞争力对比 */}
         {result.jobComparisons && result.jobComparisons.length > 0 && (
           <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-                <Target className="text-purple-600 w-6 h-6" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                  <Target className="text-purple-600 w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">岗位竞争力对比</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">同一份简历在不同岗位赛道上的匹配情况</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">岗位竞争力对比</h2>
-                <p className="text-xs text-gray-400 mt-0.5">同一份简历在不同岗位赛道上的匹配情况</p>
+              <div className="flex items-center gap-2">
+                <select
+                  value={filterCity}
+                  onChange={(e) => setFilterCity(e.target.value)}
+                  className="appearance-none bg-gray-50 border border-gray-200 text-xs font-medium text-gray-700 rounded-lg px-3 py-1.5 pr-7 outline-none focus:border-[#0A66C2] transition-colors cursor-pointer"
+                >
+                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select
+                  value={filterIndustry}
+                  onChange={(e) => setFilterIndustry(e.target.value)}
+                  className="appearance-none bg-gray-50 border border-gray-200 text-xs font-medium text-gray-700 rounded-lg px-3 py-1.5 pr-7 outline-none focus:border-[#0A66C2] transition-colors cursor-pointer"
+                >
+                  {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                </select>
               </div>
             </div>
 
-            <div className="space-y-4">
-              {result.jobComparisons.map((job, idx) => (
+            <div className={`space-y-4 ${salaryLoading ? 'opacity-50 transition-opacity' : ''}`}>
+              {filteredComparisons.map((job, idx) => (
                 <div key={idx} className={`p-5 rounded-2xl border ${idx === 0 ? 'border-[#0A66C2]/30 bg-blue-50/30' : 'border-gray-100 bg-gray-50'}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
