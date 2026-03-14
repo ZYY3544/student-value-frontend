@@ -378,7 +378,7 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <label className="text-sm font-semibold text-slate-700">学历背景</label>
+                      <label className="text-sm font-semibold text-slate-700">学历</label>
                       {hasError('educationLevel') && <span className="text-xs text-rose-500 font-semibold">请选择</span>}
                     </div>
                     <div className="relative">
@@ -396,7 +396,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <label className="text-sm font-semibold text-slate-700">所学专业</label>
+                      <label className="text-sm font-semibold text-slate-700">专业</label>
                       {hasError('major') && <span className="text-xs text-rose-500 font-semibold">必填项</span>}
                     </div>
                     <input
