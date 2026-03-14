@@ -587,15 +587,12 @@ const App: React.FC = () => {
                       </div>
                     ) : (
                       <label className="group cursor-pointer block">
-                        <div className={`border-2 border-dashed ${hasError('resumeSource') ? 'border-rose-300' : 'border-slate-200'} rounded-[32px] p-16 flex flex-col items-center justify-center text-center`}>
-                          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                            <CloudUpload className="w-8 h-8 text-[#0A66C2]" />
+                        <div className={`border-2 border-dashed ${hasError('resumeSource') ? 'border-rose-300' : 'border-slate-200'} rounded-2xl h-40 flex flex-col items-center justify-center text-center`}>
+                          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-3">
+                            <CloudUpload className="w-6 h-6 text-[#0A66C2]" />
                           </div>
-                          <h4 className="text-xl font-bold text-slate-900 mb-2">点击或拖拽简历文件至此</h4>
-                          <p className="text-slate-400 mb-8">支持 PDF, Word 格式，大小不超过 10MB</p>
-                          <span className="bg-slate-50 text-slate-700 px-8 py-3 rounded-xl font-semibold border border-slate-100">
-                            上传简历附件
-                          </span>
+                          <h4 className="text-sm font-bold text-slate-900 mb-1">点击或拖拽简历文件至此</h4>
+                          <p className="text-xs text-slate-400">支持 PDF, Word 格式，大小不超过 10MB</p>
                         </div>
                         <input
                           type="file"
