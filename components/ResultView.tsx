@@ -351,6 +351,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return competencyDetails.map(item => ({
       subject: item.label,
       A: item.rawScore,
+      tag: item.tag,
     }));
   }, [competencyDetails]);
 
@@ -492,14 +493,14 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             <div className="grid grid-cols-2 gap-4">
               {/* 左：雷达图灰色卡片 */}
               <div className="bg-gray-50 rounded-xl p-6">
-                <p className="text-sm font-bold text-gray-500 mb-2">核心能力雷达图</p>
+                <p className="text-base font-bold text-gray-600 mb-2">核心能力雷达图</p>
                 <div className="w-full h-[320px] [&_*]:!outline-none">
                   <ResponsiveContainer width="100%" height={320}>
                     <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
                       <PolarGrid stroke="#e5e7eb" />
                       <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} />
                       <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={{ r: 4, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
-                      <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
+                      <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{Number(payload[0].value).toFixed(1)}分：{payload[0].payload.tag}</div> : null} />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
@@ -507,14 +508,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
               {/* 右：能力层级定义灰色卡片 */}
               <div className="bg-gray-50 rounded-xl p-6">
-                <p className="text-sm font-bold text-gray-500 mb-3">能力层级定义</p>
+                <p className="text-base font-bold text-gray-600 mb-3">能力层级定义</p>
                 <div className="flex flex-col justify-center gap-3">
                   {competencyDetails.map((item, idx) => (
                     <div key={idx} className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-700">{item.label}</span>
-                        <span className="text-xs font-medium text-[#0A66C2] bg-blue-50 px-2 py-0.5 rounded-full">{item.tag}</span>
-                      </div>
+                      <span className="inline-block text-sm font-bold text-[#0A66C2] bg-blue-50 px-2.5 py-1 rounded-lg">{item.tag}</span>
                       <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
                     </div>
                   ))}
