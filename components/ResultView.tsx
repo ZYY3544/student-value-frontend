@@ -614,40 +614,18 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                     </div>
                     <span className="text-lg font-black text-[#0A66C2]">{job.salaryRange}</span>
                   </div>
-                  <div className="flex items-center gap-6 mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-500">匹配度</span>
-                        <span className="text-xs font-bold text-gray-700">{job.matchScore}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="h-2 rounded-full bg-[#0A66C2] transition-all" style={{ width: `${job.matchScore}%` }} />
-                      </div>
+                  {job.coreDuties && (
+                    <p className="text-xs text-gray-400 mb-3">{job.coreDuties}</p>
+                  )}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-500">匹配度</span>
+                      <span className="text-xs font-bold text-gray-700">{job.matchScore}%</span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-500">竞争力</span>
-                        <span className="text-xs font-bold text-gray-700">超过{job.competitiveness}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${job.competitiveness}%` }} />
-                      </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="h-2 rounded-full bg-[#0A66C2] transition-all" style={{ width: `${job.matchScore}%` }} />
                     </div>
                   </div>
-                  {(job.strengths.length > 0 || job.gaps.length > 0) && (
-                    <div className="flex gap-4 text-xs">
-                      {job.strengths.length > 0 && (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <span className="font-medium">优势:</span> {job.strengths.join('、')}
-                        </div>
-                      )}
-                      {job.gaps.length > 0 && (
-                        <div className="flex items-center gap-1 text-amber-600">
-                          <span className="font-medium">差距:</span> {job.gaps.join('、')}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

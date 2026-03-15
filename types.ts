@@ -67,9 +67,7 @@ export interface JobComparison {
   jobFunction: string;       // 岗位名称
   salaryRange: string;       // 薪酬区间
   matchScore: number;        // 匹配度 0-100
-  competitiveness: number;   // 竞争力百分位 0-100
-  strengths: string[];       // 核心优势维度
-  gaps: string[];            // 主要差距维度
+  coreDuties: string;        // 核心职责（3-4个关键词）
 }
 
 export interface AssessmentResult {
