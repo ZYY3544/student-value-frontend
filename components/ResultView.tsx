@@ -228,6 +228,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       completenessScore: dimScore('信息完整度'),
       structureScore: dimScore('结构规范度'),
       powerScore: dimScore('表达力度'),
+      jobComparisons: (result.jobComparisons || []).map(j => ({
+        jobFunction: j.jobFunction,
+        salaryRange: j.salaryRange,
+        matchScore: j.matchScore,
+      })),
     };
   }, [result, inputData]);
 
