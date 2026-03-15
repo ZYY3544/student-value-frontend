@@ -488,9 +488,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               {/* 左：雷达图灰色卡片 */}
               <div className="bg-gray-50 rounded-xl p-6">
                 <p className="text-sm font-bold text-gray-500 mb-2">核心能力雷达图</p>
-                <div className="w-[300px] h-[320px] [&_*]:!outline-none mx-auto">
-                  <ResponsiveContainer width={300} height={320}>
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                <div className="w-full h-[320px] [&_*]:!outline-none">
+                  <ResponsiveContainer width="100%" height={320}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
                       <PolarGrid stroke="#e5e7eb" />
                       <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} />
                       <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={{ r: 4, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
