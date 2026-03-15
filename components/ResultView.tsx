@@ -463,36 +463,34 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           </button>
         </div>
 
-        {/* 1. 评估报告：你的能力底子 */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">评估报告：你的能力底子</h2>
+        {/* 1. 你的能力底子 */}
+        <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">你的能力底子</h2>
           <p className="text-sm text-gray-500 mb-6">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平。</p>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              {/* 左侧：核心定位 */}
-              <div className="p-8 md:p-10">
-                <span className="inline-block text-sm font-medium text-[#0A66C2] bg-blue-50 px-3 py-1 rounded-full mb-4">核心定位</span>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">{result.levelTag}</h3>
-                {result.levelDesc && (
-                  <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{result.levelDesc}</div>
-                )}
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 左侧卡片：核心定位 */}
+            <div className="bg-white rounded-xl p-6 md:p-8 border border-gray-100">
+              <span className="inline-block text-sm font-medium text-[#0A66C2] bg-blue-50 px-3 py-1 rounded-full mb-4">核心定位</span>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">{result.levelTag}</h3>
+              {result.levelDesc && (
+                <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{result.levelDesc}</div>
+              )}
+            </div>
 
-              {/* 右侧：雷达图 */}
-              <div className="p-8 md:p-10 flex flex-col items-center justify-center">
-                <div className="relative w-full h-[300px] [&_*]:!outline-none">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                      <PolarGrid stroke="#e5e7eb" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#374151', fontSize: 13, fontWeight: 600 }} />
-                      <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={{ r: 4, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
-                      <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">综合素质评估模型</p>
+            {/* 右侧卡片：雷达图 */}
+            <div className="bg-white rounded-xl p-6 md:p-8 border border-gray-100 flex flex-col items-center justify-center">
+              <div className="relative w-full h-[300px] [&_*]:!outline-none">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                    <PolarGrid stroke="#e5e7eb" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#374151', fontSize: 13, fontWeight: 600 }} />
+                    <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={{ r: 4, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
+                    <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
+              <p className="text-xs text-gray-400 mt-2">综合素质评估模型</p>
             </div>
           </div>
         </div>
