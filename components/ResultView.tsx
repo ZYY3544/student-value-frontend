@@ -466,9 +466,14 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         {/* 1. 你的能力底子 */}
         <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
           {/* 标题区 */}
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">你的能力底子</h2>
-            <p className="text-xs text-gray-400 mt-0.5">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平</p>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+              <Shield className="text-[#0A66C2] w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">你的能力底子</h2>
+              <p className="text-xs text-gray-400 mt-0.5">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平</p>
+            </div>
           </div>
 
           {/* 核心定位灰色卡片 */}
