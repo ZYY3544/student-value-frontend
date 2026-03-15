@@ -613,48 +613,43 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         {/* 3. 简历诊断 */}
         {result.resumeExpression && (
           <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                  <FileText className="text-amber-600 w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">简历诊断</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">能力是底子，简历是包装——同样的经历不同的写法，HR看到的是完全不同的人</p>
-                </div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                <FileText className="text-amber-600 w-6 h-6" />
               </div>
-              <div className="text-right">
-                <span className="text-4xl font-black text-amber-500">{result.resumeExpression.overallScore}</span>
-                <span className="text-sm text-gray-400 ml-1">/ 100</span>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">简历诊断</h2>
+                <p className="text-xs text-gray-400 mt-0.5">能力是底子，简历是包装——同样的经历不同的写法，HR看到的是完全不同的人</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {Object.entries(result.resumeExpression.dimensions).map(([name, dim]: [string, { score: number; level: string; tip: string }]) => (
-                <div key={name} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-semibold text-gray-700">{name}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        dim.level === 'high' ? 'bg-green-100 text-green-700' :
-                        dim.level === 'medium' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-600'
-                      }`}>{dim.score}分</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
-                      <div
-                        className={`h-1.5 rounded-full transition-all ${
-                          dim.level === 'high' ? 'bg-green-500' :
-                          dim.level === 'medium' ? 'bg-amber-500' :
-                          'bg-red-400'
-                        }`}
-                        style={{ width: `${dim.score}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{dim.tip}</p>
-                  </div>
+            <div className="flex gap-6">
+              {/* 左侧：综合表达力 */}
+              <div className="flex-shrink-0 bg-gray-50 rounded-2xl p-6 flex flex-col items-center justify-center w-48">
+                <span className="text-sm font-semibold text-gray-500 mb-2">综合表达力</span>
+                <div className="flex items-baseline">
+                  <span className="text-5xl font-black text-gray-800">{result.resumeExpression.overallScore}</span>
+                  <span className="text-sm text-gray-400 ml-1">/ 100</span>
                 </div>
-              ))}
+                <p className="text-xs text-gray-400 mt-3 text-center leading-relaxed">你的能力比简历展现出来的要好，改写后可以显著提升匹配度</p>
+              </div>
+
+              {/* 右侧：6维卡片 3x2 */}
+              <div className="flex-1 grid grid-cols-3 gap-3">
+                {Object.entries(result.resumeExpression.dimensions).map(([name, dim]: [string, { score: number; level: string; tip: string }]) => (
+                  <div key={name} className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-2xl font-black ${
+                        dim.level === 'high' ? 'text-green-500' :
+                        dim.level === 'medium' ? 'text-amber-500' :
+                        'text-red-500'
+                      }`}>{dim.score}</span>
+                      <span className="text-sm font-bold text-gray-700">{name}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 leading-relaxed">{dim.tip}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
