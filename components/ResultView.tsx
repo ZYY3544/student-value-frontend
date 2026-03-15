@@ -464,13 +464,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         </div>
 
         {/* 1. 你的能力底子 */}
-        <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-8">
+        <div className="bg-white rounded-2xl p-6 md:p-8 mb-8 border border-gray-100 shadow-sm">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">你的能力底子</h2>
           <p className="text-sm text-gray-500 mb-6">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平。</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 左侧卡片：核心定位 */}
-            <div className="bg-white rounded-xl p-6 md:p-8 border border-gray-100">
+            <div className="bg-gray-50 rounded-xl p-6 md:p-8">
               <span className="inline-block text-sm font-medium text-[#0A66C2] bg-blue-50 px-3 py-1 rounded-full mb-4">核心定位</span>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">{result.levelTag}</h3>
               {result.levelDesc && (
@@ -479,7 +479,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             </div>
 
             {/* 右侧卡片：雷达图 */}
-            <div className="bg-white rounded-xl p-6 md:p-8 border border-gray-100 flex flex-col items-center justify-center">
+            <div className="bg-gray-50 rounded-xl p-6 md:p-8 flex flex-col items-center justify-center">
               <div className="w-[320px] h-[300px] [&_*]:!outline-none">
                 <ResponsiveContainer width={320} height={300}>
                   <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
