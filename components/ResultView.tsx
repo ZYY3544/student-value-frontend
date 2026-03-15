@@ -464,65 +464,63 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         </div>
 
         {/* 1. 你的能力底子 */}
-        <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm relative overflow-hidden">
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                <Shield className="text-[#0A66C2] w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">你的能力底子</h2>
-                <p className="text-xs text-gray-400 mt-0.5">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平</p>
-              </div>
+        <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
+          {/* 标题区 */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">你的能力底子</h2>
+            <p className="text-xs text-gray-400 mt-0.5">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平</p>
+          </div>
+
+          {/* 核心定位灰色卡片 */}
+          <div className="bg-gray-50 rounded-xl p-6 mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="text-[#0A66C2] w-5 h-5" />
+              <span className="text-lg font-bold text-gray-900">{result.levelTag}</span>
             </div>
-            <span className="text-3xl font-bold text-[#0A66C2]">{result.levelTag}</span>
             {result.levelDesc && (
-              <p className="text-sm text-gray-500 leading-relaxed mt-3">{result.levelDesc}</p>
+              <p className="text-sm text-gray-500 leading-relaxed">{result.levelDesc}</p>
             )}
           </div>
 
           {/* 分隔线 */}
-          <div className="relative z-10 border-t border-gray-200 mt-8 pt-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                <Users className="text-[#0A66C2] w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">核心能力画像</h3>
-                <p className="text-xs text-gray-400 mt-0.5">综合素质评估模型</p>
-              </div>
-            </div>
+          <div className="border-t border-gray-200 mt-6 pt-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">核心能力画像</h3>
 
-            <div className="grid grid-cols-2 gap-16">
-              <div className="w-[320px] h-[350px] [&_*]:!outline-none">
-                <ResponsiveContainer width={320} height={350}>
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                    <PolarGrid stroke="#e5e7eb" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} />
-                    <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={{ r: 4, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
-                    <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
-                  </RadarChart>
-                </ResponsiveContainer>
+            <div className="grid grid-cols-2 gap-4">
+              {/* 左：雷达图灰色卡片 */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <p className="text-xs text-gray-400 mb-2">核心能力雷达图</p>
+                <div className="w-[300px] h-[320px] [&_*]:!outline-none mx-auto">
+                  <ResponsiveContainer width={300} height={320}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                      <PolarGrid stroke="#e5e7eb" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }} />
+                      <Radar name="能力值" dataKey="A" stroke="#0A66C2" fill="#0A66C2" fillOpacity={0.15} dot={{ r: 4, fill: '#0A66C2', stroke: '#fff', strokeWidth: 2 }} />
+                      <Tooltip content={({ active, payload }) => active && payload?.[0] ? <div className="bg-[#0A66C2] text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">{payload[0].payload.subject}: {Number(payload[0].value).toFixed(1)}分</div> : null} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
-              <div className="flex flex-col justify-center gap-3">
-                {competencyDetails.map((item, idx) => (
-                  <div key={idx} className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-700">{item.label}</span>
-                      <span className="text-xs font-medium text-[#0A66C2] bg-blue-50 px-2 py-0.5 rounded-full">{item.tag}</span>
+              {/* 右：能力层级定义灰色卡片 */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <p className="text-xs text-gray-400 mb-3">能力层级定义</p>
+                <div className="flex flex-col justify-center gap-3">
+                  {competencyDetails.map((item, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                        <span className="text-xs font-medium text-[#0A66C2] bg-blue-50 px-2 py-0.5 rounded-full">{item.tag}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
                     </div>
-                    <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          <p className="relative z-10 text-xs text-gray-400 mt-6 leading-relaxed">说明：以上信息是模型基于简历内容进行深度挖掘，衡量的是当前简历展现出的实际能力水平。</p>
-
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-100/30 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
+          <p className="text-xs text-gray-400 mt-6 leading-relaxed">说明：以上信息是模型基于简历内容进行深度挖掘，衡量的是当前简历展现出的实际能力水平。</p>
         </div>
 
         {/* 2. 简历表达力诊断 */}
