@@ -467,7 +467,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
           {/* 标题区 */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">你的能力底子</h2>
+            <h2 className="text-3xl font-bold text-gray-900">你的能力底子</h2>
             <p className="text-xs text-gray-400 mt-0.5">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平</p>
           </div>
 
@@ -484,12 +484,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
           {/* 分隔线 */}
           <div className="border-t border-gray-200 mt-6 pt-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">核心能力画像</h3>
-
             <div className="grid grid-cols-2 gap-4">
               {/* 左：雷达图灰色卡片 */}
               <div className="bg-gray-50 rounded-xl p-6">
-                <p className="text-xs text-gray-400 mb-2">核心能力雷达图</p>
+                <p className="text-sm font-bold text-gray-500 mb-2">核心能力雷达图</p>
                 <div className="w-[300px] h-[320px] [&_*]:!outline-none mx-auto">
                   <ResponsiveContainer width={300} height={320}>
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
@@ -504,7 +502,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
               {/* 右：能力层级定义灰色卡片 */}
               <div className="bg-gray-50 rounded-xl p-6">
-                <p className="text-xs text-gray-400 mb-3">能力层级定义</p>
+                <p className="text-sm font-bold text-gray-500 mb-3">能力层级定义</p>
                 <div className="flex flex-col justify-center gap-3">
                   {competencyDetails.map((item, idx) => (
                     <div key={idx} className="space-y-1">
