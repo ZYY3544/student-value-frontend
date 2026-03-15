@@ -146,6 +146,9 @@ export const formatContent = (text: string) => {
       content = line;
     }
 
+    // 高亮「解读报告」关键词（与简历画布同色）
+    content = content.replace(/「解读报告」/g, '**解读报告**');
+
     const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
     const rendered = parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
