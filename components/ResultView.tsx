@@ -203,20 +203,33 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }
   }, [resumeSections, originalSections.length]);
 
-  const assessmentContext = useMemo(() => ({
-    factors: result.factors || {},
-    abilities: result.abilities || {},
-    grade: result.level,
-    salaryRange: result.salaryRange || result.personValue || '',
-    jobTitle: inputData.jobTitle,
-    jobFunction: inputData.jobFunction,
-    educationLevel: inputData.educationLevel,
-    major: inputData.major,
-    city: inputData.city,
-    industry: inputData.industry,
-    companyType: inputData.companyType,
-    targetCompany: inputData.targetCompany || '',
-  }), [result, inputData]);
+  const assessmentContext = useMemo(() => {
+    const dims = result.resumeExpression?.dimensions || {};
+    const dimScore = (name: string) => (dims as any)[name]?.score ?? '未知';
+    return {
+      factors: result.factors || {},
+      abilities: result.abilities || {},
+      grade: result.level,
+      salaryRange: result.salaryRange || result.personValue || '',
+      jobTitle: inputData.jobTitle,
+      jobFunction: inputData.jobFunction,
+      educationLevel: inputData.educationLevel,
+      major: inputData.major,
+      city: inputData.city,
+      industry: inputData.industry,
+      companyType: inputData.companyType,
+      targetCompany: inputData.targetCompany || '',
+      levelTitle: result.levelTag || '',
+      levelDescription: result.levelDesc || '',
+      expressionScore: result.resumeExpression?.overallScore ?? '未知',
+      starScore: dimScore('STAR规范度'),
+      keywordScore: dimScore('关键词覆盖'),
+      quantifyScore: dimScore('量化程度'),
+      completenessScore: dimScore('信息完整度'),
+      structureScore: dimScore('结构规范度'),
+      powerScore: dimScore('表达力度'),
+    };
+  }, [result, inputData]);
 
   const resumeText = result.resumeText || inputData.resumeText;
 
