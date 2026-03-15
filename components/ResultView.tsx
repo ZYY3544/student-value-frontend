@@ -3,7 +3,7 @@ import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingE
 import { supabase } from '../lib/supabase';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell, Search,
-  Lightbulb, Brain, Handshake, PenTool, Shield
+  Lightbulb, Brain, Handshake, PenTool, Shield, Award
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -480,8 +480,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           {/* 核心定位灰色卡片 */}
           <div className="bg-gray-50 rounded-xl p-6 mb-6">
             <div className="flex items-center gap-2 mb-2">
-              <Shield className="text-[#0A66C2] w-5 h-5" />
-              <span className="text-lg font-bold text-gray-900">{result.levelTag}</span>
+              <Award className="text-[#0A66C2] w-5 h-5" />
+              <span className="text-lg font-bold text-gray-900">能力等级：{result.levelTag}</span>
             </div>
             {result.levelDesc && (
               <p className="text-sm text-gray-500 leading-relaxed">{result.levelDesc}</p>
