@@ -480,8 +480,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
             {/* 右侧卡片：雷达图 */}
             <div className="bg-white rounded-xl p-6 md:p-8 border border-gray-100 flex flex-col items-center justify-center">
-              <div className="relative w-full h-[300px] [&_*]:!outline-none">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="w-[320px] h-[300px] [&_*]:!outline-none">
+                <ResponsiveContainer width={320} height={300}>
                   <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                     <PolarGrid stroke="#e5e7eb" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#374151', fontSize: 13, fontWeight: 600 }} />
