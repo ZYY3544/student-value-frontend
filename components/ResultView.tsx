@@ -472,7 +472,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               <Shield className="text-[#0A66C2] w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">你的能力底子</h2>
+              <h2 className="text-2xl font-bold text-gray-900">能力测评</h2>
               <p className="text-xs text-gray-400 mt-0.5">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平</p>
             </div>
           </div>
@@ -524,56 +524,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           <p className="text-xs text-gray-400 mt-6 leading-relaxed">说明：以上信息是模型基于简历内容进行深度挖掘，衡量的是当前简历展现出的实际能力水平。</p>
         </div>
 
-        {/* 2. 简历表达力诊断 */}
-        {result.resumeExpression && (
-          <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                  <FileText className="text-amber-600 w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">简历表达力</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">衡量简历的写作质量，可通过改写提升</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-4xl font-black text-amber-500">{result.resumeExpression.overallScore}</span>
-                <span className="text-sm text-gray-400 ml-1">/ 100</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {Object.entries(result.resumeExpression.dimensions).map(([name, dim]: [string, { score: number; level: string; tip: string }]) => (
-                <div key={name} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-semibold text-gray-700">{name}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        dim.level === 'high' ? 'bg-green-100 text-green-700' :
-                        dim.level === 'medium' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-600'
-                      }`}>{dim.score}分</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
-                      <div
-                        className={`h-1.5 rounded-full transition-all ${
-                          dim.level === 'high' ? 'bg-green-500' :
-                          dim.level === 'medium' ? 'bg-amber-500' :
-                          'bg-red-400'
-                        }`}
-                        style={{ width: `${dim.score}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{dim.tip}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 3. 岗位竞争力对比 */}
+        {/* 2. 薪酬对标 */}
         {result.jobComparisons && result.jobComparisons.length > 0 && (
           <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
             <div className="flex items-center justify-between mb-6">
@@ -582,8 +533,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                   <Target className="text-purple-600 w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">岗位竞争力对比</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">同一份简历在不同岗位赛道上的匹配情况</p>
+                  <h2 className="text-2xl font-bold text-gray-900">薪酬对标</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">同一份简历，不同赛道、不同城市，市场给出的定薪完全不同——选对方向很重要</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -643,6 +594,55 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* 3. 简历诊断 */}
+        {result.resumeExpression && (
+          <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                  <FileText className="text-amber-600 w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">简历诊断</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">能力是底子，简历是包装——同样的经历不同的写法，HR看到的是完全不同的人</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-4xl font-black text-amber-500">{result.resumeExpression.overallScore}</span>
+                <span className="text-sm text-gray-400 ml-1">/ 100</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(result.resumeExpression.dimensions).map(([name, dim]: [string, { score: number; level: string; tip: string }]) => (
+                <div key={name} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-semibold text-gray-700">{name}</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        dim.level === 'high' ? 'bg-green-100 text-green-700' :
+                        dim.level === 'medium' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-600'
+                      }`}>{dim.score}分</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${
+                          dim.level === 'high' ? 'bg-green-500' :
+                          dim.level === 'medium' ? 'bg-amber-500' :
+                          'bg-red-400'
+                        }`}
+                        style={{ width: `${dim.score}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{dim.tip}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
