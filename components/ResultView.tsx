@@ -519,6 +519,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             </div>
           </div>
 
+          <p className="relative z-10 text-xs text-gray-400 mt-6 leading-relaxed">说明：以上信息是模型基于简历内容进行深度挖掘，衡量的是当前简历展现出的实际能力水平。</p>
+
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-100/30 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
         </div>
