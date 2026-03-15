@@ -486,42 +486,39 @@ const App: React.FC = () => {
                     <label className="text-sm font-semibold text-slate-700">职业方向 <span className="text-slate-400 font-normal">（至少选一个，报告会对比不同赛道的竞争力）</span></label>
                     {hasError('jobFunction') && <span className="text-xs text-rose-500 font-semibold">请至少选一个</span>}
                   </div>
-                  <div className="grid grid-cols-2 gap-8">
-                    <div className="grid grid-cols-3 gap-2">
-                      {[0, 1, 2].map((idx) => {
-                        const allSelected = [formData.jobFunction, ...(formData.jobFunctions || [])];
-                        const currentVal = idx === 0 ? formData.jobFunction : (formData.jobFunctions || [])[idx - 1] || '';
-                        return (
-                          <div key={idx} className="relative">
-                            <select
-                              value={currentVal}
-                              onChange={(e) => {
-                                if (idx === 0) {
-                                  handleInputChange('jobFunction', e.target.value);
+                  <div className="grid grid-cols-3 gap-4">
+                    {[0, 1, 2].map((idx) => {
+                      const allSelected = [formData.jobFunction, ...(formData.jobFunctions || [])];
+                      const currentVal = idx === 0 ? formData.jobFunction : (formData.jobFunctions || [])[idx - 1] || '';
+                      return (
+                        <div key={idx} className="relative">
+                          <select
+                            value={currentVal}
+                            onChange={(e) => {
+                              if (idx === 0) {
+                                handleInputChange('jobFunction', e.target.value);
+                              } else {
+                                const current = [...(formData.jobFunctions || [])];
+                                if (e.target.value) {
+                                  current[idx - 1] = e.target.value;
                                 } else {
-                                  const current = [...(formData.jobFunctions || [])];
-                                  if (e.target.value) {
-                                    current[idx - 1] = e.target.value;
-                                  } else {
-                                    current.splice(idx - 1, 1);
-                                  }
-                                  handleInputChange('jobFunctions', current.filter(Boolean));
+                                  current.splice(idx - 1, 1);
                                 }
-                              }}
-                              style={{ color: currentVal ? undefined : '#cbd5e1' }}
-                              className={`${selectClass(idx === 0 ? 'jobFunction' : '_none')} ${idx > 0 && !currentVal ? 'border-dashed' : ''}`}
-                            >
-                              <option value="" disabled={idx === 0} hidden={idx === 0}>{idx === 0 ? '目标方向' : `可选方向 ${idx}`}</option>
-                              {FUNCTIONS.filter(f => f === currentVal || !allSelected.includes(f)).map(f => (
-                                <option key={f} value={f}>{f}</option>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div></div>
+                                handleInputChange('jobFunctions', current.filter(Boolean));
+                              }
+                            }}
+                            style={{ color: currentVal ? undefined : '#cbd5e1' }}
+                            className={`${selectClass(idx === 0 ? 'jobFunction' : '_none')} ${idx > 0 && !currentVal ? 'border-dashed' : ''}`}
+                          >
+                            <option value="" disabled={idx === 0} hidden={idx === 0}>{idx === 0 ? '目标方向' : `可选方向 ${idx}`}</option>
+                            {FUNCTIONS.filter(f => f === currentVal || !allSelected.includes(f)).map(f => (
+                              <option key={f} value={f}>{f}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
