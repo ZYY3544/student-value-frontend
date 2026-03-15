@@ -512,7 +512,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 <div className="flex flex-col justify-center gap-3">
                   {competencyDetails.map((item, idx) => (
                     <div key={idx} className="space-y-1">
-                      <span className="inline-block text-sm font-bold text-[#0A66C2] bg-blue-50 px-2.5 py-1 rounded-lg">{item.tag}</span>
+                      <span className="inline-block text-sm font-bold text-[#0A66C2] bg-blue-50 px-2.5 py-1 rounded-lg">{item.label}</span>
                       <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
                     </div>
                   ))}
