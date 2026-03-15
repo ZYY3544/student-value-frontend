@@ -607,23 +607,29 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             <div className={`space-y-4 ${salaryLoading ? 'opacity-50 transition-opacity' : ''}`}>
               {filteredComparisons.map((job, idx) => (
                 <div key={idx} className={`p-5 rounded-2xl border ${idx === 0 ? 'border-[#0A66C2]/30 bg-blue-50/30' : 'border-gray-100 bg-gray-50'}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-gray-800">{job.jobFunction}</span>
-                      {idx === 0 && <span className="text-xs bg-[#0A66C2] text-white px-2 py-0.5 rounded-full">目标方向</span>}
+                  <div className="flex items-center">
+                    {/* 左侧内容 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-base font-bold text-gray-800">{job.jobFunction}</span>
+                        {idx === 0 && <span className="text-xs bg-[#0A66C2] text-white px-2 py-0.5 rounded-full">目标方向</span>}
+                      </div>
+                      {job.coreDuties && (
+                        <p className="text-xs text-gray-400 mb-3"><span className="text-gray-500 font-medium">岗位核心职责：</span>{job.coreDuties}</p>
+                      )}
+                      <div className="w-1/2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-500">匹配度</span>
+                          <span className="text-xs font-bold text-gray-700">{job.matchScore}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="h-2 rounded-full bg-[#0A66C2] transition-all" style={{ width: `${job.matchScore}%` }} />
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-lg font-black text-[#0A66C2]">{job.salaryRange}</span>
-                  </div>
-                  {job.coreDuties && (
-                    <p className="text-xs text-gray-400 mb-3">{job.coreDuties}</p>
-                  )}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-500">匹配度</span>
-                      <span className="text-xs font-bold text-gray-700">{job.matchScore}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="h-2 rounded-full bg-[#0A66C2] transition-all" style={{ width: `${job.matchScore}%` }} />
+                    {/* 右侧薪酬 */}
+                    <div className="flex-shrink-0 pl-6">
+                      <span className="text-2xl font-black text-[#0A66C2]">{job.salaryRange}</span>
                     </div>
                   </div>
                 </div>
