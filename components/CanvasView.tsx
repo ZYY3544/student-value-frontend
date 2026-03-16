@@ -53,8 +53,29 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onEditSuggestion,
   onSectionContentChange,
   onExitCanvas,
+  assessmentContext,
 }) => {
   const [exporting, setExporting] = useState(false);
+
+  // 构建 Sparky 进入画布时的自动开场指令
+  const autoStartPrompt = React.useMemo(() => {
+    const ctx = assessmentContext || {};
+    const jobTitle = ctx.jobTitle || '';
+    const expressionScore = ctx.expressionScore;
+    const starScore = ctx.starScore;
+    // 找出简历表达力最弱维度
+    const dimScores: Record<string, number> = {};
+    if (starScore && starScore !== '未知') dimScores['STAR规范度'] = Number(starScore);
+    if (ctx.keywordScore && ctx.keywordScore !== '未知') dimScores['关键词覆盖'] = Number(ctx.keywordScore);
+    if (ctx.quantifyScore && ctx.quantifyScore !== '未知') dimScores['量化程度'] = Number(ctx.quantifyScore);
+    if (ctx.powerScore && ctx.powerScore !== '未知') dimScores['表达力度'] = Number(ctx.powerScore);
+    if (ctx.completenessScore && ctx.completenessScore !== '未知') dimScores['信息完整度'] = Number(ctx.completenessScore);
+    if (ctx.structureScore && ctx.structureScore !== '未知') dimScores['结构规范度'] = Number(ctx.structureScore);
+    const weakest = Object.entries(dimScores).sort((a, b) => a[1] - b[1])[0];
+    const weakDim = weakest ? weakest[0] : '';
+    const firstSection = resumeSections[1]?.title || resumeSections[0]?.title || '第一段经历';
+    return `[CANVAS_AUTO_START] 用户刚进入画布模式。请根据以下信息自动开始第一个改写建议（不要等用户先说话）：简历表达力综合分${expressionScore || '未知'}/100，最弱维度是${weakDim || '未知'}，目标岗位${jobTitle}。建议从「${firstSection}」开始改写。请直接给出改写建议，用 EDIT 指令格式输出。`;
+  }, [assessmentContext, resumeSections]);
   const [showOriginal, setShowOriginal] = useState(true);
   const originalRef = useRef<HTMLDivElement>(null);
   const optimizedRef = useRef<HTMLDivElement>(null);
@@ -209,6 +230,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onEditSuggestion={handleEditSuggestion}
             externalMessage={externalMessage}
             onExternalMessageConsumed={() => setExternalMessage(null)}
+            autoStartPrompt={autoStartPrompt}
           />
         </div>
 

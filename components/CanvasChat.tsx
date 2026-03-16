@@ -18,6 +18,7 @@ interface CanvasChatProps {
   onEditSuggestion: (edit: Omit<PendingEdit, 'status'>) => void;
   externalMessage?: string | null;
   onExternalMessageConsumed?: () => void;
+  autoStartPrompt?: string;
 }
 
 const MAX_INPUT_LENGTH = 2000;
@@ -32,6 +33,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   onEditSuggestion,
   externalMessage,
   onExternalMessageConsumed,
+  autoStartPrompt,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -109,6 +111,16 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       onExternalMessageConsumed?.();
     }
   }, [externalMessage, onExternalMessageConsumed]);
+
+  // 进入画布时自动触发第一条改写（Sparky 先动）
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStartPrompt && sessionId && !autoStarted.current && messages.length === 0) {
+      autoStarted.current = true;
+      // 短暂延迟让 UI 渲染完毕
+      setTimeout(() => sendMessageRef.current(autoStartPrompt), 300);
+    }
+  }, [autoStartPrompt, sessionId, messages.length]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
