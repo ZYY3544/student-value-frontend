@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Download, Loader2, PanelLeftClose, PanelLeft, Sparkles, Scissors, Plus } from 'lucide-react';
+import { ArrowLeft, Download, PanelLeftClose, PanelLeft, Sparkles, Scissors, Plus } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
@@ -55,7 +55,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onExitCanvas,
   assessmentContext,
 }) => {
-  const [exporting, setExporting] = useState(false);
 
   // 构建 Sparky 进入画布时的自动开场指令
   const autoStartPrompt = React.useMemo(() => {
@@ -147,41 +146,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, []);
 
-  // 导出 PDF
-  const handleExportPdf = useCallback(async () => {
-    if (!sessionId || exporting) return;
-    setExporting(true);
-    try {
-      const res = await fetch(`${apiBase}/api/chat/resume/export-pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: '导出失败' }));
-        throw new Error(err.error || '导出失败');
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = '我的简历.pdf';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (e: any) {
-      alert(e.message || '导出失败，请稍后重试');
-    } finally {
-      setExporting(false);
-    }
-  }, [sessionId, apiBase, exporting]);
+  // 导出 PDF（浏览器打印）
+  const handleExportPdf = useCallback(() => {
+    window.print();
+  }, []);
 
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
       {/* Top bar */}
-      <header className="h-12 border-b border-gray-100 flex items-center px-5 gap-4 flex-shrink-0 bg-white z-10">
+      <header className="h-12 border-b border-gray-100 flex items-center px-5 gap-4 flex-shrink-0 bg-white z-10 canvas-no-print">
         <button
           onClick={onExitCanvas}
           className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
@@ -207,10 +181,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           </button>
           <button
             onClick={handleExportPdf}
-            disabled={exporting || resumeSections.length === 0}
+            disabled={resumeSections.length === 0}
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#004F90] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            <Download className="w-3.5 h-3.5" />
             导出 PDF
           </button>
         </div>
@@ -219,7 +193,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       {/* Main content - 三栏布局 */}
       <div className="flex-1 flex overflow-hidden">
         {/* 左栏: Chat */}
-        <div className={`${showOriginal ? 'w-[30%]' : 'w-[40%]'} min-w-[280px] border-r border-gray-100 flex flex-col bg-white transition-all duration-300`}>
+        <div className={`${showOriginal ? 'w-[30%]' : 'w-[40%]'} min-w-[280px] border-r border-gray-100 flex flex-col bg-white transition-all duration-300 canvas-no-print`}>
           <CanvasChat
             sessionId={sessionId}
             messages={messages}
@@ -240,18 +214,18 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             ref={originalRef}
             onScroll={() => handleScroll('original')}
             onMouseUp={handleMouseUp}
-            className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100"
+            className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100 canvas-no-print"
           >
             <OriginalResumePanel sections={originalSections} />
           </div>
         )}
 
-        {/* 右栏: 可编辑简历（含 diff 高亮） */}
+        {/* 右栏: 可编辑简历（含 diff 高亮）— 打印时唯一显示的区域 */}
         <div
           ref={optimizedRef}
           onScroll={() => handleScroll('optimized')}
           onMouseUp={handleMouseUp}
-          className={`${showOriginal ? 'w-[35%]' : 'w-[60%]'} overflow-y-auto bg-white transition-all duration-300`}
+          className={`${showOriginal ? 'w-[35%]' : 'w-[60%]'} overflow-y-auto bg-white transition-all duration-300 canvas-print-area`}
         >
           <ResumePanel
             sections={resumeSections}
