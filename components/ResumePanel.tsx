@@ -438,24 +438,15 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
     prevEditCountRef.current = pendingEdits.length;
   }, [pendingEdits, setSectionMode]);
 
-  // AI 尚未提供任何建议时，显示占位提示
-  if (pendingEdits.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-400">
-        <div className="text-center">
-          <FileText className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-          <p className="text-sm font-medium text-gray-400">优化版本</p>
-          <p className="text-xs text-gray-300 mt-1">与 AI 对话后，优化建议将在此显示</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 space-y-5">
       <div className="mb-2">
         <h2 className="text-base font-bold text-gray-800">优化版本</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">绿色为新增内容，红色删除线为原文，点击铅笔可编辑</p>
+        <p className="text-[11px] text-gray-400 mt-0.5">
+          {pendingEdits.length > 0
+            ? '绿色为新增内容，红色删除线为原文，点击铅笔可编辑'
+            : '当前显示原文，AI 改写后将自动显示 diff 对比'}
+        </p>
       </div>
 
       {sections.map((section) => {

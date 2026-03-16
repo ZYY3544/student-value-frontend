@@ -112,13 +112,48 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     }
   }, [externalMessage, onExternalMessageConsumed]);
 
-  // 进入画布时自动触发第一条改写（Sparky 先动）
+  // 进入画布时自动触发第一条改写（Sparky 先动，不显示用户消息）
   const autoStarted = useRef(false);
   useEffect(() => {
     if (autoStartPrompt && sessionId && !autoStarted.current && messages.length === 0) {
       autoStarted.current = true;
-      // 短暂延迟让 UI 渲染完毕
-      setTimeout(() => sendMessageRef.current(autoStartPrompt), 300);
+      setTimeout(async () => {
+        // 只显示 assistant 的空气泡（不显示系统指令作为用户消息）
+        setIsLoading(true);
+        setMessages([{ role: 'assistant', content: '' }]);
+        try {
+          const res = await fetch(`${apiBase}/api/chat/message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              message: autoStartPrompt,
+              stream: true,
+              canvasMode: true,
+            }),
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          await parseSseStream(
+            res,
+            (fullText) => {
+              setMessages([{ role: 'assistant', content: fullText }]);
+            },
+            (edit) => {
+              onEditSuggestion({
+                sectionId: edit.sectionId,
+                original: edit.original,
+                suggested: edit.suggested,
+                rationale: edit.rationale,
+              });
+            }
+          );
+        } catch (err) {
+          console.error('Canvas auto-start failed:', err);
+          setMessages([{ role: 'assistant', content: '你好，我来帮你优化简历。你想从哪段开始？' }]);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 300);
     }
   }, [autoStartPrompt, sessionId, messages.length]);
 
