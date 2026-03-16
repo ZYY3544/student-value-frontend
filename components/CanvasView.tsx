@@ -12,11 +12,11 @@ import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
 import { ResumeSection, PendingEdit } from '../types';
 
-// 选中文本快捷操作
+// 选中文本快捷操作（必须要求 EDIT 格式输出，否则 LLM 会当普通对话回复）
 const QUICK_ACTIONS = [
-  { label: '润色', icon: Sparkles, prompt: (text: string) => `请润色以下简历内容，使表达更专业流畅：\n「${text}」` },
-  { label: '精简', icon: Scissors, prompt: (text: string) => `请精简以下简历内容，保留核心要点：\n「${text}」` },
-  { label: '扩充', icon: Plus, prompt: (text: string) => `请扩充以下简历内容，增加量化成果和具体细节：\n「${text}」` },
+  { label: '润色', icon: Sparkles, prompt: (text: string) => `请润色以下选中的简历内容，使表达更专业流畅。直接用 EDIT 指令格式输出改写结果：\n「${text}」` },
+  { label: '精简', icon: Scissors, prompt: (text: string) => `请精简以下选中的简历内容，保留核心要点去掉冗余。直接用 EDIT 指令格式输出改写结果：\n「${text}」` },
+  { label: '扩充', icon: Plus, prompt: (text: string) => `请扩充以下选中的简历内容，增加量化成果和具体细节。直接用 EDIT 指令格式输出改写结果：\n「${text}」` },
 ];
 
 interface CanvasViewProps {
