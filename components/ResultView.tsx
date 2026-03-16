@@ -326,6 +326,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }
   }, [sessionId]);
 
+  // 接受 AI 改写：清除 diff 高亮，定稿该段落
+  const handleAcceptEdit = useCallback((sectionId: string) => {
+    setPendingEdits(prev => prev.filter(e => e.sectionId !== sectionId));
+  }, []);
+
   // 手动编辑简历段落 + 自动保存
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSectionContentChange = useCallback((sectionId: string, newContent: string) => {
@@ -425,6 +430,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         originalSections={originalSections}
         pendingEdits={pendingEdits}
         onEditSuggestion={handleEditSuggestion}
+        onAcceptEdit={handleAcceptEdit}
         onSectionContentChange={handleSectionContentChange}
         onExitCanvas={() => setViewMode('report')}
       />

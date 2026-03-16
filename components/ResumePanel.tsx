@@ -362,7 +362,8 @@ const SectionEditor: React.FC<{
  */
 export const OriginalResumePanel: React.FC<{
   sections: ResumeSection[];
-}> = ({ sections }) => {
+  highlightSectionId?: string | null;
+}> = ({ sections, highlightSectionId }) => {
   if (sections.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400">
@@ -380,11 +381,17 @@ export const OriginalResumePanel: React.FC<{
 
       {sections.map((section) => {
         const typeConfig = SECTION_TYPE_CONFIG[section.type] || SECTION_TYPE_CONFIG.other;
+        const isHighlighted = section.id === highlightSectionId;
 
         return (
           <div
             key={section.id}
-            className="rounded-2xl border border-gray-100 bg-white/60"
+            data-section-id={section.id}
+            className={`rounded-2xl border transition-all duration-300 ${
+              isHighlighted
+                ? 'bg-amber-50/80 border-amber-200 shadow-md shadow-amber-50'
+                : 'border-gray-100 bg-white/60'
+            }`}
           >
             <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeConfig.bg} ${typeConfig.color}`}>

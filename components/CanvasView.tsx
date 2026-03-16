@@ -33,6 +33,7 @@ interface CanvasViewProps {
   originalSections: ResumeSection[];
   pendingEdits: PendingEdit[];
   onEditSuggestion: (edit: Omit<PendingEdit, 'status'>) => void;
+  onAcceptEdit: (sectionId: string) => void;
   onSectionContentChange: (sectionId: string, content: string) => void;
   onExitCanvas: () => void;
   // Not needed but passed through
@@ -51,20 +52,23 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   originalSections,
   pendingEdits,
   onEditSuggestion,
+  onAcceptEdit,
   onSectionContentChange,
   onExitCanvas,
   assessmentContext,
 }) => {
 
-  // 构建 Sparky 进入画布时的自动开场指令
+  // 被改段落高亮跟踪（中间栏联动）
+  const [highlightSectionId, setHighlightSectionId] = useState<string | null>(null);
+
+  // 构建 Sparky 进入画布时的自动开场指令（区分四种场景）
   const autoStartPrompt = React.useMemo(() => {
     const ctx = assessmentContext || {};
     const jobTitle = ctx.jobTitle || '';
     const expressionScore = ctx.expressionScore;
-    const starScore = ctx.starScore;
     // 找出简历表达力最弱维度
     const dimScores: Record<string, number> = {};
-    if (starScore && starScore !== '未知') dimScores['STAR规范度'] = Number(starScore);
+    if (ctx.starScore && ctx.starScore !== '未知') dimScores['STAR规范度'] = Number(ctx.starScore);
     if (ctx.keywordScore && ctx.keywordScore !== '未知') dimScores['关键词覆盖'] = Number(ctx.keywordScore);
     if (ctx.quantifyScore && ctx.quantifyScore !== '未知') dimScores['量化程度'] = Number(ctx.quantifyScore);
     if (ctx.powerScore && ctx.powerScore !== '未知') dimScores['表达力度'] = Number(ctx.powerScore);
@@ -73,7 +77,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     const weakest = Object.entries(dimScores).sort((a, b) => a[1] - b[1])[0];
     const weakDim = weakest ? weakest[0] : '';
     const firstSection = resumeSections[1]?.title || resumeSections[0]?.title || '第一段经历';
-    return `[CANVAS_AUTO_START] 用户刚进入画布模式。请根据以下信息自动开始第一个改写建议（不要等用户先说话）：简历表达力综合分${expressionScore || '未知'}/100，最弱维度是${weakDim || '未知'}，目标岗位${jobTitle}。建议从「${firstSection}」开始改写。请直接给出改写建议，用 EDIT 指令格式输出。`;
+    return `[CANVAS_AUTO_START] 用户刚进入画布模式，请自动开始第一个改写建议（不要等用户先说话）。
+根据 session 上下文选择开场方式：
+- 如果有面试中发现的简历改进点（resume_insights），优先据此改写对应段落
+- 如果之前做过报告解读，基于讨论中发现的薄弱点改写
+- 否则基于简历表达力诊断（综合分 ${expressionScore || '未知'}/100，最弱维度：${weakDim || '未知'}）从「${firstSection}」开始
+目标岗位：${jobTitle}
+开场先说一句你要改哪段、为什么，然后直接用 EDIT 指令格式输出改写结果。`;
   }, [assessmentContext, resumeSections]);
   const [showOriginal, setShowOriginal] = useState(true);
   const originalRef = useRef<HTMLDivElement>(null);
@@ -102,10 +112,25 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     requestAnimationFrame(() => { isSyncing.current = false; });
   }, []);
 
-  // AI 编辑建议：直接转发给 ResultView 处理（自动应用 + 存储 diff 元数据）
+  // AI 编辑建议：转发给 ResultView 处理 + 高亮中间栏对应段落
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     onEditSuggestion(edit);
+    setHighlightSectionId(edit.sectionId);
   }, [onEditSuggestion]);
+
+  // 用户接受改写：清除高亮 + 通知 ResultView 清除 diff
+  const handleAcceptEdit = useCallback((sectionId: string) => {
+    setHighlightSectionId(null);
+    onAcceptEdit(sectionId);
+  }, [onAcceptEdit]);
+
+  // 中间栏自动滚动到被高亮段落
+  useEffect(() => {
+    if (highlightSectionId && originalRef.current) {
+      const el = originalRef.current.querySelector(`[data-section-id="${highlightSectionId}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightSectionId]);
 
   // 选中文本检测
   const handleMouseUp = useCallback(() => {
@@ -205,6 +230,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             externalMessage={externalMessage}
             onExternalMessageConsumed={() => setExternalMessage(null)}
             autoStartPrompt={autoStartPrompt}
+            pendingEdits={pendingEdits}
+            onAcceptEdit={handleAcceptEdit}
+            resumeSections={resumeSections}
           />
         </div>
 
@@ -216,7 +244,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onMouseUp={handleMouseUp}
             className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100 canvas-no-print"
           >
-            <OriginalResumePanel sections={originalSections} />
+            <OriginalResumePanel sections={originalSections} highlightSectionId={highlightSectionId} />
           </div>
         )}
 
