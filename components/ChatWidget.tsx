@@ -120,8 +120,12 @@ function isStatusLine(line: string): boolean {
   return /\.{3}$/.test(trimmed) && /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u.test(trimmed);
 }
 
+// 清理隐藏标签（[RESUME_INSIGHT:...] 等系统标签不渲染给用户）
+const cleanSystemTags = (text: string) => text.replace(/\[RESUME_INSIGHT:.*?\]/g, '').trim();
+
 // Markdown 渲染
 export const formatContent = (text: string) => {
+  text = cleanSystemTags(text);
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
 
