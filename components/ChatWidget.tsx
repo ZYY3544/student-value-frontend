@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare, SquarePen, Pin, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { CareerForm } from './CareerForm';
 
 // 像素小猫 Logo
 export const PixelCat: React.FC<{ size?: number }> = ({ size = 40 }) => {
@@ -861,7 +862,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             >
               {msg.role === 'assistant' ? (
                 msg.content ? (
-                  formatContent(msg.content)
+                  <>
+                    {formatContent(msg.content.replace('[CAREER_FORM]', ''))}
+                    {msg.content.includes('[CAREER_FORM]') && (
+                      <CareerForm onSubmit={(answers) => sendMessage(answers)} />
+                    )}
+                  </>
                 ) : (
                   <span className="flex items-center gap-1 text-gray-400">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '0ms' }} />
