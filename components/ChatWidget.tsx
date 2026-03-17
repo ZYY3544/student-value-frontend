@@ -62,6 +62,7 @@ export const PixelCat: React.FC<{ size?: number }> = ({ size = 40 }) => {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  sources?: SearchSource[];
 }
 
 interface ChatWidgetProps {
@@ -219,10 +220,18 @@ const CHIP_ACTIONS: Record<string, string> = {
 };
 
 // SSE 流解析工具函数（供 ChatWidget 和 CanvasChat 复用）
+export interface SearchSource {
+  title: string;
+  link: string;
+  snippet?: string;
+  favicon?: string;
+}
+
 export async function parseSseStream(
   response: Response,
   onText: (fullText: string) => void,
   onEdit?: (edit: { sectionId: string; original: string; suggested: string; rationale: string }) => void,
+  onSources?: (sources: SearchSource[]) => void,
 ) {
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();
@@ -251,6 +260,8 @@ export async function parseSseStream(
             suggested: event.suggested,
             rationale: event.rationale,
           });
+        } else if (event.type === 'sources' && onSources) {
+          onSources(event.sources || []);
         }
       } catch { /* Skip invalid JSON */ }
     }
@@ -640,13 +651,24 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
 
-      await parseSseStream(res, (fullText) => {
-        setMessages(prev => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: fullText };
-          return updated;
-        });
-      });
+      await parseSseStream(
+        res,
+        (fullText) => {
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...updated[updated.length - 1], role: 'assistant', content: fullText };
+            return updated;
+          });
+        },
+        undefined,
+        (sources) => {
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...updated[updated.length - 1], sources };
+            return updated;
+          });
+        },
+      );
     } catch (err: any) {
       if (err.name === 'AbortError') {
         // 用户主动中断，保留已接收的内容
@@ -881,6 +903,24 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                 )
               ) : (
                 msg.content
+              )}
+              {/* 搜索来源卡片 */}
+              {msg.sources && msg.sources.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
+                  <p className="text-[10px] text-gray-400 font-medium">来源</p>
+                  {msg.sources.map((src, i) => (
+                    <a
+                      key={i}
+                      href={src.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-lg border border-gray-100 hover:border-[#0A66C2]/30 hover:bg-blue-50/30 transition-colors group"
+                    >
+                      {src.favicon && <img src={src.favicon} alt="" className="w-3.5 h-3.5 rounded-sm flex-shrink-0" />}
+                      <span className="text-xs text-gray-600 group-hover:text-[#0A66C2] truncate">{src.title}</span>
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
           </div>
