@@ -583,8 +583,31 @@ const App: React.FC = () => {
                         </button>
                       </div>
                     ) : (
-                      <label className="group cursor-pointer block">
-                        <div className={`border-2 border-dashed ${hasError('resumeSource') ? 'border-rose-300' : 'border-slate-200'} rounded-2xl h-40 flex flex-col items-center justify-center text-center`}>
+                      <label
+                        className="group cursor-pointer block"
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.querySelector('div')?.classList.add('border-[#0A66C2]', 'bg-blue-50/50'); }}
+                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.querySelector('div')?.classList.remove('border-[#0A66C2]', 'bg-blue-50/50'); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.querySelector('div')?.classList.remove('border-[#0A66C2]', 'bg-blue-50/50');
+                          const file = e.dataTransfer.files?.[0];
+                          if (file) {
+                            const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+                            if (!validTypes.includes(file.type)) return;
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const base64 = (reader.result as string).split(',')[1];
+                              handleInputChange('resumeFile', { mimeType: file.type, data: base64 });
+                              handleInputChange('resumeFileName', file.name);
+                              if (errors.includes('resumeSource')) setErrors(prev => prev.filter(err => err !== 'resumeSource'));
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      >
+                        <div className={`border-2 border-dashed ${hasError('resumeSource') ? 'border-rose-300' : 'border-slate-200'} rounded-2xl h-40 flex flex-col items-center justify-center text-center transition-colors`}>
                           <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-3">
                             <CloudUpload className="w-6 h-6 text-[#0A66C2]" />
                           </div>
