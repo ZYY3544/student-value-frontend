@@ -393,10 +393,7 @@ export const OriginalResumePanel: React.FC<{
                 : 'border-gray-100 bg-white/60'
             }`}
           >
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeConfig.bg} ${typeConfig.color}`}>
-                {typeConfig.label}
-              </span>
+            <div className="px-5 py-3 border-b border-gray-50">
               <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
             </div>
             <div className="px-5 py-4 space-y-2">
@@ -479,9 +476,6 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
           >
             {/* Section header */}
             <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeConfig.bg} ${typeConfig.color}`}>
-                {typeConfig.label}
-              </span>
               <h3 className="text-sm font-semibold text-gray-800">{section.title}</h3>
               {/* 铅笔按钮：diff/clean 模式下显示 */}
               {mode !== 'editing' && (
