@@ -127,6 +127,8 @@ const cleanSystemTags = (text: string) => text.replace(/\[RESUME_INSIGHT:.*?\]/g
 // Markdown 渲染
 export const formatContent = (text: string) => {
   text = cleanSystemTags(text);
+  // 清理全角空格和连续多余空格（LLM 偶尔产生）
+  text = text.replace(/\u3000/g, ' ').replace(/ {2,}/g, ' ');
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
 
