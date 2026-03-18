@@ -236,32 +236,35 @@ export async function parseSseStream(
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  let fullText = '';
+  let fullText = '';      // LLM 已生成的完整文本
+  let displayedLen = 0;   // 已渲染到屏幕的字符数
+  let streamDone = false;
 
-  // 节流：每 60ms 最多渲染一次，模拟自然打字速度
-  const THROTTLE_MS = 60;
-  let lastFlush = 0;
-  let pendingFlush: ReturnType<typeof setTimeout> | null = null;
-  const flushText = () => {
-    onText(fullText);
-    lastFlush = Date.now();
-    if (pendingFlush) { clearTimeout(pendingFlush); pendingFlush = null; }
-  };
-  const throttledOnText = () => {
-    const now = Date.now();
-    if (now - lastFlush >= THROTTLE_MS) {
-      flushText();
-    } else if (!pendingFlush) {
-      pendingFlush = setTimeout(flushText, THROTTLE_MS - (now - lastFlush));
-    }
+  // 逐段释放：每 50ms 渲染一批字符，模拟自然打字速度
+  const RENDER_INTERVAL = 50;
+  const CHARS_PER_TICK = 8; // 每次渲染 8 个字符（约 4 个中文字）
+  let renderTimer: ReturnType<typeof setInterval> | null = null;
+
+  const startRenderLoop = () => {
+    if (renderTimer) return;
+    renderTimer = setInterval(() => {
+      if (displayedLen < fullText.length) {
+        displayedLen = Math.min(displayedLen + CHARS_PER_TICK, fullText.length);
+        onText(fullText.slice(0, displayedLen));
+      } else if (streamDone) {
+        // 全部渲染完毕
+        if (renderTimer) { clearInterval(renderTimer); renderTimer = null; }
+        onText(fullText); // 确保完整
+      }
+    }, RENDER_INTERVAL);
   };
 
   while (true) {
     const { value, done } = await reader.read();
     if (done) {
-      // 流结束，确保最后一批文本渲染出来
-      if (pendingFlush) { clearTimeout(pendingFlush); pendingFlush = null; }
-      if (fullText) onText(fullText);
+      streamDone = true;
+      // 如果没启动过渲染循环（极短回复），直接输出
+      if (!renderTimer) onText(fullText);
       break;
     }
 
@@ -275,7 +278,7 @@ export async function parseSseStream(
         const event = JSON.parse(line.slice(6));
         if (event.type === 'text') {
           fullText += event.content;
-          throttledOnText();
+          startRenderLoop();
         } else if (event.type === 'edit' && onEdit) {
           onEdit({
             sectionId: event.sectionId,
@@ -288,6 +291,20 @@ export async function parseSseStream(
         }
       } catch { /* Skip invalid JSON */ }
     }
+  }
+
+  // 等待渲染循环把剩余字符全部输出
+  if (renderTimer) {
+    await new Promise<void>(resolve => {
+      const waitTimer = setInterval(() => {
+        if (displayedLen >= fullText.length) {
+          if (renderTimer) { clearInterval(renderTimer); renderTimer = null; }
+          clearInterval(waitTimer);
+          onText(fullText);
+          resolve();
+        }
+      }, RENDER_INTERVAL);
+    });
   }
 }
 
