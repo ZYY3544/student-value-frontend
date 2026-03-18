@@ -666,7 +666,17 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setMessages(prev => [...prev, { role: 'user', content: userDisplay }]);
     setInputValue('');
     setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+    // 根据场景显示"思考中"提示
+    const thinkingHints: Record<string, string> = {
+      '解读报告': 'Sparky 正在分析你的评测数据...',
+      '模拟面试': 'Sparky 正在准备问题...',
+      '职业规划': 'Sparky 正在分析你的情况...',
+    };
+    const actionMatch = text.match(/\[ACTION:([^\]]+)\]/);
+    const thinkingText = actionMatch ? (thinkingHints[actionMatch[1]] || 'Sparky 正在思考...') : 'Sparky 正在思考...';
+    setMessages(prev => [...prev, { role: 'assistant', content: thinkingText }]);
+    const thinkingStartTime = Date.now();
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -689,6 +699,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+
+      // 确保"思考中"提示至少显示 1 秒
+      const elapsed = Date.now() - thinkingStartTime;
+      if (elapsed < 1000) {
+        await new Promise(r => setTimeout(r, 1000 - elapsed));
       }
 
       await parseSseStream(
@@ -928,17 +944,23 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             >
               {msg.role === 'assistant' ? (
                 msg.content ? (
-                  <>
-                    {formatContent(msg.content.replace('[CAREER_FORM]', ''))}
-                    {msg.content.includes('[CAREER_FORM]') && (
-                      <CareerForm onSubmit={(answers) => sendMessage(answers)} />
-                    )}
-                  </>
+                  msg.content.startsWith('Sparky 正在') ? (
+                    <span className="flex items-center gap-2 text-gray-400 text-sm">
+                      <Loader2 size={14} className="animate-spin text-[#CA7C5E]" />
+                      {msg.content}
+                    </span>
+                  ) : (
+                    <>
+                      {formatContent(msg.content.replace('[CAREER_FORM]', ''))}
+                      {msg.content.includes('[CAREER_FORM]') && (
+                        <CareerForm onSubmit={(answers) => sendMessage(answers)} />
+                      )}
+                    </>
+                  )
                 ) : (
-                  <span className="flex items-center gap-1 text-gray-400">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="flex items-center gap-2 text-gray-400 text-sm">
+                    <Loader2 size={14} className="animate-spin text-[#CA7C5E]" />
+                    Sparky 正在思考...
                   </span>
                 )
               ) : (
