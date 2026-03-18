@@ -441,45 +441,39 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (!userId) return;
     setHistoryLoading(true);
     try {
-      // 1) 查 session 列表（不内联 chat_messages，避免 PostgREST limit 同时截断子查询）
-      const { data: sessions } = await supabase
+      // 单次查询：内联 join chat_messages，只取 role=user 的消息用于判断和展示
+      const { data, error } = await supabase
         .from('chat_sessions')
-        .select('id, created_at, pinned, title')
+        .select('id, created_at, pinned, title, chat_messages(content, role)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (sessions && sessions.length > 0) {
-        // 2) 批量取每个 session 的第一条用户消息（单独查询，不受 limit 干扰）
-        const sessionIds = sessions.map((s: any) => s.id);
-        const { data: msgs } = await supabase
-          .from('chat_messages')
-          .select('session_id, content')
-          .in('session_id', sessionIds)
-          .eq('role', 'user')
-          .order('created_at', { ascending: true });
+      if (error) {
+        console.error('[loadHistory] Supabase query error:', error);
+        setChatHistory([]);
+        return;
+      }
 
-        // 按 session_id 分组，取第一条
-        const firstMsgMap = new Map<string, string>();
-        if (msgs) {
-          for (const m of msgs) {
-            if (!firstMsgMap.has(m.session_id)) {
-              firstMsgMap.set(m.session_id, m.content?.slice(0, 30) || '新对话');
-            }
-          }
-        }
-
-        // 只保留有用户消息的 session
-        const mapped = sessions
-          .filter((s: any) => firstMsgMap.has(s.id))
+      if (data && data.length > 0) {
+        // 只保留有用户消息的 session，排除当前正在进行的空 session
+        const mapped = data
+          .filter((s: any) => {
+            const msgs = s.chat_messages || [];
+            return msgs.some((m: any) => m.role === 'user');
+          })
           .slice(0, 10)
-          .map((s: any) => ({
-            id: s.id,
-            created_at: s.created_at,
-            firstMessage: firstMsgMap.get(s.id) || '新对话',
-            pinned: !!s.pinned,
-            title: s.title || null,
-          }));
+          .map((s: any) => {
+            const msgs = s.chat_messages || [];
+            const userMsg = msgs.find((m: any) => m.role === 'user');
+            return {
+              id: s.id,
+              created_at: s.created_at,
+              firstMessage: userMsg?.content?.slice(0, 30) || '新对话',
+              pinned: !!s.pinned,
+              title: s.title || null,
+            };
+          });
 
         // pinned 优先，再按 created_at 降序
         mapped.sort((a: any, b: any) => {
