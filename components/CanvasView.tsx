@@ -329,7 +329,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
                   setHighlightSectionId(selectionToolbar.sectionId);
                   setHighlightText(selectionToolbar.text);
                 }
-                setExternalMessage(action.prompt(selectionToolbar.text, selectionToolbar.sectionTitle));
+                setExternalMessage(`[QUICK:${action.label}]` + action.prompt(selectionToolbar.text, selectionToolbar.sectionTitle));
                 setSelectionToolbar(null);
                 window.getSelection()?.removeAllRanges();
               }}

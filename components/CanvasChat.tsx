@@ -56,17 +56,30 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // 最近一次 edit 的 rationale（用于空回复兜底）
+  const lastEditRationaleRef = useRef('');
+
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || !sessionId) return;
 
-    // 隐藏 [CANVAS_AUTO_START] 指令，不显示为用户消息
-    if (!text.startsWith('[CANVAS_AUTO_START]')) {
+    // 解析快捷操作标记 [QUICK:润色]
+    const quickMatch = text.match(/^\[QUICK:(.+?)\]/);
+    const messageToSend = quickMatch ? text.slice(quickMatch[0].length) : text;
+
+    // 显示用户消息
+    if (text.startsWith('[CANVAS_AUTO_START]')) {
+      // 自动开场：隐藏
+    } else if (quickMatch) {
+      // 快捷操作：显示简短标签，不暴露完整 prompt
+      setMessages(prev => [...prev, { role: 'user', content: `${quickMatch[1]}选中内容` }]);
+    } else {
       setMessages(prev => [...prev, { role: 'user', content: text }]);
     }
     if (!overrideText) setInputValue('');
     setIsLoading(true);
     streamHasEditRef.current = false;
+    lastEditRationaleRef.current = '';
     setLastStreamHadEdit(false);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -76,7 +89,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          message: text,
+          message: messageToSend,
           stream: true,
           canvasMode: true,
         }),
@@ -98,6 +111,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         },
         (edit) => {
           streamHasEditRef.current = true;
+          lastEditRationaleRef.current = edit.rationale || '';
           onEditSuggestion({
             sectionId: edit.sectionId,
             original: edit.original,
@@ -115,7 +129,19 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       });
     } finally {
       setIsLoading(false);
-      if (streamHasEditRef.current) setLastStreamHadEdit(true);
+      if (streamHasEditRef.current) {
+        setLastStreamHadEdit(true);
+        // 兜底：LLM 只输出了 EDIT 块没有解释文字 → 用 rationale 填充
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'assistant' && !last.content?.trim() && lastEditRationaleRef.current) {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: 'assistant', content: lastEditRationaleRef.current };
+            return updated;
+          }
+          return prev;
+        });
+      }
     }
   }, [apiBase, inputValue, isLoading, sessionId, onEditSuggestion]);
 

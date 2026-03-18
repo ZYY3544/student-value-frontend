@@ -444,22 +444,25 @@ export const OriginalResumePanel: React.FC<{
       {sections.map((section) => {
         const typeConfig = SECTION_TYPE_CONFIG[section.type] || SECTION_TYPE_CONFIG.other;
         const isHighlighted = section.id === highlightSectionId;
+        const hasTextHighlight = isHighlighted && !!highlightText;
 
         return (
           <div
             key={section.id}
             data-section-id={section.id}
             className={`rounded-2xl border transition-all duration-300 ${
-              isHighlighted
-                ? 'bg-amber-50/80 border-amber-200 shadow-md shadow-amber-50'
-                : 'border-gray-100 bg-white/60'
+              hasTextHighlight
+                ? 'border-amber-200 bg-white/60'
+                : isHighlighted
+                  ? 'bg-amber-50/80 border-amber-200 shadow-md shadow-amber-50'
+                  : 'border-gray-100 bg-white/60'
             }`}
           >
             <div className="px-5 py-3 border-b border-gray-50">
               <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
             </div>
             <div className="px-5 py-4 space-y-2">
-              {isHighlighted && highlightText
+              {hasTextHighlight
                 ? renderFormattedContentWithHighlight(section.content, highlightText, `orig-${section.id}-`)
                 : renderFormattedContent(cleanResumeContent(section.content))}
             </div>
