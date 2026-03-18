@@ -611,13 +611,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               ))}
             </div>
 
-            {result.recommendedJob && (
-              <div className="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-100">
-                <p className="text-sm text-purple-700">
-                  <span className="font-bold">推荐探索：</span>根据你的能力结构，<span className="font-bold">{result.recommendedJob}</span> 可能也是一个值得考虑的方向。
-                </p>
-              </div>
-            )}
+            <p className="text-xs text-gray-400 mt-4 leading-relaxed">以上薪酬数据为月度基本工资（税前现金性收入），薪酬范围仅供参考。</p>
           </div>
         )}
 
