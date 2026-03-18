@@ -4,9 +4,90 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Check, RefreshCw } from 'lucide-react';
+import { Send, Loader2, Check, RefreshCw, FileEdit } from 'lucide-react';
 import { ChatMessage, formatContent, parseSseStream, PixelCat } from './ChatWidget';
 import { PendingEdit, ResumeSection } from '../types';
+
+// ---- 前端兜底：解析泄露到 text 里的 <<<EDIT...EDIT>>> 块 ----
+interface ParsedEditBlock {
+  sectionId: string;
+  original: string;
+  suggested: string;
+  rationale: string;
+}
+
+function parseSingleEditBlock(block: string, sections: ResumeSection[]): ParsedEditBlock | null {
+  const sectionMatch = block.match(/SECTION:\s*(.+?)(?:\n|$)/m);
+  const originalMatch = block.match(/ORIGINAL:\s*([\s\S]+?)(?=\nSUGGESTED:)/);
+  const suggestedMatch = block.match(/SUGGESTED:\s*([\s\S]+?)(?=\nRATIONALE:)/);
+  const rationaleMatch = block.match(/RATIONALE:\s*([\s\S]+?)(?=\n?EDIT>>>)/);
+  if (!originalMatch || !suggestedMatch) return null;
+
+  const sectionTitle = sectionMatch?.[1]?.trim() || '';
+  const original = originalMatch[1].trim();
+  const suggested = suggestedMatch[1].trim();
+  const rationale = rationaleMatch?.[1]?.trim() || '';
+
+  // 按标题匹配 section
+  let sectionId = sections[0]?.id || 'section-0';
+  if (sectionTitle && sections.length > 0) {
+    const idx = sections.findIndex(s =>
+      s.title.includes(sectionTitle) || sectionTitle.includes(s.title)
+    );
+    if (idx !== -1) sectionId = sections[idx].id;
+  }
+  return { sectionId, original, suggested, rationale };
+}
+
+/** 从文本中提取完整 EDIT 块，返回清理后的展示文本和解析出的 edit 列表 */
+function cleanEditBlocksFromText(
+  text: string,
+  sections: ResumeSection[],
+): { displayText: string; edits: ParsedEditBlock[] } {
+  const edits: ParsedEditBlock[] = [];
+
+  // 提取所有完整 <<<EDIT...EDIT>>> 块
+  const editRegex = /<<<EDIT[\s\S]*?EDIT>>>/g;
+  let match;
+  while ((match = editRegex.exec(text)) !== null) {
+    const parsed = parseSingleEditBlock(match[0], sections);
+    if (parsed) edits.push(parsed);
+  }
+  // 从展示文本中移除完整块
+  let display = text.replace(/<<<EDIT[\s\S]*?EDIT>>>/g, '');
+  // 隐藏正在流式传输中的不完整 EDIT 块
+  const incompleteIdx = display.indexOf('<<<EDIT');
+  if (incompleteIdx !== -1) display = display.slice(0, incompleteIdx);
+
+  return { displayText: display.trim(), edits };
+}
+
+// ---- 修改建议卡片组件 ----
+const EditSuggestionCard: React.FC<{
+  rationale: string;
+  suggested: string;
+}> = ({ rationale, suggested }) => (
+  <div className="mt-2 rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0] overflow-hidden">
+    <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#CA7C5E]/10">
+      <FileEdit className="w-3.5 h-3.5 text-[#CA7C5E]" />
+      <span className="text-xs font-semibold text-[#CA7C5E]">修改建议</span>
+    </div>
+    <div className="px-3 py-2.5 space-y-2">
+      {rationale && (
+        <div>
+          <span className="text-[11px] font-medium text-gray-400">修改原因</span>
+          <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">{rationale}</p>
+        </div>
+      )}
+      <div>
+        <span className="text-[11px] font-medium text-gray-400">改写后</span>
+        <div className="text-sm text-gray-700 mt-0.5 bg-white rounded-lg px-3 py-2 border border-gray-100 leading-relaxed whitespace-pre-wrap">
+          {suggested}
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 interface CanvasChatProps {
   sessionId: string | null;
@@ -56,8 +137,20 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // 最近一次 edit 的 rationale（用于空回复兜底）
-  const lastEditRationaleRef = useRef('');
+  // 已处理的 edit 去重（防止后端 onEdit + 前端文本解析重复触发）
+  const processedEditsRef = useRef(new Set<string>());
+  // 修改建议卡片数据
+  const [editCards, setEditCards] = useState<Array<{ rationale: string; suggested: string }>>([]);
+
+  // 统一处理一个 edit：去重 → 触发 onEditSuggestion → 存卡片数据
+  const handleParsedEdit = useCallback((edit: ParsedEditBlock) => {
+    const key = edit.original.slice(0, 50);
+    if (processedEditsRef.current.has(key)) return;
+    processedEditsRef.current.add(key);
+    streamHasEditRef.current = true;
+    onEditSuggestion(edit);
+    setEditCards(prev => [...prev, { rationale: edit.rationale, suggested: edit.suggested }]);
+  }, [onEditSuggestion]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
@@ -79,7 +172,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     if (!overrideText) setInputValue('');
     setIsLoading(true);
     streamHasEditRef.current = false;
-    lastEditRationaleRef.current = '';
+    processedEditsRef.current.clear();
+    setEditCards([]);
     setLastStreamHadEdit(false);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -103,16 +197,18 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       await parseSseStream(
         res,
         (fullText) => {
+          // 前端兜底：解析并剥离泄露到文本中的 EDIT 块
+          const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
+          for (const edit of edits) handleParsedEdit(edit);
           setMessages(prev => {
             const updated = [...prev];
-            updated[updated.length - 1] = { role: 'assistant', content: fullText };
+            updated[updated.length - 1] = { role: 'assistant', content: displayText };
             return updated;
           });
         },
         (edit) => {
-          streamHasEditRef.current = true;
-          lastEditRationaleRef.current = edit.rationale || '';
-          onEditSuggestion({
+          // 后端正常解析的 edit 事件
+          handleParsedEdit({
             sectionId: edit.sectionId,
             original: edit.original,
             suggested: edit.suggested,
@@ -129,21 +225,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       });
     } finally {
       setIsLoading(false);
-      if (streamHasEditRef.current) {
-        setLastStreamHadEdit(true);
-        // 兜底：LLM 只输出了 EDIT 块没有解释文字 → 用 rationale 填充
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant' && !last.content?.trim() && lastEditRationaleRef.current) {
-            const updated = [...prev];
-            updated[updated.length - 1] = { role: 'assistant', content: lastEditRationaleRef.current };
-            return updated;
-          }
-          return prev;
-        });
-      }
+      if (streamHasEditRef.current) setLastStreamHadEdit(true);
     }
-  }, [apiBase, inputValue, isLoading, sessionId, onEditSuggestion]);
+  }, [apiBase, inputValue, isLoading, sessionId, handleParsedEdit, resumeSections]);
 
   // 外部消息注入（选中文本快捷操作）
   const sendMessageRef = useRef(sendMessage);
@@ -164,6 +248,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       setTimeout(async () => {
         setIsLoading(true);
         streamHasEditRef.current = false;
+        processedEditsRef.current.clear();
+        setEditCards([]);
         setMessages([{ role: 'assistant', content: '' }]);
         try {
           const res = await fetch(`${apiBase}/api/chat/message`, {
@@ -180,11 +266,12 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
           await parseSseStream(
             res,
             (fullText) => {
-              setMessages([{ role: 'assistant', content: fullText }]);
+              const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
+              for (const edit of edits) handleParsedEdit(edit);
+              setMessages([{ role: 'assistant', content: displayText }]);
             },
             (edit) => {
-              streamHasEditRef.current = true;
-              onEditSuggestion({
+              handleParsedEdit({
                 sectionId: edit.sectionId,
                 original: edit.original,
                 suggested: edit.suggested,
@@ -250,44 +337,54 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
               </div>
             )}
             <div className="max-w-[85%]">
-              <div
-                className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
-                  msg.role === 'user'
-                    ? 'bg-[#CA7C5E] rounded-2xl px-4 py-3 text-white shadow-md'
-                    : 'bg-gray-50 rounded-2xl px-4 py-3 text-gray-700 border border-gray-100'
-                }`}
-              >
-                {msg.role === 'assistant' ? (
-                  msg.content ? (
-                    formatContent(msg.content)
+              {/* 文字气泡：有文本时显示，或无卡片时显示加载动画 */}
+              {(msg.role === 'user' || msg.content || !(isLastAssistant && editCards.length > 0)) && (
+                <div
+                  className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                    msg.role === 'user'
+                      ? 'bg-[#CA7C5E] rounded-2xl px-4 py-3 text-white shadow-md'
+                      : 'bg-gray-50 rounded-2xl px-4 py-3 text-gray-700 border border-gray-100'
+                  }`}
+                >
+                  {msg.role === 'assistant' ? (
+                    msg.content ? (
+                      formatContent(msg.content)
+                    ) : (
+                      <span className="flex items-center gap-1 text-gray-400">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </span>
+                    )
                   ) : (
-                    <span className="flex items-center gap-1 text-gray-400">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </span>
-                  )
-                ) : (
-                  msg.content
-                )}
-              </div>
-              {/* 接受 / 再优化 按钮 */}
-              {isLastAssistant && showEditActions && (
-                <div className="flex items-center gap-2 mt-2 ml-1">
-                  <button
-                    onClick={handleAccept}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#084e96] transition-colors shadow-sm"
-                  >
-                    <Check className="w-3 h-3" />
-                    接受
-                  </button>
-                  <button
-                    onClick={handleReoptimize}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    再优化
-                  </button>
+                    msg.content
+                  )}
+                </div>
+              )}
+              {/* 修改建议卡片 + 接受/再优化按钮 */}
+              {isLastAssistant && editCards.length > 0 && (
+                <div>
+                  {editCards.map((card, i) => (
+                    <EditSuggestionCard key={i} rationale={card.rationale} suggested={card.suggested} />
+                  ))}
+                  {showEditActions && (
+                    <div className="flex items-center gap-2 mt-2 ml-1">
+                      <button
+                        onClick={handleAccept}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#084e96] transition-colors shadow-sm"
+                      >
+                        <Check className="w-3 h-3" />
+                        接受
+                      </button>
+                      <button
+                        onClick={handleReoptimize}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        再优化
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
