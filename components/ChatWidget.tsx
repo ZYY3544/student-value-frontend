@@ -132,10 +132,92 @@ export const formatContent = (text: string) => {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
 
-  lines.forEach((line, lineIdx) => {
+  // 判断是否为表格行（| col | col | 格式）
+  const isTableRow = (l: string) => {
+    const t = l.trim();
+    return t.startsWith('|') && t.endsWith('|') && t.split('|').length >= 3;
+  };
+  // 判断是否为分隔行（| --- | --- | 格式）
+  const isSeparatorRow = (l: string) => /^\|[\s:]*-{2,}[\s:]*(\|[\s:]*-{2,}[\s:]*)+\|$/.test(l.trim());
+
+  // 渲染行内 markdown（加粗 + 链接）
+  const renderInline = (content: string, keyPrefix: string) => {
+    content = content.replace(/「解读报告」/g, '**解读报告**');
+    const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <span key={`${keyPrefix}-${i}`} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
+      }
+      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkMatch) {
+        return <a key={`${keyPrefix}-${i}`} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-[#CA7C5E] underline break-all">{linkMatch[1]}</a>;
+      }
+      return part;
+    });
+  };
+
+  // 解析表格单元格
+  const parseCells = (row: string) =>
+    row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+
+  let lineIdx = 0;
+  while (lineIdx < lines.length) {
+    const line = lines[lineIdx];
+
+    // —— 表格块 ——
+    if (isTableRow(line)) {
+      const tableLines: string[] = [];
+      while (lineIdx < lines.length && isTableRow(lines[lineIdx])) {
+        tableLines.push(lines[lineIdx]);
+        lineIdx++;
+      }
+      // 至少需要表头 + 分隔行
+      if (tableLines.length >= 2 && isSeparatorRow(tableLines[1])) {
+        const headers = parseCells(tableLines[0]);
+        const bodyRows = tableLines.slice(2).filter(r => !isSeparatorRow(r));
+        elements.push(
+          <div key={`table-${lineIdx}`} className="overflow-x-auto my-2">
+            <table className="min-w-full text-sm border-collapse">
+              <thead>
+                <tr>
+                  {headers.map((h, hi) => (
+                    <th key={hi} className="border border-gray-200 bg-[#FDF5F0] px-3 py-1.5 text-left font-bold text-[#CA7C5E] whitespace-nowrap">
+                      {renderInline(h, `th-${lineIdx}-${hi}`)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {bodyRows.map((row, ri) => {
+                  const cells = parseCells(row);
+                  return (
+                    <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      {headers.map((_, ci) => (
+                        <td key={ci} className="border border-gray-200 px-3 py-1.5">
+                          {renderInline(cells[ci] || '', `td-${lineIdx}-${ri}-${ci}`)}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      } else {
+        // 不是合法表格，当普通文本渲染
+        tableLines.forEach((tl, ti) => {
+          elements.push(<span key={`tl-${lineIdx}-${ti}`}>{renderInline(tl, `tl-${lineIdx}-${ti}`)}</span>);
+        });
+      }
+      continue;
+    }
+
+    // —— 空行 ——
     if (!line.trim()) {
       elements.push(<br key={`br-${lineIdx}`} />);
-      return;
+      lineIdx++;
+      continue;
     }
 
     const ulMatch = line.match(/^[\s]*[-*]\s+(.+)/);
@@ -154,38 +236,20 @@ export const formatContent = (text: string) => {
       content = line;
     }
 
-    // 高亮「解读报告」关键词（与简历画布同色）
-    content = content.replace(/「解读报告」/g, '**解读报告**');
-
-    const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
-    const rendered = parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <span key={i} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
-      }
-      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-      if (linkMatch) {
-        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-[#CA7C5E] underline break-all">{linkMatch[1]}</a>;
-      }
-      return part;
-    });
+    const rendered = renderInline(content, `line-${lineIdx}`);
 
     // 状态提示行：把末尾 "..." 替换为跳动动画
     if (isStatusLine(line)) {
       const textWithoutDots = content.replace(/\.{3}$/, '');
-      const partsNoDots = textWithoutDots.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
-      const renderedNoDots = partsNoDots.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          return <span key={i} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
-        }
-        return part;
-      });
+      const renderedNoDots = renderInline(textWithoutDots, `status-${lineIdx}`);
       elements.push(
         <span key={`line-${lineIdx}`} className={prefix ? 'flex items-start pl-1' : undefined}>
           {prefix}
           <span>{renderedNoDots}<BouncingDots /></span>
         </span>
       );
-      return;
+      lineIdx++;
+      continue;
     }
 
     // 独占一行的加粗标题（如 **岗位匹配总结**）渲染为 block + 上间距
@@ -196,7 +260,8 @@ export const formatContent = (text: string) => {
           {line.trim().slice(2, -2)}
         </div>
       );
-      return;
+      lineIdx++;
+      continue;
     }
 
     elements.push(
@@ -205,7 +270,8 @@ export const formatContent = (text: string) => {
         <span>{rendered}</span>
       </span>
     );
-  });
+    lineIdx++;
+  }
 
   return elements;
 };
