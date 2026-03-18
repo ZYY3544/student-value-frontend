@@ -701,10 +701,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
 
-      // 确保"思考中"提示至少显示 1 秒
+      // 确保"思考中"提示至少显示 1.5 秒（fetch 期间提示已在显示，但要保证用户能看到）
+      const MIN_THINKING_MS = 1500;
       const elapsed = Date.now() - thinkingStartTime;
-      if (elapsed < 1000) {
-        await new Promise(r => setTimeout(r, 1000 - elapsed));
+      if (elapsed < MIN_THINKING_MS) {
+        await new Promise(r => setTimeout(r, MIN_THINKING_MS - elapsed));
       }
 
       await parseSseStream(
