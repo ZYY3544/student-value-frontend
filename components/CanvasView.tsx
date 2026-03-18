@@ -12,14 +12,22 @@ import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
 import { ResumeSection, PendingEdit } from '../types';
 
-// 选中文本快捷操作（必须要求 EDIT 格式输出，否则 LLM 会当普通对话回复）
+// 选中文本快捷操作
+// display: 用户可见的消息（自然语言）
+// prompt: 发给 LLM 的指令（CANVAS_MODE_PROMPT 已约束 EDIT 格式，这里不重复）
 const QUICK_ACTIONS = [
-  { label: '润色', icon: Sparkles, prompt: (text: string, sectionTitle?: string) =>
-    `用户在「${sectionTitle || '简历'}」段落中选中了以下内容，请润色使表达更专业流畅。\n先用1-2句话简要说明修改思路，然后用 EDIT 指令格式输出改写结果（SECTION 字段请填「${sectionTitle || ''}」）：\n「${text}」` },
-  { label: '精简', icon: Scissors, prompt: (text: string, sectionTitle?: string) =>
-    `用户在「${sectionTitle || '简历'}」段落中选中了以下内容，请精简保留核心要点去掉冗余。\n先用1-2句话简要说明修改思路，然后用 EDIT 指令格式输出改写结果（SECTION 字段请填「${sectionTitle || ''}」）：\n「${text}」` },
-  { label: '扩充', icon: Plus, prompt: (text: string, sectionTitle?: string) =>
-    `用户在「${sectionTitle || '简历'}」段落中选中了以下内容，请扩充增加量化成果和具体细节。\n先用1-2句话简要说明修改思路，然后用 EDIT 指令格式输出改写结果（SECTION 字段请填「${sectionTitle || ''}」）：\n「${text}」` },
+  { label: '润色', icon: Sparkles,
+    display: (text: string) => `帮我润色这段：「${text.slice(0, 50)}${text.length > 50 ? '...' : ''}」`,
+    prompt: (text: string, sectionTitle?: string) =>
+      `请润色「${sectionTitle || '简历'}」段落中的这段内容，使表达更专业流畅：\n「${text}」` },
+  { label: '精简', icon: Scissors,
+    display: (text: string) => `帮我精简这段：「${text.slice(0, 50)}${text.length > 50 ? '...' : ''}」`,
+    prompt: (text: string, sectionTitle?: string) =>
+      `请精简「${sectionTitle || '简历'}」段落中的这段内容，保留核心要点去掉冗余：\n「${text}」` },
+  { label: '扩充', icon: Plus,
+    display: (text: string) => `帮我扩充这段：「${text.slice(0, 50)}${text.length > 50 ? '...' : ''}」`,
+    prompt: (text: string, sectionTitle?: string) =>
+      `请扩充「${sectionTitle || '简历'}」段落中的这段内容，增加量化成果和具体细节：\n「${text}」` },
 ];
 
 interface CanvasViewProps {
@@ -329,7 +337,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
                   setHighlightSectionId(selectionToolbar.sectionId);
                   setHighlightText(selectionToolbar.text);
                 }
-                setExternalMessage(`[QUICK:${action.label}]` + action.prompt(selectionToolbar.text, selectionToolbar.sectionTitle));
+                const display = action.display(selectionToolbar.text);
+                const prompt = action.prompt(selectionToolbar.text, selectionToolbar.sectionTitle);
+                setExternalMessage(`[QUICK:${display}]${prompt}`);
                 setSelectionToolbar(null);
                 window.getSelection()?.removeAllRanges();
               }}

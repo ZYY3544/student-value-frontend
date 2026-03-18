@@ -63,7 +63,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || !sessionId) return;
 
-    // 解析快捷操作标记 [QUICK:润色]
+    // 解析快捷操作标记 [QUICK:用户可见文本]LLM指令
     const quickMatch = text.match(/^\[QUICK:(.+?)\]/);
     const messageToSend = quickMatch ? text.slice(quickMatch[0].length) : text;
 
@@ -71,8 +71,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     if (text.startsWith('[CANVAS_AUTO_START]')) {
       // 自动开场：隐藏
     } else if (quickMatch) {
-      // 快捷操作：显示简短标签，不暴露完整 prompt
-      setMessages(prev => [...prev, { role: 'user', content: `${quickMatch[1]}选中内容` }]);
+      // 快捷操作：显示自然语言描述，不暴露 LLM 指令
+      setMessages(prev => [...prev, { role: 'user', content: quickMatch[1] }]);
     } else {
       setMessages(prev => [...prev, { role: 'user', content: text }]);
     }
