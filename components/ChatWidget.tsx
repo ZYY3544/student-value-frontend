@@ -238,9 +238,32 @@ export async function parseSseStream(
   let buffer = '';
   let fullText = '';
 
+  // 节流：每 60ms 最多渲染一次，模拟自然打字速度
+  const THROTTLE_MS = 60;
+  let lastFlush = 0;
+  let pendingFlush: ReturnType<typeof setTimeout> | null = null;
+  const flushText = () => {
+    onText(fullText);
+    lastFlush = Date.now();
+    if (pendingFlush) { clearTimeout(pendingFlush); pendingFlush = null; }
+  };
+  const throttledOnText = () => {
+    const now = Date.now();
+    if (now - lastFlush >= THROTTLE_MS) {
+      flushText();
+    } else if (!pendingFlush) {
+      pendingFlush = setTimeout(flushText, THROTTLE_MS - (now - lastFlush));
+    }
+  };
+
   while (true) {
     const { value, done } = await reader.read();
-    if (done) break;
+    if (done) {
+      // 流结束，确保最后一批文本渲染出来
+      if (pendingFlush) { clearTimeout(pendingFlush); pendingFlush = null; }
+      if (fullText) onText(fullText);
+      break;
+    }
 
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
@@ -252,7 +275,7 @@ export async function parseSseStream(
         const event = JSON.parse(line.slice(6));
         if (event.type === 'text') {
           fullText += event.content;
-          onText(fullText);
+          throttledOnText();
         } else if (event.type === 'edit' && onEdit) {
           onEdit({
             sectionId: event.sectionId,
