@@ -176,6 +176,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     window.print();
   }, []);
 
+  // 首次进入画布的使用引导弹窗
+  const [showGuide, setShowGuide] = useState(() => {
+    return !localStorage.getItem('canvas_guide_shown');
+  });
+  const dismissGuide = useCallback(() => {
+    setShowGuide(false);
+    localStorage.setItem('canvas_guide_shown', '1');
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
@@ -292,6 +300,49 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
               {action.label}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* 首次使用引导弹窗 */}
+      {showGuide && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20">
+          <div className="bg-white rounded-2xl shadow-2xl w-[420px] p-7">
+            <h3 className="text-lg font-bold text-gray-900 mb-5">简历画布使用指南</h3>
+            <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">1</span>
+                <div>
+                  <span className="font-semibold text-gray-800">对话改写</span>
+                  <span className="text-gray-500"> — 直接跟 Sparky 说你想改哪里，它会在原文中标记并在优化版本中给出修改</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">2</span>
+                <div>
+                  <span className="font-semibold text-gray-800">选中润色</span>
+                  <span className="text-gray-500"> — 选中原文中的任意段落，点击"润色"或"精简"，Sparky 直接帮你改</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">3</span>
+                <div>
+                  <span className="font-semibold text-gray-800">自由编辑</span>
+                  <span className="text-gray-500"> — 你也可以直接在右侧优化版本中手动编辑</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 p-3 bg-amber-50 rounded-xl">
+              <p className="text-xs text-amber-700">
+                <span className="font-semibold">小 tips：</span>Sparky 支持联网搜索岗位 JD，你可以说"帮我搜一下字节的产品经理 JD"，然后让它结合 JD 来定制改写你的简历
+              </p>
+            </div>
+            <button
+              onClick={dismissGuide}
+              className="mt-5 w-full py-2.5 bg-[#0A66C2] text-white text-sm font-semibold rounded-xl hover:bg-[#084e96] transition-colors"
+            >
+              知道了
+            </button>
+          </div>
         </div>
       )}
     </div>
