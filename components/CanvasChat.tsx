@@ -300,19 +300,14 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     [sendMessage]
   );
 
-  // 接受改写：清除 diff + 自动发消息引导下一段
+  // 接受改写：确认替换，清除 diff
   const handleAccept = useCallback(() => {
     if (!pendingEdits.length || !onAcceptEdit) return;
     const latestEdit = pendingEdits[pendingEdits.length - 1];
     onAcceptEdit(latestEdit.sectionId);
     setLastStreamHadEdit(false);
-    // 找到刚改完的段落名称和下一段建议
-    const editedTitle = resumeSections.find(s => s.id === latestEdit.sectionId)?.title || '这段';
-    const editedIdx = resumeSections.findIndex(s => s.id === latestEdit.sectionId);
-    const nextSection = editedIdx >= 0 ? resumeSections.slice(editedIdx + 1).find(s => s.type !== 'skill' && s.type !== 'education') : null;
-    const nextHint = nextSection ? `建议接下来改「${nextSection.title}」。` : '';
-    sendMessage(`[CANVAS_AUTO_START] 用户接受了「${editedTitle}」的改写。${nextHint}请继续改写下一段，用 EDIT 指令格式输出。`);
-  }, [pendingEdits, onAcceptEdit, resumeSections, sendMessage]);
+    setEditCards([]);
+  }, [pendingEdits, onAcceptEdit]);
 
   // 再优化：聚焦输入框让用户说明不满意的地方
   const handleReoptimize = useCallback(() => {

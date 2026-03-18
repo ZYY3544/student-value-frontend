@@ -278,22 +278,25 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }
 
     // 立即应用编辑到 section 内容
+    // 归一化函数：去 bullet 符号、合并空白，用于模糊匹配
+    const normalize = (s: string) => s.replace(/^[\s•·\-*●○]+/gm, '').replace(/\s+/g, ' ').trim();
+
     setResumeSections(prev => prev.map(sec => {
       if (sec.id === edit.sectionId) {
-        // 精确匹配
+        // 1. 精确匹配
         if (sec.content.includes(edit.original)) {
           return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
         }
-        // 模糊匹配：忽略空白差异
-        const normalize = (s: string) => s.split(/\s+/).join(' ');
-        const normalizedContent = normalize(sec.content);
-        const normalizedOriginal = normalize(edit.original);
-        if (normalizedContent.includes(normalizedOriginal)) {
+        // 2. 模糊匹配：忽略空白差异
+        const normContent = normalize(sec.content);
+        const normOriginal = normalize(edit.original);
+        if (normContent.includes(normOriginal)) {
+          // 逐行组合查找匹配区间
           const lines = sec.content.split('\n');
           for (let start = 0; start < lines.length; start++) {
-            for (let end = start; end < Math.min(start + 10, lines.length); end++) {
+            for (let end = start; end < Math.min(start + 15, lines.length); end++) {
               const candidate = lines.slice(start, end + 1).join('\n');
-              if (normalize(candidate) === normalizedOriginal) {
+              if (normalize(candidate) === normOriginal) {
                 const pos = sec.content.indexOf(candidate);
                 if (pos !== -1) {
                   return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + candidate.length) };
@@ -304,8 +307,37 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         }
         return sec;
       }
+      // 3. sectionId 没匹配到：遍历所有 section 尝试内容匹配（兜底）
       return sec;
     }));
+
+    // 兜底：如果 sectionId 匹配的 section 没有替换成功，尝试全局内容匹配
+    setResumeSections(prev => {
+      const alreadyReplaced = !prev.find(s => s.id === edit.sectionId && s.content.includes(edit.original));
+      if (alreadyReplaced) return prev; // 已替换成功
+      // sectionId 对应的 section 里找不到 original，尝试其他 section
+      const normOriginal = normalize(edit.original);
+      return prev.map(sec => {
+        if (sec.content.includes(edit.original)) {
+          return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+        }
+        if (normalize(sec.content).includes(normOriginal)) {
+          const lines = sec.content.split('\n');
+          for (let start = 0; start < lines.length; start++) {
+            for (let end = start; end < Math.min(start + 15, lines.length); end++) {
+              const candidate = lines.slice(start, end + 1).join('\n');
+              if (normalize(candidate) === normOriginal) {
+                const pos = sec.content.indexOf(candidate);
+                if (pos !== -1) {
+                  return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + candidate.length) };
+                }
+              }
+            }
+          }
+        }
+        return sec;
+      });
+    });
 
     // 存储 diff 元数据（用于 diff 高亮渲染）
     setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
