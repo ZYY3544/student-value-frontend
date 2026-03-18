@@ -240,10 +240,10 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     }
   }, [externalMessage, onExternalMessageConsumed]);
 
-  // 进入画布时自动触发第一条改写（Sparky 先动，不显示用户消息）
+  // 进入画布时自动触发第一条改写（仅当已有对话历史时，新对话不自动开始）
   const autoStarted = useRef(false);
   useEffect(() => {
-    if (autoStartPrompt && sessionId && !autoStarted.current && messages.length === 0) {
+    if (autoStartPrompt && sessionId && !autoStarted.current && messages.length > 0) {
       autoStarted.current = true;
       setTimeout(async () => {
         setIsLoading(true);
