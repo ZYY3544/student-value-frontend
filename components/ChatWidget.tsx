@@ -441,27 +441,54 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (!userId) return;
     setHistoryLoading(true);
     try {
-      const { data } = await supabase
+      // 1) 查 session 列表（不内联 chat_messages，避免 PostgREST limit 同时截断子查询）
+      const { data: sessions } = await supabase
         .from('chat_sessions')
-        .select('id, created_at, pinned, title, chat_messages(content, role)')
+        .select('id, created_at, pinned, title')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
-      if (data) {
+      if (sessions && sessions.length > 0) {
+        // 2) 批量取每个 session 的第一条用户消息（单独查询，不受 limit 干扰）
+        const sessionIds = sessions.map((s: any) => s.id);
+        const { data: msgs } = await supabase
+          .from('chat_messages')
+          .select('session_id, content')
+          .in('session_id', sessionIds)
+          .eq('role', 'user')
+          .order('created_at', { ascending: true });
+
+        // 按 session_id 分组，取第一条
+        const firstMsgMap = new Map<string, string>();
+        if (msgs) {
+          for (const m of msgs) {
+            if (!firstMsgMap.has(m.session_id)) {
+              firstMsgMap.set(m.session_id, m.content?.slice(0, 30) || '新对话');
+            }
+          }
+        }
+
         // 只保留有用户消息的 session
-        const withUserMsg = data.filter((s: any) => s.chat_messages?.some((m: any) => m.role === 'user'));
-        const mapped = withUserMsg.map((s: any) => {
-          const userMsg = s.chat_messages?.find((m: any) => m.role === 'user');
-          const firstMessage = userMsg?.content?.slice(0, 30) || '新对话';
-          return { id: s.id, created_at: s.created_at, firstMessage, pinned: !!s.pinned, title: s.title || null };
-        });
+        const mapped = sessions
+          .filter((s: any) => firstMsgMap.has(s.id))
+          .slice(0, 10)
+          .map((s: any) => ({
+            id: s.id,
+            created_at: s.created_at,
+            firstMessage: firstMsgMap.get(s.id) || '新对话',
+            pinned: !!s.pinned,
+            title: s.title || null,
+          }));
+
         // pinned 优先，再按 created_at 降序
         mapped.sort((a: any, b: any) => {
           if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
         setChatHistory(mapped);
+      } else {
+        setChatHistory([]);
       }
     } catch (err) {
       console.error('Failed to load chat history:', err);
