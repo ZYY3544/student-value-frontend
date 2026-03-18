@@ -131,8 +131,15 @@ export const formatContent = (text: string) => {
   const elements: React.ReactNode[] = [];
 
   lines.forEach((line, lineIdx) => {
+    // 空行 → 段落间距
     if (!line.trim()) {
-      elements.push(<br key={`br-${lineIdx}`} />);
+      elements.push(<div key={`sp-${lineIdx}`} className="h-3" />);
+      return;
+    }
+
+    // 分隔线 ---
+    if (/^-{3,}$/.test(line.trim())) {
+      elements.push(<hr key={`hr-${lineIdx}`} className="border-t border-gray-200 my-5" />);
       return;
     }
 
@@ -144,25 +151,25 @@ export const formatContent = (text: string) => {
 
     if (ulMatch) {
       content = ulMatch[1];
-      prefix = <span className="text-[#CA7C5E] mr-1.5">•</span>;
+      prefix = <span className="text-[#CA7C5E] mr-1.5 mt-0.5">•</span>;
     } else if (olMatch) {
       content = olMatch[2];
-      prefix = <span className="text-[#CA7C5E] mr-1.5 font-bold">{olMatch[1]}.</span>;
+      prefix = <span className="text-[#CA7C5E] mr-1.5 font-bold mt-0.5">{olMatch[1]}.</span>;
     } else {
       content = line;
     }
 
-    // 高亮「解读报告」关键词（与简历画布同色）
+    // 高亮「解读报告」关键词
     content = content.replace(/「解读报告」/g, '**解读报告**');
 
     const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
     const rendered = parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <span key={i} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
+        return <span key={i} className="font-semibold">{part.slice(2, -2)}</span>;
       }
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (linkMatch) {
-        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-[#CA7C5E] underline break-all">{linkMatch[1]}</a>;
+        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-[#0A66C2] underline break-all">{linkMatch[1]}</a>;
       }
       return part;
     });
@@ -173,12 +180,12 @@ export const formatContent = (text: string) => {
       const partsNoDots = textWithoutDots.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
       const renderedNoDots = partsNoDots.map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return <span key={i} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
+          return <span key={i} className="font-semibold">{part.slice(2, -2)}</span>;
         }
         return part;
       });
       elements.push(
-        <span key={`line-${lineIdx}`} className={prefix ? 'flex items-start pl-1' : undefined}>
+        <span key={`line-${lineIdx}`} className={prefix ? 'flex items-start pl-1 mb-2' : 'block mb-3'}>
           {prefix}
           <span>{renderedNoDots}<BouncingDots /></span>
         </span>
@@ -186,22 +193,33 @@ export const formatContent = (text: string) => {
       return;
     }
 
-    // 独占一行的加粗标题（如 **岗位匹配总结**）渲染为 block + 上间距
+    // 独占一行的加粗标题（如 **你的能力底子**）
     const isBoldHeading = !prefix && /^\*\*[^*]+\*\*$/.test(line.trim());
     if (isBoldHeading) {
       elements.push(
-        <div key={`line-${lineIdx}`} className="mt-3 mb-1 font-bold text-[#CA7C5E]">
+        <div key={`line-${lineIdx}`} className="mt-5 mb-2 font-bold text-gray-800 text-[15px]">
           {line.trim().slice(2, -2)}
         </div>
       );
       return;
     }
 
+    // 列表项
+    if (prefix) {
+      elements.push(
+        <div key={`line-${lineIdx}`} className="flex items-start pl-1 mb-2">
+          {prefix}
+          <span>{rendered}</span>
+        </div>
+      );
+      return;
+    }
+
+    // 普通段落
     elements.push(
-      <span key={`line-${lineIdx}`} className={prefix ? 'flex items-start pl-1' : undefined}>
-        {prefix}
-        <span>{rendered}</span>
-      </span>
+      <p key={`line-${lineIdx}`} className="mb-3">
+        {rendered}
+      </p>
     );
   });
 
@@ -880,10 +898,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               </div>
             )}
             <div
-              className={`max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap break-words ${
+              className={`max-w-[85%] text-sm break-words ${
                 msg.role === 'user'
-                  ? 'bg-[#CA7C5E] rounded-2xl p-4 text-white shadow-md'
-                  : 'bg-gray-50 rounded-2xl p-4 text-gray-700 border border-gray-100'
+                  ? 'bg-[#CA7C5E] rounded-2xl px-5 py-4 text-white shadow-md leading-relaxed whitespace-pre-wrap'
+                  : 'bg-gray-50 rounded-2xl px-5 py-4 text-gray-700 border border-gray-100 leading-[1.8]'
               }`}
             >
               {msg.role === 'assistant' ? (

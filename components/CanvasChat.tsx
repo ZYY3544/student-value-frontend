@@ -225,10 +225,10 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             )}
             <div className="max-w-[85%]">
               <div
-                className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                className={`text-sm break-words ${
                   msg.role === 'user'
-                    ? 'bg-[#CA7C5E] rounded-2xl px-4 py-3 text-white shadow-md'
-                    : 'bg-gray-50 rounded-2xl px-4 py-3 text-gray-700 border border-gray-100'
+                    ? 'bg-[#CA7C5E] rounded-2xl px-5 py-4 text-white shadow-md leading-relaxed whitespace-pre-wrap'
+                    : 'bg-gray-50 rounded-2xl px-5 py-4 text-gray-700 border border-gray-100 leading-[1.8]'
                 }`}
               >
                 {msg.role === 'assistant' ? (
