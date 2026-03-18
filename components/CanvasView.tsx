@@ -14,9 +14,12 @@ import { ResumeSection, PendingEdit } from '../types';
 
 // 选中文本快捷操作（必须要求 EDIT 格式输出，否则 LLM 会当普通对话回复）
 const QUICK_ACTIONS = [
-  { label: '润色', icon: Sparkles, prompt: (text: string) => `请润色以下选中的简历内容，使表达更专业流畅。直接用 EDIT 指令格式输出改写结果：\n「${text}」` },
-  { label: '精简', icon: Scissors, prompt: (text: string) => `请精简以下选中的简历内容，保留核心要点去掉冗余。直接用 EDIT 指令格式输出改写结果：\n「${text}」` },
-  { label: '扩充', icon: Plus, prompt: (text: string) => `请扩充以下选中的简历内容，增加量化成果和具体细节。直接用 EDIT 指令格式输出改写结果：\n「${text}」` },
+  { label: '润色', icon: Sparkles, prompt: (text: string, sectionTitle?: string) =>
+    `用户在「${sectionTitle || '简历'}」段落中选中了以下内容，请润色使表达更专业流畅。\n先用1-2句话简要说明修改思路，然后用 EDIT 指令格式输出改写结果（SECTION 字段请填「${sectionTitle || ''}」）：\n「${text}」` },
+  { label: '精简', icon: Scissors, prompt: (text: string, sectionTitle?: string) =>
+    `用户在「${sectionTitle || '简历'}」段落中选中了以下内容，请精简保留核心要点去掉冗余。\n先用1-2句话简要说明修改思路，然后用 EDIT 指令格式输出改写结果（SECTION 字段请填「${sectionTitle || ''}」）：\n「${text}」` },
+  { label: '扩充', icon: Plus, prompt: (text: string, sectionTitle?: string) =>
+    `用户在「${sectionTitle || '简历'}」段落中选中了以下内容，请扩充增加量化成果和具体细节。\n先用1-2句话简要说明修改思路，然后用 EDIT 指令格式输出改写结果（SECTION 字段请填「${sectionTitle || ''}」）：\n「${text}」` },
 ];
 
 interface CanvasViewProps {
@@ -60,6 +63,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
   // 被改段落高亮跟踪（中间栏联动）
   const [highlightSectionId, setHighlightSectionId] = useState<string | null>(null);
+  // 中栏原文：精确高亮用户选中的文本片段
+  const [highlightText, setHighlightText] = useState<string | null>(null);
 
   // 构建 Sparky 进入画布时的自动开场指令（区分四种场景）
   const autoStartPrompt = React.useMemo(() => {
@@ -91,11 +96,34 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   const isSyncing = useRef(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
+  // 从 DOM 节点向上查找所属 section
+  const findSectionFromNode = useCallback((node: Node | null): { id: string; title: string } | null => {
+    let el = node instanceof Element ? node : node?.parentElement;
+    while (el) {
+      // 中栏原文用 data-section-id，右栏优化版用 id="resume-section-X"
+      const sectionId = el.getAttribute('data-section-id');
+      if (sectionId) {
+        const sec = originalSections.find(s => s.id === sectionId) || resumeSections.find(s => s.id === sectionId);
+        if (sec) return { id: sectionId, title: sec.title };
+      }
+      const elId = el.getAttribute('id');
+      if (elId?.startsWith('resume-')) {
+        const secId = elId.replace('resume-', '');
+        const sec = resumeSections.find(s => s.id === secId) || originalSections.find(s => s.id === secId);
+        if (sec) return { id: secId, title: sec.title };
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }, [originalSections, resumeSections]);
+
   // 选中文本浮动工具栏状态
   const [selectionToolbar, setSelectionToolbar] = useState<{
     text: string;
     top: number;
     left: number;
+    sectionId?: string;
+    sectionTitle?: string;
   } | null>(null);
   const [externalMessage, setExternalMessage] = useState<string | null>(null);
 
@@ -116,11 +144,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     onEditSuggestion(edit);
     setHighlightSectionId(edit.sectionId);
+    // AI edit 到达后，保留精确高亮（用户选中的文本仍然标记）
   }, [onEditSuggestion]);
 
   // 用户接受改写：清除高亮 + 通知 ResultView 清除 diff
   const handleAcceptEdit = useCallback((sectionId: string) => {
     setHighlightSectionId(null);
+    setHighlightText(null);
     onAcceptEdit(sectionId);
   }, [onAcceptEdit]);
 
@@ -149,6 +179,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       const inOptimized = optimizedRef.current?.contains(anchor);
       if (!inOriginal && !inOptimized) return;
 
+      // 检测所属 section
+      const sectionInfo = findSectionFromNode(anchor);
+
       // 计算位置
       const range = sel.getRangeAt(0);
       const rect = range.getBoundingClientRect();
@@ -157,9 +190,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         text,
         top: rect.top < 70 ? rect.bottom : rect.top,  // 靠近顶部时改为下方
         left: rect.left + rect.width / 2,
+        sectionId: sectionInfo?.id,
+        sectionTitle: sectionInfo?.title,
       });
     });
-  }, []);
+  }, [findSectionFromNode]);
 
   // 点击外部关闭工具栏
   useEffect(() => {
@@ -252,7 +287,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onMouseUp={handleMouseUp}
             className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100 canvas-no-print"
           >
-            <OriginalResumePanel sections={originalSections} highlightSectionId={highlightSectionId} />
+            <OriginalResumePanel sections={originalSections} highlightSectionId={highlightSectionId} highlightText={highlightText} />
           </div>
         )}
 
@@ -289,7 +324,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             <button
               key={action.label}
               onClick={() => {
-                setExternalMessage(action.prompt(selectionToolbar.text));
+                // 设置中栏精确高亮
+                if (selectionToolbar.sectionId) {
+                  setHighlightSectionId(selectionToolbar.sectionId);
+                  setHighlightText(selectionToolbar.text);
+                }
+                setExternalMessage(action.prompt(selectionToolbar.text, selectionToolbar.sectionTitle));
                 setSelectionToolbar(null);
                 window.getSelection()?.removeAllRanges();
               }}

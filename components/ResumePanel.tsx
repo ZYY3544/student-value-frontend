@@ -358,12 +358,74 @@ const SectionEditor: React.FC<{
 };
 
 /**
+ * 渲染带精确文本高亮的内容：在 section 内容中找到 highlightText 并标黄
+ */
+function renderFormattedContentWithHighlight(
+  raw: string,
+  highlightText: string,
+  keyPrefix = '',
+): React.ReactNode[] {
+  const content = cleanResumeContent(raw);
+  // 在清理后的内容里查找高亮文本
+  const idx = content.indexOf(highlightText);
+  if (idx === -1) {
+    // 尝试忽略空白差异的模糊匹配
+    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
+    const normContent = normalize(content);
+    const normHighlight = normalize(highlightText);
+    const normIdx = normContent.indexOf(normHighlight);
+    if (normIdx === -1) {
+      // 找不到，降级为普通渲染
+      return renderFormattedContent(content, keyPrefix);
+    }
+    // 通过归一化位置映射回原始位置
+    let origIdx = 0, normPos = 0;
+    while (normPos < normIdx && origIdx < content.length) {
+      if (/\s/.test(content[origIdx]) && (origIdx === 0 || /\s/.test(content[origIdx - 1]))) {
+        origIdx++;
+        continue;
+      }
+      origIdx++;
+      normPos++;
+    }
+    const matchStart = origIdx;
+    let matchLen = 0, normMatchLen = 0;
+    while (normMatchLen < normHighlight.length && matchStart + matchLen < content.length) {
+      if (/\s/.test(content[matchStart + matchLen]) && matchLen > 0 && /\s/.test(content[matchStart + matchLen - 1])) {
+        matchLen++;
+        continue;
+      }
+      matchLen++;
+      normMatchLen++;
+    }
+    const before = content.slice(0, matchStart);
+    const highlighted = content.slice(matchStart, matchStart + matchLen);
+    const after = content.slice(matchStart + matchLen);
+    return [
+      ...renderFormattedContent(before, `${keyPrefix}before-`),
+      <mark key={`${keyPrefix}hl`} className="bg-amber-200/70 rounded px-0.5">{highlighted}</mark>,
+      ...renderFormattedContent(after, `${keyPrefix}after-`),
+    ];
+  }
+
+  const before = content.slice(0, idx);
+  const highlighted = content.slice(idx, idx + highlightText.length);
+  const after = content.slice(idx + highlightText.length);
+  return [
+    ...renderFormattedContent(before, `${keyPrefix}before-`),
+    <mark key={`${keyPrefix}hl`} className="bg-amber-200/70 rounded px-0.5">{highlighted}</mark>,
+    ...renderFormattedContent(after, `${keyPrefix}after-`),
+  ];
+}
+
+/**
  * OriginalResumePanel - 三栏布局中间的原文只读面板
  */
 export const OriginalResumePanel: React.FC<{
   sections: ResumeSection[];
   highlightSectionId?: string | null;
-}> = ({ sections, highlightSectionId }) => {
+  highlightText?: string | null;
+}> = ({ sections, highlightSectionId, highlightText }) => {
   if (sections.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400">
@@ -397,7 +459,9 @@ export const OriginalResumePanel: React.FC<{
               <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
             </div>
             <div className="px-5 py-4 space-y-2">
-              {renderFormattedContent(cleanResumeContent(section.content))}
+              {isHighlighted && highlightText
+                ? renderFormattedContentWithHighlight(section.content, highlightText, `orig-${section.id}-`)
+                : renderFormattedContent(cleanResumeContent(section.content))}
             </div>
           </div>
         );
@@ -466,6 +530,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
           <div
             key={section.id}
             id={`resume-${section.id}`}
+            data-section-id={section.id}
             className={`rounded-2xl border transition-all ${
               mode === 'diff' && hasEdits
                 ? 'border-blue-200 shadow-md shadow-blue-50'
