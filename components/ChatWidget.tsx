@@ -241,8 +241,8 @@ export async function parseSseStream(
   let streamDone = false;
 
   // 逐段释放：每 50ms 渲染一批字符，模拟自然打字速度
-  const RENDER_INTERVAL = 40;
-  const CHARS_PER_TICK = 3; // 每次渲染 3 个字符，跟欢迎语打字速度一致
+  const RENDER_INTERVAL = 50;
+  const CHARS_PER_TICK = 2; // 每次渲染 2 个字符（约 1 个中文字）
   let renderTimer: ReturnType<typeof setInterval> | null = null;
 
   const startRenderLoop = () => {
