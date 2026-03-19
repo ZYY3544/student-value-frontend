@@ -536,15 +536,15 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
             data-section-id={section.id}
             className={`rounded-2xl border transition-all ${
               mode === 'diff' && hasEdits
-                ? 'border-blue-200 shadow-md shadow-blue-50'
+                ? 'border-[#CA7C5E]/30 shadow-md shadow-[#CA7C5E]/5'
                 : mode === 'editing'
-                  ? 'border-blue-300 shadow-md ring-1 ring-blue-100'
-                  : 'border-blue-200 shadow-sm'
+                  ? 'border-[#CA7C5E]/40 shadow-md ring-1 ring-[#CA7C5E]/10'
+                  : 'border-[#CA7C5E]/25 shadow-sm'
             }`}
           >
             {/* Section header */}
             <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50">
-              <h3 className="text-sm font-semibold text-gray-800">{section.title}</h3>
+              <h3 className="text-sm font-semibold text-[#CA7C5E]">{section.title}</h3>
               {/* 铅笔按钮：diff/clean 模式下显示 */}
               {mode !== 'editing' && (
                 <button
@@ -557,7 +557,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                       setSectionMode(section.id, 'editing');
                     }
                   }}
-                  className="ml-auto p-1 text-[#0A66C2] hover:text-[#084e96] transition-colors"
+                  className="ml-auto p-1 text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
                   title={mode === 'clean' ? '查看修改' : '编辑此段落'}
                 >
                   <Pencil className="w-3.5 h-3.5" />
