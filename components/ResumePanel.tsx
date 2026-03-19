@@ -458,7 +458,7 @@ export const OriginalResumePanel: React.FC<{
                   : 'border-gray-100 bg-white/60'
             }`}
           >
-            <div className="px-5 py-3 border-b border-gray-50">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50 min-h-[46px]">
               <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
             </div>
             <div className="px-5 py-4 space-y-2">
@@ -543,7 +543,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
             }`}
           >
             {/* Section header */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50 min-h-[46px]">
               <h3 className="text-sm font-semibold text-[#CA7C5E]">{section.title}</h3>
               {/* 铅笔按钮：diff/clean 模式下显示 */}
               {mode !== 'editing' && (
