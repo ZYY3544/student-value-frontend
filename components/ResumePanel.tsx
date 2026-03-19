@@ -510,6 +510,7 @@ export const OriginalResumePanel: React.FC<{
           >
             <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50 min-h-[46px]">
               <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
+              <div className="ml-auto w-[22px] h-[22px]" />
             </div>
             <div className="px-5 py-4 space-y-2">
               {hasTextHighlight
