@@ -311,12 +311,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       return sec;
     }));
 
-    // 兜底：如果 sectionId 匹配的 section 没有替换成功，尝试全局内容匹配
+    // 兜底：如果原文仍存在于某个 section 中（首次按 sectionId 替换失败），尝试全局匹配
     setResumeSections(prev => {
-      const alreadyReplaced = !prev.find(s => s.id === edit.sectionId && s.content.includes(edit.original));
-      if (alreadyReplaced) return prev; // 已替换成功
-      // sectionId 对应的 section 里找不到 original，尝试其他 section
       const normOriginal = normalize(edit.original);
+      // 检查是否还有任何 section 包含原文（精确或模糊）
+      const stillContains = prev.some(s =>
+        s.content.includes(edit.original) || normalize(s.content).includes(normOriginal)
+      );
+      if (!stillContains) return prev; // 已替换成功，无需兜底
+      // 遍历所有 section 尝试替换
       return prev.map(sec => {
         if (sec.content.includes(edit.original)) {
           return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };

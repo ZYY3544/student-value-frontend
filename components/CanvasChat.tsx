@@ -255,14 +255,21 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     [sendMessage]
   );
 
-  // 接受改写：确认替换，清除 diff
+  // 接受改写：确认替换，清除 diff，给用户反馈
   const handleAccept = useCallback(() => {
     if (!pendingEdits.length || !onAcceptEdit) return;
     const latestEdit = pendingEdits[pendingEdits.length - 1];
     onAcceptEdit(latestEdit.sectionId);
     setLastStreamHadEdit(false);
+    // 冻结当前卡片到历史，然后清除
+    if (currentEditCards.length > 0) {
+      const lastAssistantIdx = messages.length - 1;
+      setFrozenEditCards(prev => ({ ...prev, [lastAssistantIdx]: currentEditCards }));
+    }
     setCurrentEditCards([]);
-  }, [pendingEdits, onAcceptEdit]);
+    // Sparky 确认反馈
+    setMessages(prev => [...prev, { role: 'assistant', content: '已采纳，右侧简历已更新。继续选中其他段落，我帮你接着改。' }]);
+  }, [pendingEdits, onAcceptEdit, currentEditCards, messages.length]);
 
   // 再优化：自动发送请求，让 AI 用不同方式重新优化同一段内容
   // 不清除 currentEditCards —— sendMessage 会自动冻结到历史
