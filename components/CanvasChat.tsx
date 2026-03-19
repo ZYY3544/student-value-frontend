@@ -58,6 +58,8 @@ function cleanEditBlocksFromText(
   // 隐藏正在流式传输中的不完整 EDIT 块
   const incompleteIdx = display.indexOf('<<<EDIT');
   if (incompleteIdx !== -1) display = display.slice(0, incompleteIdx);
+  // 清理 EDIT 块残留的孤立标记符号（如 >>、>>>、<<<）
+  display = display.replace(/>{2,}/g, '').replace(/<{2,}/g, '');
 
   return { displayText: display.trim(), edits };
 }
@@ -268,8 +270,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setLastStreamHadEdit(false);
     setEditCards([]);
     const prompt = `[QUICK:再优化这段内容]请对以下简历段落重新优化，用不同的方式改写，提供更好的版本。\n\n原文：\n${latestEdit.original}`;
-    sendMessage(prompt);
-  }, [pendingEdits, sendMessage]);
+    sendMessageRef.current(prompt);
+  }, [pendingEdits]);
 
   // 判断是否在最后一条 assistant 消息下方显示接受/再优化按钮
   const showEditActions = lastStreamHadEdit && !isLoading && pendingEdits.length > 0;

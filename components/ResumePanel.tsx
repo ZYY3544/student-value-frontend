@@ -403,7 +403,7 @@ function renderFormattedContentWithHighlight(
     const after = content.slice(matchStart + matchLen);
     return [
       ...renderFormattedContent(before, `${keyPrefix}before-`),
-      <mark key={`${keyPrefix}hl`} className="bg-amber-200/70 rounded px-0.5">{highlighted}</mark>,
+      <mark key={`${keyPrefix}hl`} className="bg-amber-200/70 rounded px-0.5 text-sm text-gray-600 leading-relaxed">{highlighted}</mark>,
       ...renderFormattedContent(after, `${keyPrefix}after-`),
     ];
   }
@@ -413,7 +413,7 @@ function renderFormattedContentWithHighlight(
   const after = content.slice(idx + highlightText.length);
   return [
     ...renderFormattedContent(before, `${keyPrefix}before-`),
-    <mark key={`${keyPrefix}hl`} className="bg-amber-200/70 rounded px-0.5">{highlighted}</mark>,
+    <mark key={`${keyPrefix}hl`} className="bg-amber-200/70 rounded px-0.5 text-sm text-gray-600 leading-relaxed">{highlighted}</mark>,
     ...renderFormattedContent(after, `${keyPrefix}after-`),
   ];
 }
