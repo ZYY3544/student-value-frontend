@@ -181,6 +181,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000); // 90秒超时
       const res = await fetch(`${apiBase}/api/chat/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,7 +192,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
           stream: true,
           canvasMode: true,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -221,9 +225,12 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       );
     } catch (err: any) {
       console.error('Canvas send failed:', err);
+      const errorMsg = err.name === 'AbortError'
+        ? '请求超时了，后端可能正在启动中，请稍后再试。'
+        : '抱歉，获取回复失败，请重试。';
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: 'assistant', content: '抱歉，获取回复失败，请重试。' };
+        updated[updated.length - 1] = { role: 'assistant', content: errorMsg };
         return updated;
       });
     } finally {
