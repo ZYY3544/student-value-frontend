@@ -240,55 +240,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     }
   }, [externalMessage, onExternalMessageConsumed]);
 
-  // 进入画布时自动触发第一条改写（仅当已有对话历史时，新对话不自动开始）
-  const autoStarted = useRef(false);
-  useEffect(() => {
-    if (autoStartPrompt && sessionId && !autoStarted.current && messages.length > 0) {
-      autoStarted.current = true;
-      setTimeout(async () => {
-        setIsLoading(true);
-        streamHasEditRef.current = false;
-        processedEditsRef.current.clear();
-        setEditCards([]);
-        setMessages([{ role: 'assistant', content: '' }]);
-        try {
-          const res = await fetch(`${apiBase}/api/chat/message`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId,
-              message: autoStartPrompt,
-              stream: true,
-              canvasMode: true,
-            }),
-          });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          await parseSseStream(
-            res,
-            (fullText) => {
-              const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
-              for (const edit of edits) handleParsedEdit(edit);
-              setMessages([{ role: 'assistant', content: displayText }]);
-            },
-            (edit) => {
-              handleParsedEdit({
-                sectionId: edit.sectionId,
-                original: edit.original,
-                suggested: edit.suggested,
-                rationale: edit.rationale,
-              });
-            }
-          );
-        } catch (err) {
-          console.error('Canvas auto-start failed:', err);
-          setMessages([{ role: 'assistant', content: '你好，我来帮你优化简历。你想从哪段开始？' }]);
-        } finally {
-          setIsLoading(false);
-          if (streamHasEditRef.current) setLastStreamHadEdit(true);
-        }
-      }, 300);
-    }
-  }, [autoStartPrompt, sessionId, messages.length]);
+  // autoStart 已移除：进入画布后保留对话历史，等用户主动操作
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

@@ -74,30 +74,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   // 中栏原文：精确高亮用户选中的文本片段
   const [highlightText, setHighlightText] = useState<string | null>(null);
 
-  // 构建 Sparky 进入画布时的自动开场指令（区分四种场景）
-  const autoStartPrompt = React.useMemo(() => {
-    const ctx = assessmentContext || {};
-    const jobTitle = ctx.jobTitle || '';
-    const expressionScore = ctx.expressionScore;
-    // 找出简历表达力最弱维度
-    const dimScores: Record<string, number> = {};
-    if (ctx.starScore && ctx.starScore !== '未知') dimScores['STAR规范度'] = Number(ctx.starScore);
-    if (ctx.keywordScore && ctx.keywordScore !== '未知') dimScores['关键词覆盖'] = Number(ctx.keywordScore);
-    if (ctx.quantifyScore && ctx.quantifyScore !== '未知') dimScores['量化程度'] = Number(ctx.quantifyScore);
-    if (ctx.powerScore && ctx.powerScore !== '未知') dimScores['表达力度'] = Number(ctx.powerScore);
-    if (ctx.completenessScore && ctx.completenessScore !== '未知') dimScores['信息完整度'] = Number(ctx.completenessScore);
-    if (ctx.structureScore && ctx.structureScore !== '未知') dimScores['结构规范度'] = Number(ctx.structureScore);
-    const weakest = Object.entries(dimScores).sort((a, b) => a[1] - b[1])[0];
-    const weakDim = weakest ? weakest[0] : '';
-    const firstSection = resumeSections[1]?.title || resumeSections[0]?.title || '第一段经历';
-    return `[CANVAS_AUTO_START] 用户刚进入画布模式，请自动开始第一个改写建议（不要等用户先说话）。
-根据 session 上下文选择开场方式：
-- 如果有面试中发现的简历改进点（resume_insights），优先据此改写对应段落
-- 如果之前做过报告解读，基于讨论中发现的薄弱点改写
-- 否则基于简历表达力诊断（综合分 ${expressionScore || '未知'}/100，最弱维度：${weakDim || '未知'}）从「${firstSection}」开始
-目标岗位：${jobTitle}
-开场先说一句你要改哪段、为什么，然后直接用 EDIT 指令格式输出改写结果。`;
-  }, [assessmentContext, resumeSections]);
+  // autoStartPrompt 已移除：进入画布后保留对话历史，等用户主动操作
   const [showOriginal, setShowOriginal] = useState(true);
   const originalRef = useRef<HTMLDivElement>(null);
   const optimizedRef = useRef<HTMLDivElement>(null);
@@ -280,7 +257,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onEditSuggestion={handleEditSuggestion}
             externalMessage={externalMessage}
             onExternalMessageConsumed={() => setExternalMessage(null)}
-            autoStartPrompt={autoStartPrompt}
+            autoStartPrompt={undefined}
             pendingEdits={pendingEdits}
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
