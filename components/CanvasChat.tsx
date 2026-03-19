@@ -64,32 +64,25 @@ function cleanEditBlocksFromText(
   return { displayText: display.trim(), edits };
 }
 
-// ---- 修改建议卡片组件 ----
+// ---- 修改建议卡片组件（只显示改写内容，不含修改原因） ----
 const EditSuggestionCard: React.FC<{
-  rationale: string;
   suggested: string;
-}> = ({ rationale, suggested }) => (
+}> = ({ suggested }) => (
   <div className="mt-2 rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0] overflow-hidden">
     <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#CA7C5E]/10">
       <FileEdit className="w-3.5 h-3.5 text-[#CA7C5E]" />
-      <span className="text-xs font-semibold text-[#CA7C5E]">修改建议</span>
+      <span className="text-xs font-semibold text-[#CA7C5E]">改写建议</span>
     </div>
-    <div className="px-3 py-2.5 space-y-2">
-      {rationale && (
-        <div>
-          <span className="text-[11px] font-medium text-gray-400">修改原因</span>
-          <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">{rationale}</p>
-        </div>
-      )}
-      <div>
-        <span className="text-[11px] font-medium text-gray-400">改写后</span>
-        <div className="text-sm text-gray-700 mt-0.5 bg-white rounded-lg px-3 py-2 border border-gray-100 leading-relaxed whitespace-pre-wrap">
-          {suggested}
-        </div>
+    <div className="px-3 py-2.5">
+      <div className="text-sm text-gray-700 bg-white rounded-lg px-3 py-2 border border-gray-100 leading-relaxed whitespace-pre-wrap">
+        {suggested}
       </div>
     </div>
   </div>
 );
+
+// 单条编辑卡片数据
+interface EditCardData { rationale: string; suggested: string }
 
 interface CanvasChatProps {
   sessionId: string | null;
@@ -141,8 +134,10 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
 
   // 已处理的 edit 去重（防止后端 onEdit + 前端文本解析重复触发）
   const processedEditsRef = useRef(new Set<string>());
-  // 修改建议卡片数据
-  const [editCards, setEditCards] = useState<Array<{ rationale: string; suggested: string }>>([]);
+  // 当前流的编辑卡片
+  const [currentEditCards, setCurrentEditCards] = useState<EditCardData[]>([]);
+  // 历史消息的编辑卡片（key = message index）
+  const [frozenEditCards, setFrozenEditCards] = useState<Record<number, EditCardData[]>>({});
 
   // 统一处理一个 edit：去重 → 触发 onEditSuggestion → 存卡片数据
   const handleParsedEdit = useCallback((edit: ParsedEditBlock) => {
@@ -151,7 +146,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     processedEditsRef.current.add(key);
     streamHasEditRef.current = true;
     onEditSuggestion(edit);
-    setEditCards(prev => [...prev, { rationale: edit.rationale, suggested: edit.suggested }]);
+    setCurrentEditCards(prev => [...prev, { rationale: edit.rationale, suggested: edit.suggested }]);
   }, [onEditSuggestion]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
@@ -161,6 +156,12 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     // 解析快捷操作标记 [QUICK:用户可见文本]LLM指令
     const quickMatch = text.match(/^\[QUICK:(.+?)\]/);
     const messageToSend = quickMatch ? text.slice(quickMatch[0].length) : text;
+
+    // 冻结当前 editCards 到上一条 assistant 消息
+    if (currentEditCards.length > 0) {
+      const lastAssistantIdx = messages.length - 1;
+      setFrozenEditCards(prev => ({ ...prev, [lastAssistantIdx]: currentEditCards }));
+    }
 
     // 显示用户消息
     if (text.startsWith('[CANVAS_AUTO_START]')) {
@@ -175,7 +176,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setIsLoading(true);
     streamHasEditRef.current = false;
     processedEditsRef.current.clear();
-    setEditCards([]);
+    setCurrentEditCards([]);
     setLastStreamHadEdit(false);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
@@ -229,7 +230,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       setIsLoading(false);
       if (streamHasEditRef.current) setLastStreamHadEdit(true);
     }
-  }, [apiBase, inputValue, isLoading, sessionId, handleParsedEdit, resumeSections]);
+  }, [apiBase, inputValue, isLoading, sessionId, handleParsedEdit, resumeSections, currentEditCards, messages.length]);
 
   // 外部消息注入（选中文本快捷操作）
   const sendMessageRef = useRef(sendMessage);
@@ -260,15 +261,15 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     const latestEdit = pendingEdits[pendingEdits.length - 1];
     onAcceptEdit(latestEdit.sectionId);
     setLastStreamHadEdit(false);
-    setEditCards([]);
+    setCurrentEditCards([]);
   }, [pendingEdits, onAcceptEdit]);
 
   // 再优化：自动发送请求，让 AI 用不同方式重新优化同一段内容
+  // 不清除 currentEditCards —— sendMessage 会自动冻结到历史
   const handleReoptimize = useCallback(() => {
     if (!pendingEdits.length) return;
     const latestEdit = pendingEdits[pendingEdits.length - 1];
     setLastStreamHadEdit(false);
-    setEditCards([]);
     const prompt = `[QUICK:再优化这段内容]请对以下简历段落重新优化，用不同的方式改写，提供更好的版本。\n\n原文：\n${latestEdit.original}`;
     sendMessageRef.current(prompt);
   }, [pendingEdits]);
@@ -276,12 +277,19 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   // 判断是否在最后一条 assistant 消息下方显示接受/再优化按钮
   const showEditActions = lastStreamHadEdit && !isLoading && pendingEdits.length > 0;
 
+  // 获取某条消息的 editCards（冻结的历史 or 当前流的）
+  const getEditCards = (idx: number, isLast: boolean): EditCardData[] => {
+    if (isLast) return currentEditCards;
+    return frozenEditCards[idx] || [];
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
         {messages.map((msg, idx) => {
           const isLastAssistant = msg.role === 'assistant' && idx === messages.length - 1;
+          const cards = msg.role === 'assistant' ? getEditCards(idx, isLastAssistant) : [];
           return (
           <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
@@ -291,7 +299,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             )}
             <div className="max-w-[85%]">
               {/* 文字气泡：有文本时显示，或无卡片时显示加载动画 */}
-              {(msg.role === 'user' || msg.content || !(isLastAssistant && editCards.length > 0)) && (
+              {(msg.role === 'user' || msg.content || !(isLastAssistant && cards.length > 0)) && (
                 <div
                   className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
                     msg.role === 'user'
@@ -314,13 +322,20 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                   )}
                 </div>
               )}
-              {/* 修改建议卡片 + 接受/再优化按钮 */}
-              {isLastAssistant && editCards.length > 0 && (
+              {/* 修改原因（作为 Sparky 的文字回复） + 改写建议卡片 */}
+              {cards.length > 0 && (
                 <div>
-                  {editCards.map((card, i) => (
-                    <EditSuggestionCard key={i} rationale={card.rationale} suggested={card.suggested} />
+                  {cards.map((card, i) => (
+                    <React.Fragment key={i}>
+                      {card.rationale && (
+                        <div className="mt-2 bg-gray-50 rounded-2xl px-4 py-3 text-sm text-gray-700 border border-gray-100 leading-relaxed">
+                          {card.rationale}
+                        </div>
+                      )}
+                      <EditSuggestionCard suggested={card.suggested} />
+                    </React.Fragment>
                   ))}
-                  {showEditActions && (
+                  {isLastAssistant && showEditActions && (
                     <div className="flex items-center gap-2 mt-2 ml-1">
                       <button
                         onClick={handleAccept}
