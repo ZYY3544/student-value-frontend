@@ -358,7 +358,7 @@ const SectionEditor: React.FC<{
 };
 
 /**
- * 渲染带精确文本高亮的内容：在 section 内容中找到 highlightText 并标黄
+ * 渲染带精确文本高亮的内容：保持原始排版结构，在行内对匹配部分加 mark
  */
 function renderFormattedContentWithHighlight(
   raw: string,
@@ -366,56 +366,106 @@ function renderFormattedContentWithHighlight(
   keyPrefix = '',
 ): React.ReactNode[] {
   const content = cleanResumeContent(raw);
-  // 在清理后的内容里查找高亮文本
-  const idx = content.indexOf(highlightText);
-  if (idx === -1) {
-    // 尝试忽略空白差异的模糊匹配
+
+  // 1. 找到高亮区间 [hlStart, hlEnd) —— 精确匹配 or 模糊匹配
+  let hlStart = content.indexOf(highlightText);
+  let hlLen = highlightText.length;
+
+  if (hlStart === -1) {
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
     const normContent = normalize(content);
     const normHighlight = normalize(highlightText);
     const normIdx = normContent.indexOf(normHighlight);
-    if (normIdx === -1) {
-      // 找不到，降级为普通渲染
-      return renderFormattedContent(content, keyPrefix);
-    }
-    // 通过归一化位置映射回原始位置
+    if (normIdx === -1) return renderFormattedContent(content, keyPrefix);
+
+    // 映射归一化位置回原始位置
     let origIdx = 0, normPos = 0;
     while (normPos < normIdx && origIdx < content.length) {
-      if (/\s/.test(content[origIdx]) && (origIdx === 0 || /\s/.test(content[origIdx - 1]))) {
-        origIdx++;
-        continue;
-      }
-      origIdx++;
-      normPos++;
+      if (/\s/.test(content[origIdx]) && (origIdx === 0 || /\s/.test(content[origIdx - 1]))) { origIdx++; continue; }
+      origIdx++; normPos++;
     }
-    const matchStart = origIdx;
-    let matchLen = 0, normMatchLen = 0;
-    while (normMatchLen < normHighlight.length && matchStart + matchLen < content.length) {
-      if (/\s/.test(content[matchStart + matchLen]) && matchLen > 0 && /\s/.test(content[matchStart + matchLen - 1])) {
-        matchLen++;
-        continue;
-      }
-      matchLen++;
-      normMatchLen++;
+    hlStart = origIdx;
+    hlLen = 0;
+    let normMatchLen = 0;
+    while (normMatchLen < normHighlight.length && hlStart + hlLen < content.length) {
+      if (/\s/.test(content[hlStart + hlLen]) && hlLen > 0 && /\s/.test(content[hlStart + hlLen - 1])) { hlLen++; continue; }
+      hlLen++; normMatchLen++;
     }
-    const before = content.slice(0, matchStart);
-    const highlighted = content.slice(matchStart, matchStart + matchLen);
-    const after = content.slice(matchStart + matchLen);
-    return [
-      ...renderFormattedContent(before, `${keyPrefix}before-`),
-      <mark key={`${keyPrefix}hl`} className="bg-amber-200/70 rounded px-0.5 text-sm text-gray-600 leading-relaxed">{highlighted}</mark>,
-      ...renderFormattedContent(after, `${keyPrefix}after-`),
-    ];
   }
 
-  const before = content.slice(0, idx);
-  const highlighted = content.slice(idx, idx + highlightText.length);
-  const after = content.slice(idx + highlightText.length);
-  return [
-    ...renderFormattedContent(before, `${keyPrefix}before-`),
-    <mark key={`${keyPrefix}hl`} className="bg-amber-200/70 rounded px-0.5 text-sm text-gray-600 leading-relaxed">{highlighted}</mark>,
-    ...renderFormattedContent(after, `${keyPrefix}after-`),
-  ];
+  const hlEnd = hlStart + hlLen;
+
+  // 2. 行内高亮辅助：给定文本及其在 content 中的起始偏移，返回带 <mark> 的节点
+  const applyHighlight = (text: string, textStart: number, key: string): React.ReactNode => {
+    const textEnd = textStart + text.length;
+    if (textEnd <= hlStart || textStart >= hlEnd) return text; // 无重叠
+    if (textStart >= hlStart && textEnd <= hlEnd) {
+      return <mark key={key} className="bg-amber-200/70 rounded px-0.5">{text}</mark>;
+    }
+    // 部分重叠
+    const oStart = Math.max(0, hlStart - textStart);
+    const oEnd = Math.min(text.length, hlEnd - textStart);
+    return (
+      <React.Fragment key={key}>
+        {oStart > 0 && text.slice(0, oStart)}
+        <mark className="bg-amber-200/70 rounded px-0.5">{text.slice(oStart, oEnd)}</mark>
+        {oEnd < text.length && text.slice(oEnd)}
+      </React.Fragment>
+    );
+  };
+
+  // 3. 逐行处理（与 renderFormattedContent 结构完全一致，仅在文本渲染时加高亮）
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let bulletGroup: { text: string; textStart: number }[] = [];
+  let groupIdx = 0;
+  let offset = 0;
+
+  const flushBullets = () => {
+    if (bulletGroup.length === 0) return;
+    elements.push(
+      <ul key={`${keyPrefix}ul-${groupIdx}`} className="list-disc pl-5 space-y-1.5">
+        {bulletGroup.map((item, i) => (
+          <li key={i} className="text-sm text-gray-600 leading-relaxed">
+            {applyHighlight(item.text, item.textStart, `${keyPrefix}hl-${groupIdx}-${i}`)}
+          </li>
+        ))}
+      </ul>
+    );
+    bulletGroup = [];
+    groupIdx++;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flushBullets();
+      elements.push(<div key={`${keyPrefix}sp-${i}`} className="h-1.5" />);
+      offset += line.length + 1;
+      continue;
+    }
+
+    const leadingSpaces = line.length - line.trimStart().length;
+
+    if (isBulletLine(trimmed)) {
+      const bulletText = extractBulletText(trimmed);
+      const prefixLen = trimmed.length - bulletText.length;
+      bulletGroup.push({ text: bulletText, textStart: offset + leadingSpaces + prefixLen });
+    } else {
+      flushBullets();
+      elements.push(
+        <p key={`${keyPrefix}p-${i}`} className="text-sm text-gray-600 leading-relaxed">
+          {applyHighlight(trimmed, offset + leadingSpaces, `${keyPrefix}hl-p-${i}`)}
+        </p>
+      );
+    }
+    offset += line.length + 1;
+  }
+
+  flushBullets();
+  return elements;
 }
 
 /**
