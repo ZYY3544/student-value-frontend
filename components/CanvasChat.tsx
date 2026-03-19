@@ -261,11 +261,15 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setEditCards([]);
   }, [pendingEdits, onAcceptEdit]);
 
-  // 再优化：聚焦输入框让用户说明不满意的地方
+  // 再优化：自动发送请求，让 AI 用不同方式重新优化同一段内容
   const handleReoptimize = useCallback(() => {
+    if (!pendingEdits.length) return;
+    const latestEdit = pendingEdits[pendingEdits.length - 1];
     setLastStreamHadEdit(false);
-    inputRef.current?.focus();
-  }, []);
+    setEditCards([]);
+    const prompt = `[QUICK:再优化这段内容]请对以下简历段落重新优化，用不同的方式改写，提供更好的版本。\n\n原文：\n${latestEdit.original}`;
+    sendMessage(prompt);
+  }, [pendingEdits, sendMessage]);
 
   // 判断是否在最后一条 assistant 消息下方显示接受/再优化按钮
   const showEditActions = lastStreamHadEdit && !isLoading && pendingEdits.length > 0;
