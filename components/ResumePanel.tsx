@@ -435,10 +435,10 @@ export const OriginalResumePanel: React.FC<{
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 space-y-5 text-[#666]">
       <div className="mb-2">
-        <h2 className="text-base font-bold text-gray-800">简历原文</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">初始版本，仅供参考对比</p>
+        <h2 className="text-sm font-medium text-gray-400">简历原文</h2>
+        <p className="text-[11px] text-gray-300 mt-0.5">初始版本，仅供参考对比</p>
       </div>
 
       {sections.map((section) => {
@@ -452,14 +452,14 @@ export const OriginalResumePanel: React.FC<{
             data-section-id={section.id}
             className={`rounded-2xl border transition-all duration-300 ${
               hasTextHighlight
-                ? 'border-amber-200 bg-white/60'
+                ? 'border-amber-200 bg-white/40'
                 : isHighlighted
-                  ? 'bg-amber-50/80 border-amber-200 shadow-md shadow-amber-50'
-                  : 'border-gray-100 bg-white/60'
+                  ? 'bg-amber-50/60 border-amber-200 shadow-md shadow-amber-50'
+                  : 'border-gray-100/80 bg-white/40'
             }`}
           >
-            <div className="px-5 py-3 border-b border-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
+            <div className="px-5 py-3 border-b border-gray-100/60">
+              <h3 className="text-sm font-medium text-gray-400">{section.title}</h3>
             </div>
             <div className="px-5 py-4 space-y-2">
               {hasTextHighlight
@@ -511,14 +511,15 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
 
   return (
     <div className="p-6 space-y-5">
-      <div className="mb-2">
-        <h2 className="text-base font-bold text-gray-800">优化版本</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">
-          {pendingEdits.length > 0
-            ? '绿色为新增内容，红色删除线为原文，点击铅笔可编辑'
-            : '当前显示原文，AI 改写后将自动显示 diff 对比'}
-        </p>
+      <div className="mb-2 flex items-center gap-2">
+        <h2 className="text-base font-bold text-gray-900">优化版本</h2>
+        <span className="px-1.5 py-0.5 text-[10px] font-medium text-blue-600 bg-blue-50 rounded">可编辑</span>
       </div>
+      <p className="text-[11px] text-gray-400 -mt-3 mb-2">
+        {pendingEdits.length > 0
+          ? '绿色为新增内容，红色删除线为原文，点击铅笔可编辑'
+          : '当前显示原文，AI 改写后将自动显示 diff 对比'}
+      </p>
 
       {sections.map((section) => {
         const typeConfig = SECTION_TYPE_CONFIG[section.type] || SECTION_TYPE_CONFIG.other;
@@ -534,12 +535,12 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
             key={section.id}
             id={`resume-${section.id}`}
             data-section-id={section.id}
-            className={`rounded-2xl border transition-all ${
+            className={`rounded-2xl border border-l-[3px] transition-all ${
               mode === 'diff' && hasEdits
-                ? 'border-blue-200 shadow-md shadow-blue-50'
+                ? 'border-l-blue-500 border-blue-200 shadow-md shadow-blue-50'
                 : mode === 'editing'
-                  ? 'border-blue-300 shadow-md ring-1 ring-blue-100'
-                  : 'border-gray-100 shadow-sm'
+                  ? 'border-l-blue-500 border-blue-300 shadow-md ring-1 ring-blue-100'
+                  : 'border-l-blue-500 border-gray-100 shadow-sm'
             }`}
           >
             {/* Section header */}

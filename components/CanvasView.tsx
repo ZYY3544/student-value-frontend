@@ -270,7 +270,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             ref={originalRef}
             onScroll={() => handleScroll('original')}
             onMouseUp={handleMouseUp}
-            className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100 canvas-no-print"
+            className="w-[35%] overflow-y-auto border-r border-gray-100 canvas-no-print" style={{ backgroundColor: '#f7f8fa' }}
           >
             <OriginalResumePanel sections={originalSections} highlightSectionId={highlightSectionId} highlightText={highlightText} />
           </div>
