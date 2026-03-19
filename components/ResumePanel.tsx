@@ -539,7 +539,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                 ? 'border-blue-200 shadow-md shadow-blue-50'
                 : mode === 'editing'
                   ? 'border-blue-300 shadow-md ring-1 ring-blue-100'
-                  : 'border-gray-100 shadow-sm'
+                  : 'border-blue-200 shadow-sm'
             }`}
           >
             {/* Section header */}
@@ -557,7 +557,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                       setSectionMode(section.id, 'editing');
                     }
                   }}
-                  className="ml-auto p-1 text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
+                  className="ml-auto p-1 text-[#0A66C2] hover:text-[#084e96] transition-colors"
                   title={mode === 'clean' ? '查看修改' : '编辑此段落'}
                 >
                   <Pencil className="w-3.5 h-3.5" />
