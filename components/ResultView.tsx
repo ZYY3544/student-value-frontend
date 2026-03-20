@@ -288,33 +288,30 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       saveTimerRef.current = null;
     }
 
-    // 立即应用编辑到 section 内容
     // 归一化函数：去 bullet 符号、合并空白，用于模糊匹配
     const normalize = (s: string) => s.replace(/^[\s•·\-*●○]+/gm, '').replace(/\s+/g, ' ').trim();
 
-    // "再优化"场景：同 section 已有 pending edit，内容里存的是旧 suggested
+    // 再优化场景：同 section 已有 pending edit，内容已被替换为旧 suggested，
+    // 用旧 suggested 作为匹配目标来替换为新 suggested
     const existingEdit = pendingEditsRef.current.find(e => e.sectionId === edit.sectionId);
+    const matchTarget = existingEdit ? existingEdit.suggested : edit.original;
 
+    // 立即应用编辑到 section 内容
     setResumeSections(prev => prev.map(sec => {
       if (sec.id === edit.sectionId) {
-        // 0. 再优化：替换旧 suggested → 新 suggested
-        if (existingEdit && sec.content.includes(existingEdit.suggested)) {
-          return { ...sec, content: sec.content.replace(existingEdit.suggested, edit.suggested) };
-        }
-        // 1. 精确匹配
-        if (sec.content.includes(edit.original)) {
-          return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+        // 1. 精确匹配（再优化时 matchTarget = 旧 suggested）
+        if (sec.content.includes(matchTarget)) {
+          return { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
         }
         // 2. 模糊匹配：忽略空白差异
         const normContent = normalize(sec.content);
-        const normOriginal = normalize(edit.original);
-        if (normContent.includes(normOriginal)) {
-          // 逐行组合查找匹配区间
+        const normTarget = normalize(matchTarget);
+        if (normContent.includes(normTarget)) {
           const lines = sec.content.split('\n');
           for (let start = 0; start < lines.length; start++) {
             for (let end = start; end < Math.min(start + 15, lines.length); end++) {
               const candidate = lines.slice(start, end + 1).join('\n');
-              if (normalize(candidate) === normOriginal) {
+              if (normalize(candidate) === normTarget) {
                 const pos = sec.content.indexOf(candidate);
                 if (pos !== -1) {
                   return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + candidate.length) };
@@ -325,11 +322,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         }
         return sec;
       }
-      // 3. sectionId 没匹配到：遍历所有 section 尝试内容匹配（兜底）
       return sec;
     }));
 
-    // 兜底：如果原文仍存在于某个 section 中（首次按 sectionId 替换失败），尝试全局匹配
+    // 兜底：全局匹配（首次按 sectionId 替换失败时）
     // 再优化场景已在上面处理，跳过兜底
     if (!existingEdit) {
       setResumeSections(prev => {

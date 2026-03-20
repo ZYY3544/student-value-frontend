@@ -240,7 +240,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         return updated;
       });
     } finally {
-      // 兜底：流结束时若缓冲区仍有卡片（如纯 edit 无 text 的极端情况），全部释放
+      // parseSseStream 等渲染循环跑完才 resolve，所以此处文字已全部打完，释放卡片
       if (pendingEditCardsRef.current.length > 0) {
         setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
         pendingEditCardsRef.current = [];
