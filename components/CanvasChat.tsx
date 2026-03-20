@@ -138,15 +138,18 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const [currentEditCards, setCurrentEditCards] = useState<EditCardData[]>([]);
   // 历史消息的编辑卡片（key = message index）
   const [frozenEditCards, setFrozenEditCards] = useState<Record<number, EditCardData[]>>({});
+  // 缓冲区：edit 事件先暂存，等 text 开始渲染后再释放到 currentEditCards
+  const pendingEditCardsRef = useRef<EditCardData[]>([]);
 
-  // 统一处理一个 edit：去重 → 触发 onEditSuggestion → 存卡片数据
+  // 统一处理一个 edit：去重 → 触发 onEditSuggestion → 缓冲卡片数据（等 text 到达后再显示）
   const handleParsedEdit = useCallback((edit: ParsedEditBlock) => {
     const key = edit.original.slice(0, 50);
     if (processedEditsRef.current.has(key)) return;
     processedEditsRef.current.add(key);
     streamHasEditRef.current = true;
     onEditSuggestion(edit);
-    setCurrentEditCards(prev => [...prev, { rationale: edit.rationale, suggested: edit.suggested }]);
+    // 先缓冲，不直接 setState；由 onText 回调在文字开始渲染时 flush
+    pendingEditCardsRef.current.push({ rationale: edit.rationale, suggested: edit.suggested });
   }, [onEditSuggestion]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
@@ -176,6 +179,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setIsLoading(true);
     streamHasEditRef.current = false;
     processedEditsRef.current.clear();
+    pendingEditCardsRef.current = [];
     setCurrentEditCards([]);
     setLastStreamHadEdit(false);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
@@ -212,6 +216,11 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             updated[updated.length - 1] = { role: 'assistant', content: displayText };
             return updated;
           });
+          // 文字开始渲染后，将缓冲的 edit 卡片释放到 state
+          if (displayText && pendingEditCardsRef.current.length > 0) {
+            setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
+            pendingEditCardsRef.current = [];
+          }
         },
         (edit) => {
           // 后端正常解析的 edit 事件
@@ -234,6 +243,11 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         return updated;
       });
     } finally {
+      // 兜底：流结束时若缓冲区仍有卡片（如纯 edit 无 text 的极端情况），全部释放
+      if (pendingEditCardsRef.current.length > 0) {
+        setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
+        pendingEditCardsRef.current = [];
+      }
       setIsLoading(false);
       if (streamHasEditRef.current) setLastStreamHadEdit(true);
     }
@@ -312,8 +326,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
               </div>
             )}
             <div className="max-w-[85%]">
-              {/* 文字气泡：始终显示（无内容时显示加载动画） */}
-              {(msg.role === 'user' || msg.content || cards.length === 0 || !isLastAssistant) && (
+              {/* 文字气泡：有文本时显示，或无卡片时显示加载动画 */}
+              {(msg.role === 'user' || msg.content || !(isLastAssistant && cards.length > 0)) && (
                 <div
                   className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
                     msg.role === 'user'
@@ -336,8 +350,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                   )}
                 </div>
               )}
-              {/* 修改原因（作为 Sparky 的文字回复） + 改写建议卡片：等文字到达后再显示 */}
-              {cards.length > 0 && (msg.content || !(isLastAssistant && isLoading)) && (
+              {/* 修改原因（作为 Sparky 的文字回复） + 改写建议卡片 */}
+              {cards.length > 0 && (
                 <div>
                   {cards.map((card, i) => (
                     <React.Fragment key={i}>
