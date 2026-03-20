@@ -216,11 +216,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             updated[updated.length - 1] = { role: 'assistant', content: displayText };
             return updated;
           });
-          // 文字开始渲染后，将缓冲的 edit 卡片释放到 state
-          if (displayText && pendingEditCardsRef.current.length > 0) {
-            setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
-            pendingEditCardsRef.current = [];
-          }
+          // 不在此处释放缓冲区：等 parseSseStream 全部文字渲染完毕后，
+          // 由 finally 块统一释放 edit 卡片，确保文字气泡完整显示后再出卡片
         },
         (edit) => {
           // 后端正常解析的 edit 事件

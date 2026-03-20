@@ -203,6 +203,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return [];
   });
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
+  // ref 追踪最新 pendingEdits，避免 handleEditSuggestion 闭包捕获旧值
+  const pendingEditsRef = useRef<PendingEdit[]>([]);
+  pendingEditsRef.current = pendingEdits;
 
   // 兜底：当 resumeSections 首次有数据时，同步冻结为原文快照
   useEffect(() => {
@@ -289,8 +292,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     // 归一化函数：去 bullet 符号、合并空白，用于模糊匹配
     const normalize = (s: string) => s.replace(/^[\s•·\-*●○]+/gm, '').replace(/\s+/g, ' ').trim();
 
+    // "再优化"场景：同 section 已有 pending edit，内容里存的是旧 suggested
+    const existingEdit = pendingEditsRef.current.find(e => e.sectionId === edit.sectionId);
+
     setResumeSections(prev => prev.map(sec => {
       if (sec.id === edit.sectionId) {
+        // 0. 再优化：替换旧 suggested → 新 suggested
+        if (existingEdit && sec.content.includes(existingEdit.suggested)) {
+          return { ...sec, content: sec.content.replace(existingEdit.suggested, edit.suggested) };
+        }
         // 1. 精确匹配
         if (sec.content.includes(edit.original)) {
           return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
@@ -320,38 +330,45 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }));
 
     // 兜底：如果原文仍存在于某个 section 中（首次按 sectionId 替换失败），尝试全局匹配
-    setResumeSections(prev => {
-      const normOriginal = normalize(edit.original);
-      // 检查是否还有任何 section 包含原文（精确或模糊）
-      const stillContains = prev.some(s =>
-        s.content.includes(edit.original) || normalize(s.content).includes(normOriginal)
-      );
-      if (!stillContains) return prev; // 已替换成功，无需兜底
-      // 遍历所有 section 尝试替换
-      return prev.map(sec => {
-        if (sec.content.includes(edit.original)) {
-          return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
-        }
-        if (normalize(sec.content).includes(normOriginal)) {
-          const lines = sec.content.split('\n');
-          for (let start = 0; start < lines.length; start++) {
-            for (let end = start; end < Math.min(start + 15, lines.length); end++) {
-              const candidate = lines.slice(start, end + 1).join('\n');
-              if (normalize(candidate) === normOriginal) {
-                const pos = sec.content.indexOf(candidate);
-                if (pos !== -1) {
-                  return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + candidate.length) };
+    // 再优化场景已在上面处理，跳过兜底
+    if (!existingEdit) {
+      setResumeSections(prev => {
+        const normOriginal = normalize(edit.original);
+        const stillContains = prev.some(s =>
+          s.content.includes(edit.original) || normalize(s.content).includes(normOriginal)
+        );
+        if (!stillContains) return prev;
+        return prev.map(sec => {
+          if (sec.content.includes(edit.original)) {
+            return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+          }
+          if (normalize(sec.content).includes(normOriginal)) {
+            const lines = sec.content.split('\n');
+            for (let start = 0; start < lines.length; start++) {
+              for (let end = start; end < Math.min(start + 15, lines.length); end++) {
+                const candidate = lines.slice(start, end + 1).join('\n');
+                if (normalize(candidate) === normOriginal) {
+                  const pos = sec.content.indexOf(candidate);
+                  if (pos !== -1) {
+                    return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + candidate.length) };
+                  }
                 }
               }
             }
           }
-        }
-        return sec;
+          return sec;
+        });
       });
-    });
+    }
 
-    // 存储 diff 元数据（用于 diff 高亮渲染）
-    setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
+    // 存储 diff 元数据：同 section 已有 edit 时更新而非追加
+    if (existingEdit) {
+      setPendingEdits(prev => prev.map(e =>
+        e.sectionId === edit.sectionId ? { ...edit, status: 'pending' as const } : e
+      ));
+    } else {
+      setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
+    }
 
     // 通知后端
     if (sessionId) {
