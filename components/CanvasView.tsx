@@ -16,18 +16,24 @@ import { ResumeSection, PendingEdit } from '../types';
 // display: 用户可见的消息（自然语言）
 // prompt: 发给 LLM 的指令（CANVAS_MODE_PROMPT 已约束 EDIT 格式，这里不重复）
 const QUICK_ACTIONS = [
-  { label: '润色', icon: Sparkles,
+  { label: '润色', icon: Sparkles, action: '润色简历',
     display: (text: string) => `帮我润色这段：「${text.slice(0, 50)}${text.length > 50 ? '...' : ''}」`,
-    prompt: (text: string, sectionTitle?: string) =>
-      `请润色「${sectionTitle || '简历'}」段落中的这段内容，使表达更专业流畅：\n「${text}」` },
-  { label: '精简', icon: Scissors,
+    prompt: (text: string, sectionTitle?: string) => {
+      const sec = sectionTitle ? `[SECTION:${sectionTitle}] ` : '';
+      return `[ACTION:润色简历] ${sec}${text}`;
+    }},
+  { label: '精简', icon: Scissors, action: '精简',
     display: (text: string) => `帮我精简这段：「${text.slice(0, 50)}${text.length > 50 ? '...' : ''}」`,
-    prompt: (text: string, sectionTitle?: string) =>
-      `请精简「${sectionTitle || '简历'}」段落中的这段内容，保留核心要点去掉冗余：\n「${text}」` },
-  { label: '扩充', icon: Plus,
+    prompt: (text: string, sectionTitle?: string) => {
+      const sec = sectionTitle ? `[SECTION:${sectionTitle}] ` : '';
+      return `[ACTION:精简] ${sec}${text}`;
+    }},
+  { label: '扩充', icon: Plus, action: '扩充',
     display: (text: string) => `帮我扩充这段：「${text.slice(0, 50)}${text.length > 50 ? '...' : ''}」`,
-    prompt: (text: string, sectionTitle?: string) =>
-      `请扩充「${sectionTitle || '简历'}」段落中的这段内容，增加量化成果和具体细节：\n「${text}」` },
+    prompt: (text: string, sectionTitle?: string) => {
+      const sec = sectionTitle ? `[SECTION:${sectionTitle}] ` : '';
+      return `[ACTION:扩充] ${sec}${text}`;
+    }},
 ];
 
 interface CanvasViewProps {
