@@ -255,10 +255,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
       </header>
 
-      {/* Main content - 三栏布局 */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main content - 三栏布局，divide-x 统一分隔线，避免 border-r 导致中/右栏宽度不一致 */}
+      <div className="flex-1 flex overflow-hidden divide-x divide-gray-100">
         {/* 左栏: Chat */}
-        <div className={`${showOriginal ? 'w-[30%]' : 'w-[40%]'} min-w-[280px] border-r border-gray-100 flex flex-col bg-white transition-all duration-300 canvas-no-print`}>
+        <div className={`${showOriginal ? 'w-[30%]' : 'w-[40%]'} min-w-[280px] flex flex-col bg-white transition-all duration-300 canvas-no-print`}>
           <CanvasChat
             sessionId={sessionId}
             messages={messages}
@@ -282,7 +282,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             ref={originalRef}
             onScroll={() => handleScroll('original')}
             onMouseUp={handleMouseUp}
-            className="w-[35%] overflow-y-auto bg-gray-50/80 border-r border-gray-100 canvas-no-print"
+            className="w-[35%] overflow-y-auto bg-gray-50/80 canvas-no-print"
           >
             <OriginalResumePanel sections={originalSections} highlightSectionId={highlightSectionId} highlightText={highlightText} />
           </div>
