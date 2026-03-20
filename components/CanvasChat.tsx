@@ -341,7 +341,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                 <div>
                   {cards.map((card, i) => (
                     <React.Fragment key={i}>
-                      {card.rationale && (
+                      {card.rationale && !msg.content && (
                         <div className="mt-2 bg-gray-50 rounded-2xl px-4 py-3 text-sm text-gray-700 border border-gray-100 leading-relaxed">
                           {card.rationale}
                         </div>
