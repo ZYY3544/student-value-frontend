@@ -312,8 +312,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
               </div>
             )}
             <div className="max-w-[85%]">
-              {/* 文字气泡：有文本时显示，或无卡片时显示加载动画 */}
-              {(msg.role === 'user' || msg.content || !(isLastAssistant && cards.length > 0)) && (
+              {/* 文字气泡：始终显示（无内容时显示加载动画） */}
+              {(msg.role === 'user' || msg.content || cards.length === 0 || !isLastAssistant) && (
                 <div
                   className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
                     msg.role === 'user'
@@ -336,8 +336,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                   )}
                 </div>
               )}
-              {/* 修改原因（作为 Sparky 的文字回复） + 改写建议卡片 */}
-              {cards.length > 0 && (
+              {/* 修改原因（作为 Sparky 的文字回复） + 改写建议卡片：等文字到达后再显示 */}
+              {cards.length > 0 && (msg.content || !(isLastAssistant && isLoading)) && (
                 <div>
                   {cards.map((card, i) => (
                     <React.Fragment key={i}>
