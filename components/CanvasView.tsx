@@ -131,12 +131,18 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     requestAnimationFrame(() => { isSyncing.current = false; });
   }, []);
 
-  // AI 编辑建议：转发给 ResultView 处理 + 高亮中间栏对应段落
+  // AI 编辑建议：用前端保存的精确选中文本覆盖 LLM 的 ORIGINAL，确保匹配可靠
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
-    onEditSuggestion(edit);
-    setHighlightSectionId(edit.sectionId);
-    // AI edit 到达后，保留精确高亮（用户选中的文本仍然标记）
-  }, [onEditSuggestion]);
+    const enrichedEdit = {
+      ...edit,
+      // 用用户实际选中的文本替换 LLM 返回的 ORIGINAL（LLM 可能改字）
+      ...(highlightText ? { original: highlightText } : {}),
+      // 用前端已知的 sectionId 替换 LLM 猜的
+      ...(highlightSectionId ? { sectionId: highlightSectionId } : {}),
+    };
+    onEditSuggestion(enrichedEdit);
+    setHighlightSectionId(edit.sectionId || highlightSectionId);
+  }, [onEditSuggestion, highlightText, highlightSectionId]);
 
   // 用户接受改写：清除高亮 + 通知 ResultView 清除 diff
   const handleAcceptEdit = useCallback((sectionId: string) => {
