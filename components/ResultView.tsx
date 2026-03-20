@@ -139,6 +139,14 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const savedMsgCount = useRef(0);
   const dbSessionId = useRef<string | null>(null);
 
+  // 新对话时重置持久化状态
+  useEffect(() => {
+    if (!sessionId) {
+      savedMsgCount.current = 0;
+      dbSessionId.current = null;
+    }
+  }, [sessionId]);
+
   // 将新消息持久化到 Supabase
   useEffect(() => {
     if (!userId || !sessionId || messages.length <= savedMsgCount.current) return;

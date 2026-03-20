@@ -531,6 +531,42 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     loadHistory();
   }, [loadHistory, sessionId]);
 
+  // 点击历史对话恢复消息
+  const handleRestoreSession = useCallback(async (id: string) => {
+    if (isInitializing || isLoading) return;
+    setMenuOpen(false);
+    setActionMenuId(null);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('role, content')
+        .eq('session_id', id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('[handleRestoreSession] Supabase error:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // 中断正在进行的请求
+        if (abortRef.current) abortRef.current.abort();
+        setIsLoading(false);
+        setSessionId(null); // 先重置，触发 savedMsgCount 清零
+        // 使用 setTimeout 确保 sessionId=null 的 effect 先执行
+        setTimeout(() => {
+          setMessages(data.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })));
+          setSessionId(id);
+          setInputValue('');
+        }, 0);
+      }
+    } catch (err) {
+      console.error('Failed to restore session:', err);
+    }
+  }, [isInitializing, isLoading]);
+
   // Auto-initialize on mount
   const initSession = useCallback(async () => {
     if (sessionId) return;
@@ -948,7 +984,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                   {chatHistory.map((item) => (
                     <div
                       key={item.id}
-                      className="group relative flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-default"
+                      onClick={() => handleRestoreSession(item.id)}
+                      className="group relative flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                       {item.pinned && <span className="absolute left-1 top-1 text-[10px]">📌</span>}
                       <MessageSquare className="w-4 h-4 text-gray-300 mt-0.5 shrink-0" />
