@@ -169,12 +169,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       const text = sel.toString().trim();
       if (text.length < 6) return;
 
-      // 确保选中内容在简历面板内
+      // 确保选中内容在简历面板的正文区域内（排除标题、描述等非正文元素）
       const anchor = sel.anchorNode;
       if (!anchor) return;
       const inOriginal = originalRef.current?.contains(anchor);
       const inOptimized = optimizedRef.current?.contains(anchor);
       if (!inOriginal && !inOptimized) return;
+
+      // 必须在 section 正文区域（data-section-content）内，排除标题栏等
+      const anchorEl = anchor instanceof Element ? anchor : anchor.parentElement;
+      if (!anchorEl?.closest('[data-section-content]')) return;
 
       // 检测所属 section
       const sectionInfo = findSectionFromNode(anchor);

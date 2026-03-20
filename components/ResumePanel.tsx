@@ -334,7 +334,7 @@ const SectionEditor: React.FC<{
   }, [adjustHeight]);
 
   return (
-    <div className="relative">
+    <div>
       <textarea
         ref={textareaRef}
         defaultValue={section.content}
@@ -345,14 +345,6 @@ const SectionEditor: React.FC<{
         className="w-full text-sm text-gray-600 leading-relaxed bg-transparent border-none outline-none resize-none focus:ring-0 p-0"
         spellCheck={false}
       />
-      <button
-        onClick={onDone}
-        className="absolute top-0 right-0 flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 transition-colors"
-        title="完成编辑"
-      >
-        <Eye className="w-3.5 h-3.5" />
-        完成编辑
-      </button>
     </div>
   );
 };
@@ -512,7 +504,7 @@ export const OriginalResumePanel: React.FC<{
               <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
               <div className="ml-auto w-[22px] h-[22px]" />
             </div>
-            <div className="px-5 py-4 space-y-2">
+            <div className="px-5 py-4 space-y-2" data-section-content>
               {hasTextHighlight
                 ? renderFormattedContentWithHighlight(section.content, highlightText, `orig-${section.id}-`)
                 : renderFormattedContent(cleanResumeContent(section.content))}
@@ -596,15 +588,21 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
             {/* Section header */}
             <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50 min-h-[46px]">
               <h3 className="text-sm font-semibold text-[#CA7C5E]">{section.title}</h3>
-              {/* 铅笔按钮：diff/clean 模式下显示 */}
-              {mode !== 'editing' && (
+              {mode === 'editing' ? (
+                <button
+                  onClick={() => setSectionMode(section.id, 'clean')}
+                  className="ml-auto flex items-center gap-1 text-xs text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
+                  title="完成编辑"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  完成编辑
+                </button>
+              ) : (
                 <button
                   onClick={() => {
                     if (mode === 'clean') {
-                      // clean → diff（颜色恢复）
                       setSectionMode(section.id, 'diff');
                     } else {
-                      // diff → editing（进入编辑）
                       setSectionMode(section.id, 'editing');
                     }
                   }}
@@ -617,7 +615,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
             </div>
 
             {/* Section content */}
-            <div className="px-5 py-4">
+            <div className="px-5 py-4" data-section-content>
               {mode === 'editing' ? (
                 <SectionEditor
                   section={section}
