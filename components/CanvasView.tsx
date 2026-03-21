@@ -72,6 +72,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   assessmentContext,
 }) => {
 
+  // JD 优化阶段动画状态
+  const [jdPhase, setJdPhase] = useState<string | null>(null);
+
   // 被改段落高亮跟踪（中间栏联动）
   const [highlightSectionId, setHighlightSectionId] = useState<string | null>(null);
   // 中栏原文：精确高亮用户选中的文本片段
@@ -271,7 +274,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             suggested: edit.suggested,
             rationale: edit.rationale,
           });
-        }
+        },
+        undefined,  // onSources
+        (phase) => { setJdPhase(phase); },  // onPhase
       );
     } catch (err: any) {
       console.error('JD auto-optimize failed:', err);
@@ -285,6 +290,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       });
     } finally {
       setIsLoading(false);
+      setJdPhase(null);
     }
   }, [jdInput, sessionId, apiBase, setMessages, handleEditSuggestion]);
 
@@ -356,6 +362,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             pendingEdits={pendingEdits}
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
+            jdPhase={jdPhase}
           />
         </div>
 

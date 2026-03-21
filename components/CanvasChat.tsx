@@ -98,6 +98,7 @@ interface CanvasChatProps {
   pendingEdits?: PendingEdit[];
   onAcceptEdit?: (sectionId: string) => void;
   resumeSections?: ResumeSection[];
+  jdPhase?: string | null;
 }
 
 const MAX_INPUT_LENGTH = 2000;
@@ -116,6 +117,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   pendingEdits = [],
   onAcceptEdit,
   resumeSections = [],
+  jdPhase,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -335,6 +337,18 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                   {msg.role === 'assistant' ? (
                     msg.content ? (
                       formatContent(msg.content)
+                    ) : jdPhase && isLastAssistant ? (
+                      <span className="flex items-center gap-2 text-gray-400">
+                        <span className="animate-pulse">
+                          <PixelCat size={16} />
+                        </span>
+                        <span className="text-xs">
+                          {jdPhase === 'parsing' ? 'Sparky 正在解析 JD...' :
+                           jdPhase === 'diagnosing' ? 'Sparky 正在诊断匹配度...' :
+                           jdPhase === 'rewriting' ? 'Sparky 正在改写简历...' :
+                           'Sparky 正在思考...'}
+                        </span>
+                      </span>
                     ) : (
                       <span className="flex items-center gap-1 text-gray-400">
                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '0ms' }} />

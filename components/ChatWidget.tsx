@@ -300,6 +300,7 @@ export async function parseSseStream(
   onText: (fullText: string) => void,
   onEdit?: (edit: { sectionId: string; original: string; suggested: string; rationale: string }) => void,
   onSources?: (sources: SearchSource[]) => void,
+  onPhase?: (phase: string) => void,
 ) {
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();
@@ -356,6 +357,8 @@ export async function parseSseStream(
           });
         } else if (event.type === 'sources' && onSources) {
           onSources(event.sources || []);
+        } else if (event.type === 'phase' && onPhase) {
+          onPhase(event.phase);
         }
       } catch { /* Skip invalid JSON */ }
     }
