@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Pencil, Eye, FileText } from 'lucide-react';
+import { Pencil, Eye, FileText, PanelLeftClose } from 'lucide-react';
 import { ResumeSection, PendingEdit } from '../types';
 
 /**
@@ -468,7 +468,8 @@ export const OriginalResumePanel: React.FC<{
   sections: ResumeSection[];
   highlightSectionId?: string | null;
   highlightText?: string | null;
-}> = ({ sections, highlightSectionId, highlightText }) => {
+  onHide?: () => void;
+}> = ({ sections, highlightSectionId, highlightText, onHide }) => {
   if (sections.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400">
@@ -479,9 +480,20 @@ export const OriginalResumePanel: React.FC<{
 
   return (
     <div className="p-6 space-y-5">
-      <div className="mb-2">
-        <h2 className="text-base font-bold text-gray-800">简历原文</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">初始版本，仅供参考对比</p>
+      <div className="mb-2 flex items-start justify-between">
+        <div>
+          <h2 className="text-base font-bold text-gray-800">简历原文</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">初始版本，仅供参考对比</p>
+        </div>
+        {onHide && (
+          <button
+            onClick={onHide}
+            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+            title="隐藏原文"
+          >
+            <PanelLeftClose className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {sections.map((section) => {
