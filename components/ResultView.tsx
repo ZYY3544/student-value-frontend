@@ -420,9 +420,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }
   }, [sessionId]);
 
-  // 接受 AI 改写：清除 diff 高亮，定稿该段落
+  // 接受 AI 改写：标记为 accepted（保留高亮显示修改部分）
   const handleAcceptEdit = useCallback((sectionId: string) => {
-    setPendingEdits(prev => prev.filter(e => e.sectionId !== sectionId));
+    setPendingEdits(prev => prev.map(e =>
+      e.sectionId === sectionId ? { ...e, status: 'accepted' as const } : e
+    ));
   }, []);
 
   // 手动编辑简历段落 + 自动保存

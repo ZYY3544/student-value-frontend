@@ -201,6 +201,15 @@ const DiffMark: React.FC<{
 };
 
 /**
+ * AcceptedMark - 已采纳的修改：淡绿背景标记，不显示 diff 对比
+ */
+const AcceptedMark: React.FC<{ text: string }> = ({ text }) => (
+  <span className="bg-green-50 text-gray-700 rounded px-0.5 text-sm border-b border-green-200">
+    {text}
+  </span>
+);
+
+/**
  * 渲染带 diff 高亮的内容
  * 在已应用的内容中查找 suggested 文本，标记为绿色；original 显示为红色删除线
  */
@@ -274,12 +283,16 @@ function renderContentWithDiff(
     }
 
     fragments.push(
-      <DiffMark
-        key={`diff-${i}`}
-        original={m.edit.original}
-        suggested={m.edit.suggested}
-        rationale={m.edit.rationale}
-      />
+      m.edit.status === 'accepted' ? (
+        <AcceptedMark key={`diff-${i}`} text={content.slice(m.start, m.end)} />
+      ) : (
+        <DiffMark
+          key={`diff-${i}`}
+          original={m.edit.original}
+          suggested={m.edit.suggested}
+          rationale={m.edit.rationale}
+        />
+      )
     );
 
     cursor = m.end;
