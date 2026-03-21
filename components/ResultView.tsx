@@ -532,9 +532,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onSectionContentChange={handleSectionContentChange}
         onExitCanvas={() => setViewMode('report')}
         parsedJd={parsedJd}
-        jdChecklist={jdChecklist}
         setParsedJd={setParsedJd}
-        setJdChecklist={setJdChecklist}
       />
     );
   }

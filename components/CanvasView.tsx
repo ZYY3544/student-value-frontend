@@ -43,9 +43,7 @@ interface CanvasViewProps {
   onExitCanvas: () => void;
   // JD analysis
   parsedJd: ParsedJd | null;
-  jdChecklist: JdMatchItem[];
   setParsedJd: (jd: ParsedJd | null) => void;
-  setJdChecklist: (list: JdMatchItem[]) => void;
   // Not needed but passed through
   assessmentContext?: any;
   resumeText?: string;
@@ -66,9 +64,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onSectionContentChange,
   onExitCanvas,
   parsedJd,
-  jdChecklist,
   setParsedJd,
-  setJdChecklist,
   assessmentContext,
 }) => {
 
