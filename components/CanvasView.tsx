@@ -7,7 +7,7 @@
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { ArrowLeft, Download, PanelLeft, Sparkles, FileSearch } from 'lucide-react';
-import { ChatMessage, PixelCat } from './ChatWidget';
+import { ChatMessage, PixelCat, parseSseStream } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
 import { ResumeSection, PendingEdit, ParsedJd, JdMatchItem } from '../types';
@@ -231,35 +231,62 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
   const handleJdAnalyze = useCallback(async () => {
     if (!jdInput.trim() || !sessionId) return;
-    setIsJdLoading(true);
+
+    // Close modal
+    setShowJdModal(false);
+    const jdTextToSend = jdInput.trim();
+    setJdInput('');
+
+    // Add user message + empty assistant message
+    setMessages(prev => [...prev,
+      { role: 'user', content: '根据这个 JD 自动优化我的简历' },
+      { role: 'assistant', content: '' }
+    ]);
+    setIsLoading(true);
+
     try {
-      const res = await fetch(`${apiBase}/api/chat/jd-analyze`, {
+      const res = await fetch(`${apiBase}/api/chat/jd-auto-optimize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, jdText: jdInput.trim() }),
+        body: JSON.stringify({ sessionId, jdText: jdTextToSend }),
       });
-      if (!res.ok) throw new Error('分析失败');
-      const data = await res.json();
-      setParsedJd(data.data.jd);
-      setJdChecklist(data.data.checklist);
-      setShowJdModal(false);
-      setJdInput('');
 
-      // Sparky proactive message
-      const missing = data.data.checklist.filter((i: JdMatchItem) => i.status === 'missing').length;
-      const partial = data.data.checklist.filter((i: JdMatchItem) => i.status === 'partial').length;
-      if (missing > 0 || partial > 0) {
-        setMessages(prev => [...prev, {
+      if (!res.ok) throw new Error('优化失败');
+
+      await parseSseStream(
+        res,
+        // onText: update the last assistant message
+        (fullText) => {
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: 'assistant', content: fullText };
+            return updated;
+          });
+        },
+        // onEdit: auto-apply edit to right panel
+        (edit) => {
+          handleEditSuggestion({
+            sectionId: edit.sectionId,
+            original: edit.original,
+            suggested: edit.suggested,
+            rationale: edit.rationale,
+          });
+        }
+      );
+    } catch (err: any) {
+      console.error('JD auto-optimize failed:', err);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
           role: 'assistant',
-          content: `已分析目标 JD「${data.data.jd.title || ''}」，发现 ${missing} 项未覆盖、${partial} 项部分覆盖的要求。点击左下方清单中的未覆盖项，我来帮你针对性优化。`
-        }]);
-      }
-    } catch (err) {
-      console.error('JD analyze failed:', err);
+          content: '抱歉，优化过程中遇到问题，请重试。'
+        };
+        return updated;
+      });
     } finally {
-      setIsJdLoading(false);
+      setIsLoading(false);
     }
-  }, [jdInput, sessionId, apiBase, setParsedJd, setJdChecklist, setMessages]);
+  }, [jdInput, sessionId, apiBase, setMessages, handleEditSuggestion]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
@@ -329,10 +356,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             pendingEdits={pendingEdits}
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
-            jdChecklist={jdChecklist}
-            onJdItemClick={(item) => {
-              setExternalMessage(`[QUICK:针对 JD 要求优化：${item.requirement}]请帮我针对以下 JD 要求优化简历。\n\nJD 要求：${item.requirement}\n建议方向：${item.suggestion || '请分析简历内容并给出改写建议'}`);
-            }}
           />
         </div>
 
@@ -474,9 +497,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
                 {isJdLoading ? (
                   <>
                     <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    分析中...
+                    优化中...
                   </>
-                ) : '开始分析'}
+                ) : '开始优化'}
               </button>
             </div>
           </div>
