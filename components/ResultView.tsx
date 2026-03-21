@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { ChatWidget, ChatMessage } from './ChatWidget';
 import { CanvasView } from './CanvasView';
+import { cleanResumeContent } from './ResumePanel';
 
 interface ResultViewProps {
   result: AssessmentResult;
@@ -303,6 +304,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         if (sec.content.includes(matchTarget)) {
           return { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
         }
+        // 1.5. 用户从渲染后面板选取文本（经过 cleanResumeContent 合并断行/去 bullet），
+        //      原始 content 含断行对不上，先 clean 再精确匹配
+        const cleaned = cleanResumeContent(sec.content);
+        if (cleaned.includes(matchTarget)) {
+          return { ...sec, content: cleaned.replace(matchTarget, edit.suggested) };
+        }
         // 2. 模糊匹配：忽略空白差异
         const normContent = normalize(sec.content);
         const normTarget = normalize(matchTarget);
@@ -337,6 +344,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         return prev.map(sec => {
           if (sec.content.includes(edit.original)) {
             return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+          }
+          const cleanedSec = cleanResumeContent(sec.content);
+          if (cleanedSec.includes(edit.original)) {
+            return { ...sec, content: cleanedSec.replace(edit.original, edit.suggested) };
           }
           if (normalize(sec.content).includes(normOriginal)) {
             const lines = sec.content.split('\n');

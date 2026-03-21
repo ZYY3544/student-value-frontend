@@ -12,7 +12,7 @@ import { ResumeSection, PendingEdit } from '../types';
  * 1. 把单独占一行的 bullet（•·-）合并到下一行前面
  * 2. 修复句中意外断行（上一行末尾不是标点/bullet，下一行开头不是 bullet/空行）
  */
-function cleanResumeContent(raw: string): string {
+export function cleanResumeContent(raw: string): string {
   const lines = raw.split('\n');
   const merged: string[] = [];
 
