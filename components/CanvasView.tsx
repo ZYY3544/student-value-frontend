@@ -79,6 +79,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   const [highlightSectionId, setHighlightSectionId] = useState<string | null>(null);
   // 中栏原文：精确高亮用户选中的文本片段
   const [highlightText, setHighlightText] = useState<string | null>(null);
+  // ref 同步：SSE 回调链闭包长，state 可能过期，用 ref 保证始终读到最新值
+  const highlightTextRef = useRef<string | null>(null);
+  const highlightSectionIdRef = useRef<string | null>(null);
+  highlightTextRef.current = highlightText;
+  highlightSectionIdRef.current = highlightSectionId;
 
   // autoStartPrompt 已移除：进入画布后保留对话历史，等用户主动操作
   const [showOriginal, setShowOriginal] = useState(true);
@@ -131,18 +136,19 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     requestAnimationFrame(() => { isSyncing.current = false; });
   }, []);
 
-  // AI 编辑建议：用前端保存的精确选中文本覆盖 LLM 的 ORIGINAL，确保匹配可靠
+  // AI 编辑建议：用前端记录的选中文本 / sectionId 覆盖 LLM 返回值，确保匹配可靠
+  // 读 ref 而非 state，避免 SSE 回调链闭包捕获过期值
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
+    const frontendText = highlightTextRef.current;
+    const frontendSectionId = highlightSectionIdRef.current;
     const enrichedEdit = {
       ...edit,
-      // 用用户实际选中的文本替换 LLM 返回的 ORIGINAL（LLM 可能改字）
-      ...(highlightText ? { original: highlightText } : {}),
-      // 用前端已知的 sectionId 替换 LLM 猜的
-      ...(highlightSectionId ? { sectionId: highlightSectionId } : {}),
+      ...(frontendText ? { original: frontendText } : {}),
+      ...(frontendSectionId ? { sectionId: frontendSectionId } : {}),
     };
     onEditSuggestion(enrichedEdit);
-    setHighlightSectionId(edit.sectionId || highlightSectionId);
-  }, [onEditSuggestion, highlightText, highlightSectionId]);
+    setHighlightSectionId(edit.sectionId || frontendSectionId);
+  }, [onEditSuggestion]);
 
   // 用户接受改写：清除高亮 + 通知 ResultView 清除 diff
   const handleAcceptEdit = useCallback((sectionId: string) => {
