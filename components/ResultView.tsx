@@ -298,22 +298,26 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const matchTarget = existingEdit ? existingEdit.suggested : edit.original;
 
     // 立即应用编辑到 section 内容
+    console.log('[EditSuggestion]', { sectionId: edit.sectionId, matchTarget: matchTarget.slice(0, 60), suggested: edit.suggested.slice(0, 60), isReopt: !!existingEdit });
     setResumeSections(prev => prev.map(sec => {
       if (sec.id === edit.sectionId) {
         // 1. 精确匹配（再优化时 matchTarget = 旧 suggested）
         if (sec.content.includes(matchTarget)) {
+          console.log('[EditSuggestion] hit: exact');
           return { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
         }
         // 1.5. 用户从渲染后面板选取文本（经过 cleanResumeContent 合并断行/去 bullet），
         //      原始 content 含断行对不上，先 clean 再精确匹配
         const cleaned = cleanResumeContent(sec.content);
         if (cleaned.includes(matchTarget)) {
+          console.log('[EditSuggestion] hit: clean');
           return { ...sec, content: cleaned.replace(matchTarget, edit.suggested) };
         }
         // 2. 模糊匹配：忽略空白差异
         const normContent = normalize(sec.content);
         const normTarget = normalize(matchTarget);
         if (normContent.includes(normTarget)) {
+          console.log('[EditSuggestion] hit: fuzzy');
           const lines = sec.content.split('\n');
           for (let start = 0; start < lines.length; start++) {
             for (let end = start; end < Math.min(start + 15, lines.length); end++) {
@@ -327,6 +331,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             }
           }
         }
+        console.warn('[EditSuggestion] MISS: no match found', { sectionId: edit.sectionId, matchTarget: matchTarget.slice(0, 80), contentHead: sec.content.slice(0, 80) });
         return sec;
       }
       return sec;
