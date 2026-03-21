@@ -663,22 +663,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                   <p className="text-xs text-gray-400 mt-0.5">同一份简历，不同赛道、不同城市，市场给出的定薪完全不同——选对方向很重要</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={filterCity}
-                  onChange={(e) => setFilterCity(e.target.value)}
-                  className="appearance-none bg-gray-50 border border-gray-200 text-xs font-medium text-gray-700 rounded-lg px-3 py-1.5 pr-7 outline-none focus:border-[#0A66C2] transition-colors cursor-pointer"
-                >
-                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <select
-                  value={filterIndustry}
-                  onChange={(e) => setFilterIndustry(e.target.value)}
-                  className="appearance-none bg-gray-50 border border-gray-200 text-xs font-medium text-gray-700 rounded-lg px-3 py-1.5 pr-7 outline-none focus:border-[#0A66C2] transition-colors cursor-pointer"
-                >
-                  {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                </select>
-              </div>
             </div>
 
             <div className={`space-y-4 ${salaryLoading ? 'opacity-50 transition-opacity' : ''}`}>
@@ -702,7 +686,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               ))}
             </div>
 
-            <p className="text-xs text-gray-400 mt-4 leading-relaxed">以上薪酬数据为月度基本工资（税前现金性收入），薪酬范围仅供参考。</p>
+            <p className="text-xs text-gray-400 mt-4 leading-relaxed">说明：以上薪酬数据为月度基本工资（税前现金性收入），薪酬范围仅供参考。</p>
           </div>
         )}
 
