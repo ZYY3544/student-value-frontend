@@ -307,11 +307,22 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           return { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
         }
         // 1.5. 用户从渲染后面板选取文本（经过 cleanResumeContent 合并断行/去 bullet），
-        //      原始 content 含断行对不上，先 clean 再精确匹配
+        //      原始 content 含断行对不上 → 用滑动窗口找到对应的原始行范围再替换
         const cleaned = cleanResumeContent(sec.content);
         if (cleaned.includes(matchTarget)) {
-          console.log('[EditSuggestion] hit: clean');
-          return { ...sec, content: cleaned.replace(matchTarget, edit.suggested) };
+          const lines = sec.content.split('\n');
+          for (let start = 0; start < lines.length; start++) {
+            for (let end = start; end < Math.min(start + 15, lines.length); end++) {
+              const chunk = lines.slice(start, end + 1).join('\n');
+              if (cleanResumeContent(chunk).includes(matchTarget)) {
+                console.log('[EditSuggestion] hit: clean (lines ' + start + '-' + end + ')');
+                const pos = sec.content.indexOf(chunk);
+                if (pos !== -1) {
+                  return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + chunk.length) };
+                }
+              }
+            }
+          }
         }
         // 2. 模糊匹配：忽略空白差异
         const normContent = normalize(sec.content);
@@ -352,7 +363,18 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           }
           const cleanedSec = cleanResumeContent(sec.content);
           if (cleanedSec.includes(edit.original)) {
-            return { ...sec, content: cleanedSec.replace(edit.original, edit.suggested) };
+            const fallbackLines = sec.content.split('\n');
+            for (let s = 0; s < fallbackLines.length; s++) {
+              for (let e = s; e < Math.min(s + 15, fallbackLines.length); e++) {
+                const chunk = fallbackLines.slice(s, e + 1).join('\n');
+                if (cleanResumeContent(chunk).includes(edit.original)) {
+                  const pos = sec.content.indexOf(chunk);
+                  if (pos !== -1) {
+                    return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + chunk.length) };
+                  }
+                }
+              }
+            }
           }
           if (normalize(sec.content).includes(normOriginal)) {
             const lines = sec.content.split('\n');
