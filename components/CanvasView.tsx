@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Download, PanelLeftClose, PanelLeft, Sparkles, Scissors, Plus } from 'lucide-react';
+import { ArrowLeft, Download, PanelLeftClose, PanelLeft, Sparkles } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
@@ -21,18 +21,6 @@ const QUICK_ACTIONS = [
     prompt: (text: string, sectionTitle?: string) => {
       const sec = sectionTitle ? `[SECTION:${sectionTitle}] ` : '';
       return `[ACTION:润色简历] ${sec}${text}`;
-    }},
-  { label: '精简', icon: Scissors, action: '精简',
-    display: (text: string) => `帮我精简这段：「${text.slice(0, 50)}${text.length > 50 ? '...' : ''}」`,
-    prompt: (text: string, sectionTitle?: string) => {
-      const sec = sectionTitle ? `[SECTION:${sectionTitle}] ` : '';
-      return `[ACTION:精简] ${sec}${text}`;
-    }},
-  { label: '扩充', icon: Plus, action: '扩充',
-    display: (text: string) => `帮我扩充这段：「${text.slice(0, 50)}${text.length > 50 ? '...' : ''}」`,
-    prompt: (text: string, sectionTitle?: string) => {
-      const sec = sectionTitle ? `[SECTION:${sectionTitle}] ` : '';
-      return `[ACTION:扩充] ${sec}${text}`;
     }},
 ];
 
