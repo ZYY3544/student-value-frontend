@@ -7,10 +7,10 @@
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { ArrowLeft, Download, PanelLeft, Sparkles, FileSearch } from 'lucide-react';
-import { ChatMessage, PixelCat, parseSseStream } from './ChatWidget';
+import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
-import { ResumeSection, PendingEdit, ParsedJd, JdMatchItem } from '../types';
+import { ResumeSection, PendingEdit, ParsedJd } from '../types';
 
 // 选中文本快捷操作
 // display: 用户可见的消息（自然语言）
@@ -230,69 +230,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   // JD 分析弹窗状态
   const [showJdModal, setShowJdModal] = useState(false);
   const [jdInput, setJdInput] = useState('');
-  const [isJdLoading, setIsJdLoading] = useState(false);
+  const [jdOptimizeText, setJdOptimizeText] = useState<string | null>(null);
 
-  const handleJdAnalyze = useCallback(async () => {
-    if (!jdInput.trim() || !sessionId) return;
-
-    // Close modal
+  const handleJdAnalyze = useCallback(() => {
+    if (!jdInput.trim()) return;
     setShowJdModal(false);
-    const jdTextToSend = jdInput.trim();
+    setJdOptimizeText(jdInput.trim());
     setJdInput('');
-
-    // Add user message + empty assistant message
-    setMessages(prev => [...prev,
-      { role: 'user', content: '根据这个 JD 自动优化我的简历' },
-      { role: 'assistant', content: '' }
-    ]);
-    setIsLoading(true);
-
-    try {
-      const res = await fetch(`${apiBase}/api/chat/jd-auto-optimize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, jdText: jdTextToSend }),
-      });
-
-      if (!res.ok) throw new Error('优化失败');
-
-      await parseSseStream(
-        res,
-        // onText: update the last assistant message
-        (fullText) => {
-          setMessages(prev => {
-            const updated = [...prev];
-            updated[updated.length - 1] = { role: 'assistant', content: fullText };
-            return updated;
-          });
-        },
-        // onEdit: auto-apply edit to right panel
-        (edit) => {
-          handleEditSuggestion({
-            sectionId: edit.sectionId,
-            original: edit.original,
-            suggested: edit.suggested,
-            rationale: edit.rationale,
-          });
-        },
-        undefined,  // onSources
-        (phase) => { setJdPhase(phase); },  // onPhase
-      );
-    } catch (err: any) {
-      console.error('JD auto-optimize failed:', err);
-      setMessages(prev => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: 'assistant',
-          content: '抱歉，优化过程中遇到问题，请重试。'
-        };
-        return updated;
-      });
-    } finally {
-      setIsLoading(false);
-      setJdPhase(null);
-    }
-  }, [jdInput, sessionId, apiBase, setMessages, handleEditSuggestion]);
+  }, [jdInput]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
@@ -363,6 +308,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
             jdPhase={jdPhase}
+            jdOptimizeText={jdOptimizeText}
+            onJdOptimizeConsumed={() => setJdOptimizeText(null)}
+            onJdPhaseChange={setJdPhase}
           />
         </div>
 
@@ -486,22 +434,22 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
               onChange={e => setJdInput(e.target.value)}
               placeholder="粘贴 JD 内容或 URL..."
               className="w-full h-48 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 resize-none"
-              disabled={isJdLoading}
+              disabled={isLoading}
             />
             <div className="flex justify-end gap-3 mt-4">
               <button
                 onClick={() => { setShowJdModal(false); setJdInput(''); }}
                 className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                disabled={isJdLoading}
+                disabled={isLoading}
               >
                 取消
               </button>
               <button
                 onClick={handleJdAnalyze}
-                disabled={!jdInput.trim() || isJdLoading}
+                disabled={!jdInput.trim() || isLoading}
                 className="px-5 py-2 bg-[#0A66C2] text-white text-sm font-semibold rounded-xl hover:bg-[#084e96] disabled:opacity-40 transition-colors flex items-center gap-2"
               >
-                {isJdLoading ? (
+                {isLoading ? (
                   <>
                     <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     优化中...

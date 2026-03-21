@@ -99,6 +99,9 @@ interface CanvasChatProps {
   onAcceptEdit?: (sectionId: string) => void;
   resumeSections?: ResumeSection[];
   jdPhase?: string | null;
+  jdOptimizeText?: string | null;
+  onJdOptimizeConsumed?: () => void;
+  onJdPhaseChange?: (phase: string | null) => void;
 }
 
 const MAX_INPUT_LENGTH = 2000;
@@ -118,6 +121,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   onAcceptEdit,
   resumeSections = [],
   jdPhase,
+  jdOptimizeText,
+  onJdOptimizeConsumed,
+  onJdPhaseChange,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -262,6 +268,83 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       onExternalMessageConsumed?.();
     }
   }, [externalMessage, onExternalMessageConsumed]);
+
+  // JD 一键优化：走和 sendMessage 一样的 handleParsedEdit → 缓冲 → 卡片链路
+  useEffect(() => {
+    if (!jdOptimizeText || isLoading || !sessionId) return;
+    onJdOptimizeConsumed?.();
+
+    const jdText = jdOptimizeText;
+
+    // 冻结当前 editCards
+    if (currentEditCards.length > 0) {
+      const lastAssistantIdx = messages.length - 1;
+      setFrozenEditCards(prev => ({ ...prev, [lastAssistantIdx]: currentEditCards }));
+    }
+
+    // 显示用户消息 + 空 assistant 消息
+    setMessages(prev => [...prev,
+      { role: 'user', content: '根据这个 JD 自动优化我的简历' },
+      { role: 'assistant', content: '' },
+    ]);
+    setIsLoading(true);
+    streamHasEditRef.current = false;
+    processedEditsRef.current.clear();
+    pendingEditCardsRef.current = [];
+    setCurrentEditCards([]);
+    setLastStreamHadEdit(false);
+
+    (async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/chat/jd-auto-optimize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, jdText: jdText }),
+        });
+
+        if (!res.ok) throw new Error('优化失败');
+
+        await parseSseStream(
+          res,
+          (fullText) => {
+            const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
+            for (const edit of edits) handleParsedEdit(edit);
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { role: 'assistant', content: displayText };
+              return updated;
+            });
+          },
+          (edit) => {
+            handleParsedEdit({
+              sectionId: edit.sectionId,
+              original: edit.original,
+              suggested: edit.suggested,
+              rationale: edit.rationale,
+            });
+          },
+          undefined, // onSources
+          (phase) => { onJdPhaseChange?.(phase); }, // onPhase
+        );
+      } catch (err: any) {
+        console.error('JD auto-optimize failed:', err);
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: '抱歉，优化过程中遇到问题，请重试。' };
+          return updated;
+        });
+      } finally {
+        if (pendingEditCardsRef.current.length > 0) {
+          setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
+          pendingEditCardsRef.current = [];
+        }
+        setIsLoading(false);
+        if (streamHasEditRef.current) setLastStreamHadEdit(true);
+        onJdPhaseChange?.(null);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jdOptimizeText]);
 
   // autoStart 已移除：进入画布后保留对话历史，等用户主动操作
 
