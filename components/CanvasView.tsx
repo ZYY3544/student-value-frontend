@@ -6,11 +6,11 @@
  */
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Download, PanelLeftClose, PanelLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, PanelLeftClose, PanelLeft, Sparkles, FileSearch } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
-import { ResumeSection, PendingEdit } from '../types';
+import { ResumeSection, PendingEdit, ParsedJd, JdMatchItem } from '../types';
 
 // 选中文本快捷操作
 // display: 用户可见的消息（自然语言）
@@ -41,6 +41,11 @@ interface CanvasViewProps {
   onAcceptEdit: (sectionId: string) => void;
   onSectionContentChange: (sectionId: string, content: string) => void;
   onExitCanvas: () => void;
+  // JD analysis
+  parsedJd: ParsedJd | null;
+  jdChecklist: JdMatchItem[];
+  setParsedJd: (jd: ParsedJd | null) => void;
+  setJdChecklist: (list: JdMatchItem[]) => void;
   // Not needed but passed through
   assessmentContext?: any;
   resumeText?: string;
@@ -60,6 +65,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onAcceptEdit,
   onSectionContentChange,
   onExitCanvas,
+  parsedJd,
+  jdChecklist,
+  setParsedJd,
+  setJdChecklist,
   assessmentContext,
 }) => {
 
@@ -215,6 +224,43 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     localStorage.setItem('canvas_guide_shown', '1');
   }, []);
 
+  // JD 分析弹窗状态
+  const [showJdModal, setShowJdModal] = useState(false);
+  const [jdInput, setJdInput] = useState('');
+  const [isJdLoading, setIsJdLoading] = useState(false);
+
+  const handleJdAnalyze = useCallback(async () => {
+    if (!jdInput.trim() || !sessionId) return;
+    setIsJdLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/chat/jd-analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, jdText: jdInput.trim() }),
+      });
+      if (!res.ok) throw new Error('分析失败');
+      const data = await res.json();
+      setParsedJd(data.data.jd);
+      setJdChecklist(data.data.checklist);
+      setShowJdModal(false);
+      setJdInput('');
+
+      // Sparky proactive message
+      const missing = data.data.checklist.filter((i: JdMatchItem) => i.status === 'missing').length;
+      const partial = data.data.checklist.filter((i: JdMatchItem) => i.status === 'partial').length;
+      if (missing > 0 || partial > 0) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `已分析目标 JD「${data.data.jd.title || ''}」，发现 ${missing} 项未覆盖、${partial} 项部分覆盖的要求。点击左下方清单中的未覆盖项，我来帮你针对性优化。`
+        }]);
+      }
+    } catch (err) {
+      console.error('JD analyze failed:', err);
+    } finally {
+      setIsJdLoading(false);
+    }
+  }, [jdInput, sessionId, apiBase, setParsedJd, setJdChecklist, setMessages]);
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
       {/* Top bar */}
@@ -234,6 +280,17 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
         {/* 右侧按钮组 */}
         <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => setShowJdModal(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg transition-colors ${
+              parsedJd
+                ? 'text-green-700 border-green-200 bg-green-50 hover:bg-green-100'
+                : 'text-gray-500 border-gray-200 hover:text-gray-800 hover:bg-gray-50'
+            }`}
+          >
+            <FileSearch className="w-3.5 h-3.5" />
+            {parsedJd ? `JD: ${parsedJd.title?.slice(0, 10) || '已锚定'}` : '锚定 JD'}
+          </button>
           <button
             onClick={() => setShowOriginal(v => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -271,6 +328,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             pendingEdits={pendingEdits}
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
+            jdChecklist={jdChecklist}
+            onJdItemClick={(item) => {
+              setExternalMessage(`[QUICK:针对 JD 要求优化：${item.requirement}]请帮我针对以下 JD 要求优化简历。\n\nJD 要求：${item.requirement}\n建议方向：${item.suggestion || '请分析简历内容并给出改写建议'}`);
+            }}
           />
         </div>
 
@@ -379,6 +440,44 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             >
               知道了
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* JD 分析弹窗 */}
+      {showJdModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20">
+          <div className="bg-white rounded-2xl shadow-2xl w-[520px] p-7">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">锚定目标 JD</h3>
+            <p className="text-xs text-gray-400 mb-4">粘贴岗位 JD 全文或链接，Sparky 将针对该岗位定制化优化你的简历</p>
+            <textarea
+              value={jdInput}
+              onChange={e => setJdInput(e.target.value)}
+              placeholder="粘贴 JD 内容或 URL..."
+              className="w-full h-48 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 resize-none"
+              disabled={isJdLoading}
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => { setShowJdModal(false); setJdInput(''); }}
+                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                disabled={isJdLoading}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleJdAnalyze}
+                disabled={!jdInput.trim() || isJdLoading}
+                className="px-5 py-2 bg-[#0A66C2] text-white text-sm font-semibold rounded-xl hover:bg-[#084e96] disabled:opacity-40 transition-colors flex items-center gap-2"
+              >
+                {isJdLoading ? (
+                  <>
+                    <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    分析中...
+                  </>
+                ) : '开始分析'}
+              </button>
+            </div>
           </div>
         </div>
       )}

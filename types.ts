@@ -134,6 +134,28 @@ export interface PendingEdit {
   status: 'pending' | 'accepted' | 'rejected';
 }
 
+// JD Analysis
+export interface JdRequirement {
+  name: string;
+  description: string;
+  priority: 'must' | 'preferred' | 'nice';
+}
+
+export interface ParsedJd {
+  title: string;
+  company?: string;
+  requirements: JdRequirement[];
+  keywords: string[];
+  responsibilities: string[];
+}
+
+export interface JdMatchItem {
+  requirement: string;
+  status: 'covered' | 'partial' | 'missing';
+  evidence?: string;
+  suggestion?: string;
+}
+
 export enum AppState {
   AUTH = 'AUTH',
   FORM = 'FORM',

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit, ResumeExpression, JobComparison } from '../types';
+import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit, ResumeExpression, JobComparison, ParsedJd, JdMatchItem } from '../types';
 import { supabase } from '../lib/supabase';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell, Search,
@@ -204,6 +204,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return [];
   });
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
+  const [parsedJd, setParsedJd] = useState<ParsedJd | null>(null);
+  const [jdChecklist, setJdChecklist] = useState<JdMatchItem[]>([]);
   // ref 追踪最新 pendingEdits，避免 handleEditSuggestion 闭包捕获旧值
   const pendingEditsRef = useRef<PendingEdit[]>([]);
   pendingEditsRef.current = pendingEdits;
@@ -529,6 +531,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onAcceptEdit={handleAcceptEdit}
         onSectionContentChange={handleSectionContentChange}
         onExitCanvas={() => setViewMode('report')}
+        parsedJd={parsedJd}
+        jdChecklist={jdChecklist}
+        setParsedJd={setParsedJd}
+        setJdChecklist={setJdChecklist}
       />
     );
   }

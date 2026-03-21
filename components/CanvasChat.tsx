@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2, Check, RefreshCw, FileEdit } from 'lucide-react';
 import { ChatMessage, formatContent, parseSseStream, PixelCat } from './ChatWidget';
-import { PendingEdit, ResumeSection } from '../types';
+import { PendingEdit, ResumeSection, JdMatchItem } from '../types';
 
 // ---- 前端兜底：解析泄露到 text 里的 <<<EDIT...EDIT>>> 块 ----
 interface ParsedEditBlock {
@@ -98,6 +98,8 @@ interface CanvasChatProps {
   pendingEdits?: PendingEdit[];
   onAcceptEdit?: (sectionId: string) => void;
   resumeSections?: ResumeSection[];
+  jdChecklist?: JdMatchItem[];
+  onJdItemClick?: (item: JdMatchItem) => void;
 }
 
 const MAX_INPUT_LENGTH = 2000;
@@ -116,6 +118,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   pendingEdits = [],
   onAcceptEdit,
   resumeSections = [],
+  jdChecklist = [],
+  onJdItemClick,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -386,6 +390,39 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         })}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* JD 匹配清单 */}
+      {jdChecklist.length > 0 && (
+        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-xs font-semibold text-gray-500">JD 匹配清单</span>
+            <span className="text-[10px] text-gray-400">
+              {jdChecklist.filter(i => i.status === 'covered').length}/{jdChecklist.length} 已覆盖
+            </span>
+          </div>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {jdChecklist.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => item.status !== 'covered' && onJdItemClick?.(item)}
+                disabled={item.status === 'covered' || isLoading}
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors ${
+                  item.status === 'covered'
+                    ? 'text-green-600 bg-green-50/50 cursor-default'
+                    : item.status === 'partial'
+                      ? 'text-amber-600 bg-amber-50/50 hover:bg-amber-50 cursor-pointer'
+                      : 'text-red-500 bg-red-50/50 hover:bg-red-50 cursor-pointer'
+                } disabled:opacity-60`}
+              >
+                <span className="flex-shrink-0">
+                  {item.status === 'covered' ? '\u2713' : item.status === 'partial' ? '\u25D0' : '\u2717'}
+                </span>
+                <span className="truncate">{item.requirement}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Input */}
       <div className="p-4 bg-white border-t border-gray-100">
