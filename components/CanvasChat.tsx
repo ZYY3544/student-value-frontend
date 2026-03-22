@@ -102,9 +102,18 @@ interface CanvasChatProps {
   jdOptimizeText?: string | null;
   onJdOptimizeConsumed?: () => void;
   onJdPhaseChange?: (phase: string | null) => void;
+  onJdVersionCreate?: (jdContent: string) => void;
 }
 
-const MAX_INPUT_LENGTH = 2000;
+// JD 自动检测：长文本 + 含 JD 特征关键词
+const JD_KEYWORDS = ['岗位职责', '任职要求', '职位描述', '工作职责', '工作内容', '学历要求', '招聘', '岗位要求', '职位要求', '任职资格'];
+function detectJd(text: string): boolean {
+  if (text.length < 150) return false;
+  const matchCount = JD_KEYWORDS.filter(kw => text.includes(kw)).length;
+  return matchCount >= 2;
+}
+
+const MAX_INPUT_LENGTH = 5000;
 
 export const CanvasChat: React.FC<CanvasChatProps> = ({
   sessionId,
@@ -124,6 +133,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   jdOptimizeText,
   onJdOptimizeConsumed,
   onJdPhaseChange,
+  onJdVersionCreate,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +178,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     const quickMatch = text.match(/^\[QUICK:(.+?)\]/);
     const messageToSend = quickMatch ? text.slice(quickMatch[0].length) : text;
 
+    // JD 自动检测：用户直接粘贴了 JD 文本 → 走 JD 优化流程
+    const isJd = !quickMatch && detectJd(messageToSend);
+
     // 冻结当前 editCards 到上一条 assistant 消息
     if (currentEditCards.length > 0) {
       const lastAssistantIdx = messages.length - 1;
@@ -177,8 +190,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     // 显示用户消息
     if (text.startsWith('[CANVAS_AUTO_START]')) {
       // 自动开场：隐藏
+    } else if (isJd) {
+      setMessages(prev => [...prev, { role: 'user', content: `[JD 已识别] ${messageToSend.slice(0, 80)}...` }]);
     } else if (quickMatch) {
-      // 快捷操作：显示自然语言描述，不暴露 LLM 指令
       setMessages(prev => [...prev, { role: 'user', content: quickMatch[1] }]);
     } else {
       setMessages(prev => [...prev, { role: 'user', content: text }]);
@@ -192,9 +206,54 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setLastStreamHadEdit(false);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
+    // JD 检测到 → 走 /api/chat/jd-auto-optimize
+    if (isJd) {
+      try {
+        onJdPhaseChange?.('parsing');
+        const res = await fetch(`${apiBase}/api/chat/jd-auto-optimize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, jdText: messageToSend }),
+        });
+        if (!res.ok) throw new Error('优化失败');
+        await parseSseStream(
+          res,
+          (fullText) => {
+            const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
+            for (const edit of edits) handleParsedEdit(edit);
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { role: 'assistant', content: displayText };
+              return updated;
+            });
+          },
+          (edit) => handleParsedEdit({ sectionId: edit.sectionId, original: edit.original, suggested: edit.suggested, rationale: edit.rationale }),
+          undefined,
+          (phase) => { onJdPhaseChange?.(phase); },
+        );
+      } catch (err) {
+        console.error('JD auto-optimize failed:', err);
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: '抱歉，JD 优化过程中遇到问题，请重试。' };
+          return updated;
+        });
+      } finally {
+        if (pendingEditCardsRef.current.length > 0) {
+          setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
+          pendingEditCardsRef.current = [];
+        }
+        setIsLoading(false);
+        if (streamHasEditRef.current) setLastStreamHadEdit(true);
+        onJdPhaseChange?.(null);
+        onJdVersionCreate?.(messageToSend);
+      }
+      return;
+    }
+
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 90000); // 90秒超时
+      const timeout = setTimeout(() => controller.abort(), 90000);
       const res = await fetch(`${apiBase}/api/chat/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

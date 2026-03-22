@@ -46,6 +46,7 @@ interface CanvasViewProps {
   onSwitchVersion: (versionId: string) => void;
   onDeleteVersion: (versionId: string) => void;
   onRenameVersion: (versionId: string, newName: string) => void;
+  onJdVersionCreate: (jdContent: string) => void;
   // Not needed but passed through
   assessmentContext?: any;
   resumeText?: string;
@@ -71,6 +72,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onSwitchVersion,
   onDeleteVersion,
   onRenameVersion,
+  onJdVersionCreate,
   assessmentContext,
 }) => {
 
@@ -246,6 +248,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             pendingEdits={pendingEdits}
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
+            onJdVersionCreate={onJdVersionCreate}
           />
         </div>
 

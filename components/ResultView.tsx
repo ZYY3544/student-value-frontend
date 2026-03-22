@@ -276,6 +276,29 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     ));
   }, []);
 
+  // JD 优化完成后自动创建版本，从 JD 内容提取"公司 · 岗位"命名
+  const handleJdVersionCreate = useCallback((jdContent: string) => {
+    if (versions.length >= 5) return;
+    // 提取公司名和岗位名
+    const companyMatch = jdContent.match(/(?:公司|企业|集团)[：:]\s*(.{2,15})/);
+    const titleMatch = jdContent.match(/(?:岗位|职位|招聘)[：:]\s*(.{2,20})/);
+    const company = companyMatch?.[1]?.replace(/[,，。.、\s]+$/, '') || '';
+    const title = titleMatch?.[1]?.replace(/[,，。.、\s]+$/, '') || '';
+    const name = company && title ? `${company} · ${title}` : company || title || `JD 版本`;
+
+    const newVersion: ResumeVersion = {
+      id: crypto.randomUUID(),
+      name,
+      sections: resumeSections.map(s => ({ ...s })),
+      pendingEdits: pendingEdits.map(e => ({ ...e })),
+      jdContent,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    setVersions(prev => [...prev, newVersion]);
+    setActiveVersionId(newVersion.id);
+  }, [versions, resumeSections, pendingEdits]);
+
   // 兜底：当 resumeSections 首次有数据时，同步冻结为原文快照
   useEffect(() => {
     if (originalSections.length === 0 && resumeSections.length > 0) {
@@ -603,6 +626,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onSwitchVersion={handleSwitchVersion}
         onDeleteVersion={handleDeleteVersion}
         onRenameVersion={handleRenameVersion}
+        onJdVersionCreate={handleJdVersionCreate}
       />
     );
   }
