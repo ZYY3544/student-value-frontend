@@ -9,7 +9,7 @@ import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { ArrowLeft, Download, Sparkles } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
-import { ResumePanel, OriginalResumePanel } from './ResumePanel';
+import { ResumePanel, OriginalResumePanel, VersionSelector } from './ResumePanel';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 // 选中文本快捷操作
@@ -220,7 +220,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           <span className="text-sm font-bold text-gray-800">简历画布</span>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-3">
+          <VersionSelector
+            versions={versions}
+            activeVersionId={activeVersionId}
+            onSave={onSaveVersion}
+            onSwitch={onSwitchVersion}
+            onDelete={onDeleteVersion}
+            onRename={onRenameVersion}
+            hasPendingJd={hasPendingJdVersion}
+          />
           <button
             onClick={handleExportPdf}
             disabled={resumeSections.length === 0}
@@ -281,13 +290,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onContentChange={onSectionContentChange}
             showOriginal={showOriginal}
             onToggleOriginal={() => setShowOriginal(prev => !prev)}
-            versions={versions}
-            activeVersionId={activeVersionId}
-            onSaveVersion={onSaveVersion}
-            onSwitchVersion={onSwitchVersion}
-            onDeleteVersion={onDeleteVersion}
-            onRenameVersion={onRenameVersion}
-            hasPendingJdVersion={hasPendingJdVersion}
           />
         </div>
       </div>

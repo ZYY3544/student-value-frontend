@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Pencil, Eye, FileText, PanelLeftClose, PanelLeftOpen, ChevronDown, Trash2, Plus, Check, X } from 'lucide-react';
+import { Pencil, Eye, FileText, PanelLeftClose, PanelLeftOpen, ChevronDown, Trash2, Plus, Check, X, PenLine } from 'lucide-react';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 /**
@@ -70,7 +70,7 @@ function formatTime(ts: number): string {
   return `${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
 }
 
-const VersionSelector: React.FC<{
+export const VersionSelector: React.FC<{
   versions: ResumeVersion[];
   activeVersionId: string | null;
   onSave: () => void;
@@ -148,11 +148,7 @@ const VersionSelector: React.FC<{
                             className="text-sm text-gray-800 bg-white border border-[#0A66C2] rounded px-1.5 py-0.5 outline-none w-full"
                           />
                         ) : (
-                          <span
-                            className="text-sm text-gray-800 truncate block"
-                            onDoubleClick={(e) => { e.stopPropagation(); setRenamingId(v.id); setRenameValue(v.name); }}
-                            title="双击重命名"
-                          >
+                          <span className="text-sm text-gray-800 truncate block">
                             {v.name}
                             {v.id === activeVersionId && <span className="ml-1.5 text-[10px] text-[#0A66C2] font-medium">当前</span>}
                           </span>
@@ -161,13 +157,22 @@ const VersionSelector: React.FC<{
                           {formatTime(v.updatedAt || v.createdAt)}
                         </span>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(v.id); }}
-                        className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded"
-                        title="删除版本"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setRenamingId(v.id); setRenameValue(v.name); }}
+                          className="p-1 text-gray-300 hover:text-gray-600 rounded"
+                          title="重命名"
+                        >
+                          <PenLine className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(v.id); }}
+                          className="p-1 text-gray-300 hover:text-red-500 rounded"
+                          title="删除版本"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -717,17 +722,6 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-base font-bold text-gray-800">优化版本</h2>
-            {onSaveVersion && onSwitchVersion && onDeleteVersion && onRenameVersion && (
-              <VersionSelector
-                versions={versions}
-                activeVersionId={activeVersionId}
-                onSave={onSaveVersion}
-                onSwitch={onSwitchVersion}
-                onDelete={onDeleteVersion}
-                onRename={onRenameVersion}
-                hasPendingJd={hasPendingJdVersion}
-              />
-            )}
           </div>
           <p className="text-[11px] text-gray-400 mt-0.5">
             {pendingEdits.length > 0
