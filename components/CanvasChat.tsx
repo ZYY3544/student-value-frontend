@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2, Check, RefreshCw, FileEdit } from 'lucide-react';
 import { ChatMessage, formatContent, parseSseStream, PixelCat } from './ChatWidget';
+import { FileSearch } from 'lucide-react';
 import { PendingEdit, ResumeSection } from '../types';
 
 // ---- 前端兜底：解析泄露到 text 里的 <<<EDIT...EDIT>>> 块 ----
@@ -201,8 +202,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const jdSuccessRef = useRef(false);
-  // JD 确认暂存：detectJd 命中后暂存原文，等用户确认后再走优化
-  const [pendingJdText, setPendingJdText] = useState<string | null>(null);
+  // JD 上传弹窗
+  const [showJdModal, setShowJdModal] = useState(false);
+  const [jdInput, setJdInput] = useState('');
   // JD 诊断结果（用于在消息中渲染诊断卡片）
   const [jdDiagnosisData, setJdDiagnosisData] = useState<JdDiagnosisData | null>(null);
   // 追踪当前流式输出是否产生了编辑建议
@@ -254,16 +256,13 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       setFrozenEditCards(prev => ({ ...prev, [lastAssistantIdx]: currentEditCards }));
     }
 
-    // JD 检测到 → 显示确认消息，暂存原文，等用户点"开始定制"
+    // JD 检测到 → 引导用户使用 JD 上传按钮
     if (isJd) {
-      const titleMatch = messageToSend.match(/(?:岗位|职位|招聘)[：:]\s*(.{2,20})/);
-      const titleHint = titleMatch ? `（${titleMatch[1].replace(/[,，。.、\s]+$/, '')}）` : '';
       setMessages(prev => [
         ...prev,
         { role: 'user', content: `${messageToSend.slice(0, 100)}...` },
-        { role: 'assistant', content: `[JD_CONFIRM${titleHint}]` },
+        { role: 'assistant', content: '[JD_HINT]' },
       ]);
-      setPendingJdText(messageToSend);
       if (!overrideText) setInputValue('');
       return;
     }
@@ -355,24 +354,29 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const sendMessageRef = useRef(sendMessage);
   sendMessageRef.current = sendMessage;
 
-  // JD 确认 → 用户点"开始定制"
-  const runJdOptimize = useCallback(async () => {
-    if (!pendingJdText || !sessionId) return;
-    const jdText = pendingJdText;
-    setPendingJdText(null);
+  // JD 弹窗提交 → 走 JD 优化流程
+  const handleJdSubmit = useCallback(async () => {
+    const jdText = jdInput.trim();
+    if (!jdText || !sessionId) return;
+    setShowJdModal(false);
+    setJdInput('');
 
     // 冻结 editCards
     if (currentEditCards.length > 0) {
       const lastAssistantIdx = messages.length - 1;
       setFrozenEditCards(prev => ({ ...prev, [lastAssistantIdx]: currentEditCards }));
     }
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: `上传 JD：${jdText.slice(0, 60)}...` },
+      { role: 'assistant', content: '' },
+    ]);
     setIsLoading(true);
     streamHasEditRef.current = false;
     processedEditsRef.current.clear();
     pendingEditCardsRef.current = [];
     setCurrentEditCards([]);
     setLastStreamHadEdit(false);
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
     try {
       onJdPhaseChange?.('parsing');
@@ -420,17 +424,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingJdText, sessionId, apiBase, resumeSections]);
-
-  // JD 确认 → 用户点"不用，继续聊"
-  const handleJdDecline = useCallback(() => {
-    if (!pendingJdText) return;
-    const text = pendingJdText;
-    setPendingJdText(null);
-    // 移除确认消息，把原文当普通消息发送
-    setMessages(prev => prev.filter(m => !m.content.startsWith('[JD_CONFIRM')));
-    sendMessageRef.current(text);
-  }, [pendingJdText]);
+  }, [jdInput, sessionId, apiBase, resumeSections]);
 
   useEffect(() => {
     if (externalMessage) {
@@ -589,28 +583,18 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                   }`}
                 >
                   {msg.role === 'assistant' ? (
-                    msg.content?.startsWith('[JD_CONFIRM') ? (
+                    msg.content === '[JD_HINT]' ? (
                       <>
                         <span className="text-sm text-gray-700">
-                          我检测到你发了一份岗位描述{msg.content.match(/\((.+?)\)/)?.[1] ? `（${msg.content.match(/\((.+?)\)/)?.[1]}）` : ''}，需要我根据这份 JD 帮你生成一个定制版本吗？
+                          你发的内容看起来是一份岗位描述，点击下方的「上传 JD」按钮可以获得更精准的定制化改写。
                         </span>
-                        <div className="flex gap-2 mt-3">
+                        <div className="mt-3">
                           <button
-                            onClick={runJdOptimize}
-                            disabled={versionCount >= 5}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                              versionCount >= 5
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'bg-[#0A66C2] text-white hover:bg-[#084e96]'
-                            }`}
+                            onClick={() => setShowJdModal(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#084e96] transition-colors"
                           >
-                            {versionCount >= 5 ? '版本已满，请先删除一个' : '开始定制'}
-                          </button>
-                          <button
-                            onClick={handleJdDecline}
-                            className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            不用，继续聊
+                            <FileSearch className="w-3.5 h-3.5" />
+                            上传 JD
                           </button>
                         </div>
                       </>
@@ -686,6 +670,17 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
 
       {/* Input */}
       <div className="p-4 bg-white border-t border-gray-100">
+        {/* JD 上传快捷入口 */}
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            onClick={() => setShowJdModal(true)}
+            disabled={isLoading || !sessionId}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-gray-500 border border-gray-200 rounded-lg hover:text-[#0A66C2] hover:border-[#0A66C2]/30 hover:bg-blue-50/50 transition-colors disabled:opacity-40"
+          >
+            <FileSearch className="w-3 h-3" />
+            上传 JD
+          </button>
+        </div>
         <div className="relative">
           <textarea
             ref={inputRef}
@@ -712,6 +707,38 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
           </button>
         </div>
       </div>
+
+      {/* JD 上传弹窗 */}
+      {showJdModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20">
+          <div className="bg-white rounded-2xl shadow-2xl w-[520px] p-7">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">上传目标 JD</h3>
+            <p className="text-xs text-gray-400 mb-4">粘贴岗位 JD 全文或网址，Sparky 将针对该岗位定制化优化你的简历</p>
+            <textarea
+              value={jdInput}
+              onChange={e => setJdInput(e.target.value)}
+              placeholder="粘贴 JD 内容或 URL..."
+              className="w-full h-48 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 resize-none"
+              disabled={isLoading}
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => { setShowJdModal(false); setJdInput(''); }}
+                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleJdSubmit}
+                disabled={!jdInput.trim() || isLoading}
+                className="px-5 py-2 bg-[#0A66C2] text-white text-sm font-semibold rounded-xl hover:bg-[#084e96] disabled:opacity-40 transition-colors"
+              >
+                开始分析
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
