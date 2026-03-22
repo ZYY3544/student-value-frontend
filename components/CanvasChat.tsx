@@ -198,7 +198,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   versionCount = 0,
 }) => {
   const [inputValue, setInputValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const jdSuccessRef = useRef(false);
   // JD 确认暂存：detectJd 命中后暂存原文，等用户确认后再走优化
@@ -495,6 +495,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
           },
           undefined, // onSources
           (phase) => { onJdPhaseChange?.(phase); }, // onPhase
+          (diagData) => { setJdDiagnosisData(diagData as JdDiagnosisData); }, // onJdDiagnosis
         );
       } catch (err: any) {
         console.error('JD auto-optimize failed:', err);
@@ -686,20 +687,26 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       {/* Input */}
       <div className="p-4 bg-white border-t border-gray-100">
         <div className="relative">
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={inputValue}
             onChange={e => setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH))}
             onKeyDown={handleKeyDown}
-            placeholder="告诉 Sparky 你想优化哪段简历..."
+            placeholder="告诉 Sparky 你想优化哪段简历...（支持粘贴 JD 全文）"
             disabled={isLoading || !sessionId}
-            className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 transition-all disabled:bg-gray-100 disabled:text-gray-400"
+            rows={1}
+            className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 transition-all disabled:bg-gray-100 disabled:text-gray-400 resize-none overflow-hidden"
+            style={{ maxHeight: '120px' }}
+            onInput={e => {
+              const el = e.currentTarget;
+              el.style.height = 'auto';
+              el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+            }}
           />
           <button
             onClick={() => sendMessage()}
             disabled={!inputValue.trim() || isLoading || !sessionId}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#CA7C5E] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#CA7C5E]/30 disabled:bg-gray-300 disabled:shadow-none transition-colors"
+            className="absolute right-2 bottom-2 w-9 h-9 bg-[#CA7C5E] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#CA7C5E]/30 disabled:bg-gray-300 disabled:shadow-none transition-colors"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
