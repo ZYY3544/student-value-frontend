@@ -428,7 +428,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     fetchSections();
   }, [sessionId, resumeSections.length]);
 
-  // AI 编辑建议：优先用前端选中文本定位（同源，100% 匹配），GPT original 仅做 diff 展示
+  // AI 编辑建议：不替换 content，只存 pendingEdits（content 在接受时才改）
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -439,70 +439,56 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const matchTarget = sel?.text || edit.original;
     const targetSectionId = sel?.sectionId || edit.sectionId;
 
-    console.log('[EditSuggestion] called with:', {
-      sectionId: targetSectionId,
-      matchTarget: matchTarget?.slice(0, 80),
-      suggested: edit.suggested?.slice(0, 80),
-      source: sel ? 'pendingSelection' : 'edit.original',
-    });
-
-    // 按 sectionId 定位目标段落，用前端选中文本做局部替换
-    setResumeSections(prev => {
-      const idx = prev.findIndex(s => s.id === targetSectionId);
-      if (idx === -1) {
-        console.warn('[EditSuggestion] section not found:', targetSectionId);
-        return prev;
-      }
-      const sec = prev[idx];
-
-      if (!sec.content.includes(matchTarget)) {
-        console.warn('[EditSuggestion] matchTarget not found in section', targetSectionId);
-        console.log('[EditSuggestion] matchTarget:', JSON.stringify(matchTarget?.substring(0, 100)));
-        console.log('[EditSuggestion] sec.content first 100:', JSON.stringify(sec.content?.substring(0, 100)));
-        return prev;
-      }
-
-      const updated = [...prev];
-      updated[idx] = { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
-      return updated;
-    });
-
-    // 清除 pendingSelection
-    setPendingSelection(null);
-
-    // diff 元数据：同段落新 edit 替换旧 edit，不同段落追加
+    // 只存 diff 元数据，不动 resumeSections
     setPendingEdits(prev => {
-      const hasExisting = prev.some(e => e.sectionId === edit.sectionId);
+      const hasExisting = prev.some(e => e.sectionId === targetSectionId);
       if (hasExisting) {
         return prev.map(e =>
-          e.sectionId === edit.sectionId
-            ? { ...edit, status: 'pending' as const }
+          e.sectionId === targetSectionId
+            ? { ...edit, sectionId: targetSectionId, original: matchTarget, status: 'pending' as const }
             : e
         );
       }
-      return [...prev, { ...edit, status: 'pending' }];
+      return [...prev, { ...edit, sectionId: targetSectionId, original: matchTarget, status: 'pending' }];
     });
 
-    // 通知后端
-    if (sessionId) {
-      fetch(`${API_BASE}/api/chat/edit-action`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          sectionId: edit.sectionId,
-          action: 'accept',
-          suggestedText: edit.suggested,
-          originalText: edit.original,
-        }),
-      }).catch(err => console.error('Failed to notify edit:', err));
-    }
-  }, [sessionId]);
-
-  // 接受 AI 改写：清除 diff 标记，只保留新文本
-  const handleAcceptEdit = useCallback((sectionId: string) => {
-    setPendingEdits(prev => prev.filter(e => e.sectionId !== sectionId));
+    setPendingSelection(null);
   }, []);
+
+  // 接受 AI 改写：此时才真正替换 content
+  const handleAcceptEdit = useCallback((sectionId: string) => {
+    const edit = pendingEditsRef.current.find(e => e.sectionId === sectionId);
+    if (edit) {
+      setResumeSections(prev => {
+        const idx = prev.findIndex(s => s.id === sectionId);
+        if (idx === -1) return prev;
+        const sec = prev[idx];
+        if (!sec.content.includes(edit.original)) {
+          console.warn('[AcceptEdit] original not found in section', sectionId);
+          return prev;
+        }
+        const updated = [...prev];
+        updated[idx] = { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+        return updated;
+      });
+
+      // 通知后端
+      if (sessionId) {
+        fetch(`${API_BASE}/api/chat/edit-action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            sectionId,
+            action: 'accept',
+            suggestedText: edit.suggested,
+            originalText: edit.original,
+          }),
+        }).catch(err => console.error('Failed to notify edit:', err));
+      }
+    }
+    setPendingEdits(prev => prev.filter(e => e.sectionId !== sectionId));
+  }, [sessionId]);
 
   // 手动编辑简历段落 + 自动保存
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -249,8 +249,8 @@ const DiffMark: React.FC<{
 
 
 /**
- * 渲染带 diff 高亮的内容
- * 先正常渲染替换后的 section.content，再在底部展示 diff 对比卡片（original vs suggested）
+ * 渲染带 inline diff 高亮的内容
+ * content 是原文（未替换），在 edit.original 的位置嵌入 DiffMark，前后正常渲染
  */
 function renderContentWithDiff(
   content: string,
@@ -261,20 +261,29 @@ function renderContentWithDiff(
   }
 
   const latestEdit = sectionEdits[sectionEdits.length - 1].edit;
+  const pos = content.indexOf(latestEdit.original);
+
+  if (pos === -1) {
+    // 找不到原文位置，fallback 到底部卡片
+    return (
+      <div className="space-y-3">
+        <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{content}</div>
+        <div className="rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0]/50 px-4 py-3">
+          <div className="text-[11px] font-medium text-[#CA7C5E] mb-2">修改对比</div>
+          <DiffMark original={latestEdit.original} suggested={latestEdit.suggested} rationale={latestEdit.rationale} />
+        </div>
+      </div>
+    );
+  }
+
+  const before = content.slice(0, pos);
+  const after = content.slice(pos + latestEdit.original.length);
 
   return (
-    <div className="space-y-3">
-      {/* 正常渲染替换后的段落内容 */}
-      <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{content}</div>
-      {/* diff 对比卡片 */}
-      <div className="rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0]/50 px-4 py-3">
-        <div className="text-[11px] font-medium text-[#CA7C5E] mb-2">修改对比</div>
-        <DiffMark
-          original={latestEdit.original}
-          suggested={latestEdit.suggested}
-          rationale={latestEdit.rationale}
-        />
-      </div>
+    <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+      {before}
+      <DiffMark original={latestEdit.original} suggested={latestEdit.suggested} rationale={latestEdit.rationale} />
+      {after}
     </div>
   );
 }
