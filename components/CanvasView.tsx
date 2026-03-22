@@ -113,9 +113,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     const sel = lastSelectionRef.current;
+    // 只用 selection 的 sectionId 来兜底定位，不覆盖 original（避免 original/suggested 语义不匹配）
     const enrichedEdit = {
       ...edit,
-      ...(sel?.text ? { original: sel.text } : {}),
       ...(sel?.sectionId ? { sectionId: sel.sectionId } : {}),
     };
     onEditSuggestion(enrichedEdit);

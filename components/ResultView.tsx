@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { ChatWidget, ChatMessage } from './ChatWidget';
 import { CanvasView } from './CanvasView';
-import { cleanResumeContent } from './ResumePanel';
+
 
 interface ResultViewProps {
   result: AssessmentResult;
@@ -411,129 +411,40 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     fetchSections();
   }, [sessionId, resumeSections.length]);
 
-  // AI 编辑建议：自动应用到内容 + 存储 diff 元数据
+  // AI 编辑建议：按 section index 精确定位 + 替换，不做全局搜索
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
-    // 取消 pending auto-save，避免覆盖
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
 
-    // 归一化函数：去 bullet 符号、合并空白，用于模糊匹配
-    const normalize = (s: string) => s.replace(/^[\s•·\-*●○]+/gm, '').replace(/\s+/g, ' ').trim();
-
-    // 再优化场景：只有当新 edit 的 original 和已有 edit 的 suggested 匹配时，才算再优化
-    // （即用户对同一段文字点了"再优化"）。不同段落的编辑不互相干扰。
+    // 再优化检测：新 edit 的 original 恰好等于同段落已有 edit 的 suggested
     const existingEdit = pendingEditsRef.current.find(e =>
-      e.sectionId === edit.sectionId && (
-        e.suggested === edit.original ||
-        normalize(e.suggested) === normalize(edit.original)
-      )
+      e.sectionId === edit.sectionId && e.suggested === edit.original
     );
     const matchTarget = existingEdit ? existingEdit.suggested : edit.original;
 
-    // 立即应用编辑到 section 内容
-    console.log('[EditSuggestion]', { sectionId: edit.sectionId, matchTarget: matchTarget.slice(0, 60), suggested: edit.suggested.slice(0, 60), isReopt: !!existingEdit });
-    setResumeSections(prev => prev.map(sec => {
-      if (sec.id === edit.sectionId) {
-        // 1. 精确匹配（再优化时 matchTarget = 旧 suggested）
-        if (sec.content.includes(matchTarget)) {
-          console.log('[EditSuggestion] hit: exact');
-          return { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
-        }
-        // 1.5. 用户从渲染后面板选取文本（经过 cleanResumeContent 合并断行/去 bullet），
-        //      原始 content 含断行对不上 → 用滑动窗口找到对应的原始行范围再替换
-        const cleaned = cleanResumeContent(sec.content);
-        if (cleaned.includes(matchTarget)) {
-          const lines = sec.content.split('\n');
-          for (let start = 0; start < lines.length; start++) {
-            for (let end = start; end < Math.min(start + 15, lines.length); end++) {
-              const chunk = lines.slice(start, end + 1).join('\n');
-              if (cleanResumeContent(chunk).includes(matchTarget)) {
-                console.log('[EditSuggestion] hit: clean (lines ' + start + '-' + end + ')');
-                const pos = sec.content.indexOf(chunk);
-                if (pos !== -1) {
-                  return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + chunk.length) };
-                }
-              }
-            }
-          }
-        }
-        // 2. 模糊匹配：忽略空白差异
-        const normContent = normalize(sec.content);
-        const normTarget = normalize(matchTarget);
-        if (normContent.includes(normTarget)) {
-          console.log('[EditSuggestion] hit: fuzzy');
-          const lines = sec.content.split('\n');
-          for (let start = 0; start < lines.length; start++) {
-            for (let end = start; end < Math.min(start + 15, lines.length); end++) {
-              const candidate = lines.slice(start, end + 1).join('\n');
-              if (normalize(candidate) === normTarget) {
-                const pos = sec.content.indexOf(candidate);
-                if (pos !== -1) {
-                  return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + candidate.length) };
-                }
-              }
-            }
-          }
-        }
-        console.warn('[EditSuggestion] MISS: no match found', { sectionId: edit.sectionId, matchTarget: matchTarget.slice(0, 80), contentHead: sec.content.slice(0, 80) });
-        return sec;
+    // 按 sectionId 精确定位目标段落，只在该段落内替换，绝不跨段
+    setResumeSections(prev => {
+      const idx = prev.findIndex(s => s.id === edit.sectionId);
+      if (idx === -1) {
+        console.warn('[EditSuggestion] section not found:', edit.sectionId);
+        return prev;
       }
-      return sec;
-    }));
+      const sec = prev[idx];
+      if (!sec.content.includes(matchTarget)) {
+        console.warn('[EditSuggestion] original not found in section', edit.sectionId);
+        return prev;
+      }
+      const updated = [...prev];
+      updated[idx] = { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
+      return updated;
+    });
 
-    // 兜底：全局匹配（首次按 sectionId 替换失败时）
-    // 再优化场景已在上面处理，跳过兜底
-    if (!existingEdit) {
-      setResumeSections(prev => {
-        const normOriginal = normalize(edit.original);
-        const stillContains = prev.some(s =>
-          s.content.includes(edit.original) || normalize(s.content).includes(normOriginal)
-        );
-        if (!stillContains) return prev;
-        return prev.map(sec => {
-          if (sec.content.includes(edit.original)) {
-            return { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
-          }
-          const cleanedSec = cleanResumeContent(sec.content);
-          if (cleanedSec.includes(edit.original)) {
-            const fallbackLines = sec.content.split('\n');
-            for (let s = 0; s < fallbackLines.length; s++) {
-              for (let e = s; e < Math.min(s + 15, fallbackLines.length); e++) {
-                const chunk = fallbackLines.slice(s, e + 1).join('\n');
-                if (cleanResumeContent(chunk).includes(edit.original)) {
-                  const pos = sec.content.indexOf(chunk);
-                  if (pos !== -1) {
-                    return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + chunk.length) };
-                  }
-                }
-              }
-            }
-          }
-          if (normalize(sec.content).includes(normOriginal)) {
-            const lines = sec.content.split('\n');
-            for (let start = 0; start < lines.length; start++) {
-              for (let end = start; end < Math.min(start + 15, lines.length); end++) {
-                const candidate = lines.slice(start, end + 1).join('\n');
-                if (normalize(candidate) === normOriginal) {
-                  const pos = sec.content.indexOf(candidate);
-                  if (pos !== -1) {
-                    return { ...sec, content: sec.content.slice(0, pos) + edit.suggested + sec.content.slice(pos + candidate.length) };
-                  }
-                }
-              }
-            }
-          }
-          return sec;
-        });
-      });
-    }
-
-    // 存储 diff 元数据：再优化替换已有 edit，新段落追加
+    // diff 元数据：再优化替换已有 edit，新段落追加
     if (existingEdit) {
       setPendingEdits(prev => prev.map(e =>
-        e.sectionId === edit.sectionId && (e.suggested === existingEdit.suggested || normalize(e.suggested) === normalize(existingEdit.suggested))
+        e.sectionId === edit.sectionId && e.suggested === matchTarget
           ? { ...edit, status: 'pending' as const }
           : e
       ));
@@ -557,11 +468,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }
   }, [sessionId]);
 
-  // 接受 AI 改写：标记为 accepted（保留高亮显示修改部分）
+  // 接受 AI 改写：清除 diff 标记，只保留新文本
   const handleAcceptEdit = useCallback((sectionId: string) => {
-    setPendingEdits(prev => prev.map(e =>
-      e.sectionId === sectionId ? { ...e, status: 'accepted' as const } : e
-    ));
+    setPendingEdits(prev => prev.filter(e => e.sectionId !== sectionId));
   }, []);
 
   // 手动编辑简历段落 + 自动保存
