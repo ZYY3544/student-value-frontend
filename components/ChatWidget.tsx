@@ -238,9 +238,12 @@ export const formatContent = (text: string) => {
       continue;
     }
 
-    // —— 空行 ——
+    // —— 空行（连续空行压成一个，减少段间距） ——
     if (!line.trim()) {
-      elements.push(<br key={`br-${lineIdx}`} />);
+      const prevIsBreak = elements.length > 0 && (elements[elements.length - 1] as any)?.type === 'br';
+      if (!prevIsBreak) {
+        elements.push(<br key={`br-${lineIdx}`} />);
+      }
       lineIdx++;
       continue;
     }
