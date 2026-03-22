@@ -326,6 +326,7 @@ export async function parseSseStream(
   onEdit?: (edit: { sectionId: string; original: string; suggested: string; rationale: string }) => void,
   onSources?: (sources: SearchSource[]) => void,
   onPhase?: (phase: string) => void,
+  onJdDiagnosis?: (data: any) => void,
 ) {
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();
@@ -384,6 +385,8 @@ export async function parseSseStream(
           onSources(event.sources || []);
         } else if (event.type === 'phase' && onPhase) {
           onPhase(event.phase);
+        } else if (event.type === 'jd_diagnosis' && onJdDiagnosis) {
+          onJdDiagnosis(event.data);
         }
       } catch { /* Skip invalid JSON */ }
     }

@@ -81,6 +81,59 @@ const EditSuggestionCard: React.FC<{
   </div>
 );
 
+// ---- JD 诊断卡片 ----
+interface JdDiagnosisData {
+  job_title: string;
+  summary: string;
+  matched: { requirement: string; evidence: string }[];
+  optimizable: { requirement: string; resume_source: string; gap: string }[];
+  missing: { requirement: string; reason: string }[];
+}
+
+const JdDiagnosisCard: React.FC<{ data: JdDiagnosisData }> = ({ data }) => (
+  <div className="mt-2 rounded-xl border border-gray-200 bg-white overflow-hidden">
+    <div className="px-4 py-3 border-b border-gray-100">
+      <span className="text-sm font-bold text-gray-800">{data.job_title}</span>
+      <p className="text-xs text-gray-500 mt-1">{data.summary}</p>
+    </div>
+    <div className="px-4 py-3 space-y-3 text-xs">
+      {data.matched.length > 0 && (
+        <div>
+          <span className="font-semibold text-green-600">✓ 已匹配</span>
+          {data.matched.map((m, i) => (
+            <div key={i} className="flex gap-1.5 mt-1 text-gray-600">
+              <span className="text-green-500 flex-shrink-0">✓</span>
+              <span><span className="font-medium text-gray-700">{m.requirement}</span>：{m.evidence}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {data.optimizable.length > 0 && (
+        <div>
+          <span className="font-semibold text-amber-600">◐ 可优化</span>
+          {data.optimizable.map((o, i) => (
+            <div key={i} className="flex gap-1.5 mt-1 text-gray-600">
+              <span className="text-amber-500 flex-shrink-0">◐</span>
+              <span><span className="font-medium text-gray-700">{o.requirement}</span>：{o.gap}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {data.missing.length > 0 && (
+        <div>
+          <span className="font-semibold text-red-500">✗ 需补充</span>
+          {data.missing.map((m, i) => (
+            <div key={i} className="flex gap-1.5 mt-1 text-gray-600">
+              <span className="text-red-400 flex-shrink-0">✗</span>
+              <span><span className="font-medium text-gray-700">{m.requirement}</span>：{m.reason}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
 // 单条编辑卡片数据
 interface EditCardData { rationale: string; suggested: string }
 
@@ -150,6 +203,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const jdSuccessRef = useRef(false);
   // JD 确认暂存：detectJd 命中后暂存原文，等用户确认后再走优化
   const [pendingJdText, setPendingJdText] = useState<string | null>(null);
+  // JD 诊断结果（用于在消息中渲染诊断卡片）
+  const [jdDiagnosisData, setJdDiagnosisData] = useState<JdDiagnosisData | null>(null);
   // 追踪当前流式输出是否产生了编辑建议
   const streamHasEditRef = useRef(false);
   const [lastStreamHadEdit, setLastStreamHadEdit] = useState(false);
@@ -341,6 +396,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         (edit) => handleParsedEdit({ sectionId: edit.sectionId, original: edit.original, suggested: edit.suggested, rationale: edit.rationale }),
         undefined,
         (phase) => { onJdPhaseChange?.(phase); },
+        (diagData) => { setJdDiagnosisData(diagData as JdDiagnosisData); },
       );
       jdSuccessRef.current = true;
     } catch (err) {
@@ -582,6 +638,10 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                     msg.content
                   )}
                 </div>
+              )}
+              {/* JD 诊断卡片 — 紧跟在文字气泡下方 */}
+              {msg.role === 'assistant' && isLastAssistant && jdDiagnosisData && (
+                <JdDiagnosisCard data={jdDiagnosisData} />
               )}
               {/* 修改原因（作为 Sparky 的文字回复） + 改写建议卡片 */}
               {cards.length > 0 && (
