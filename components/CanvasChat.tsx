@@ -333,7 +333,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       console.error('Canvas send failed:', err);
       const errorMsg = err.name === 'AbortError'
         ? '请求超时了，后端可能正在启动中，请稍后再试。'
-        : '抱歉，获取回复失败，请重试。';
+        : (err.message?.includes('已用完') || err.message?.includes('次数'))
+          ? err.message
+          : '抱歉，获取回复失败，请重试。';
       setMessages(prev => {
         const updated = [...prev];
         updated[updated.length - 1] = { role: 'assistant', content: errorMsg };

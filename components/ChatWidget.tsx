@@ -899,9 +899,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         return;
       }
       console.error('Send failed:', err);
+      // 429 等后端返回的错误信息直接展示，其余用通用文案
+      const errorMsg = err.message?.includes('已用完') || err.message?.includes('次数')
+        ? err.message
+        : '抱歉，获取回复失败，请重试。';
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: 'assistant', content: '抱歉，获取回复失败，请重试。' };
+        updated[updated.length - 1] = { role: 'assistant', content: errorMsg };
         return updated;
       });
     } finally {
