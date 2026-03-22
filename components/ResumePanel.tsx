@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Pencil, Eye, FileText, PanelLeftClose } from 'lucide-react';
+import { Pencil, Eye, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { ResumeSection, PendingEdit } from '../types';
 
 /**
@@ -52,6 +52,8 @@ interface ResumePanelProps {
   originalSections: ResumeSection[];
   pendingEdits: PendingEdit[];
   onContentChange: (sectionId: string, content: string) => void;
+  showOriginal?: boolean;
+  onToggleOriginal?: () => void;
 }
 
 // 每个 section 的显示模态
@@ -468,8 +470,7 @@ export const OriginalResumePanel: React.FC<{
   sections: ResumeSection[];
   highlightSectionId?: string | null;
   highlightText?: string | null;
-  onHide?: () => void;
-}> = ({ sections, highlightSectionId, highlightText, onHide }) => {
+}> = ({ sections, highlightSectionId, highlightText }) => {
   if (sections.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400">
@@ -480,20 +481,9 @@ export const OriginalResumePanel: React.FC<{
 
   return (
     <div className="p-6 space-y-5">
-      <div className="mb-2 flex items-start justify-between">
-        <div>
-          <h2 className="text-base font-bold text-gray-800">简历原文</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">初始版本，仅供参考对比</p>
-        </div>
-        {onHide && (
-          <button
-            onClick={onHide}
-            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
-            title="隐藏原文"
-          >
-            <PanelLeftClose className="w-4 h-4" />
-          </button>
-        )}
+      <div className="mb-2">
+        <h2 className="text-base font-bold text-gray-800">简历原文</h2>
+        <p className="text-[11px] text-gray-400 mt-0.5">初始版本，仅供参考对比</p>
       </div>
 
       {sections.map((section) => {
@@ -538,6 +528,8 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
   originalSections,
   pendingEdits,
   onContentChange,
+  showOriginal,
+  onToggleOriginal,
 }) => {
   const [sectionModes, setSectionModes] = useState<Record<string, SectionMode>>({});
 
@@ -567,13 +559,24 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
 
   return (
     <div className="p-6 space-y-5">
-      <div className="mb-2">
-        <h2 className="text-base font-bold text-gray-800">优化版本</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">
-          {pendingEdits.length > 0
-            ? '绿色为新增内容，红色删除线为原文，点击铅笔可编辑'
-            : '当前显示原文，AI 改写后将自动显示 diff 对比'}
-        </p>
+      <div className="mb-2 flex items-start justify-between">
+        <div>
+          <h2 className="text-base font-bold text-gray-800">优化版本</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">
+            {pendingEdits.length > 0
+              ? '绿色为新增内容，红色删除线为原文，点击铅笔可编辑'
+              : '当前显示原文，AI 改写后将自动显示 diff 对比'}
+          </p>
+        </div>
+        {onToggleOriginal && (
+          <button
+            onClick={onToggleOriginal}
+            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+            title={showOriginal ? '隐藏原文' : '显示原文'}
+          >
+            {showOriginal ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
+          </button>
+        )}
       </div>
 
       {sections.map((section) => {

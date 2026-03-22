@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Download, PanelLeft, Sparkles, FileSearch } from 'lucide-react';
+import { ArrowLeft, Download, Sparkles, FileSearch } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
@@ -265,15 +265,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             <FileSearch className="w-3.5 h-3.5" />
             {parsedJd ? `JD: ${parsedJd.title?.slice(0, 10) || '已锚定'}` : '锚定 JD'}
           </button>
-          {!showOriginal && (
-            <button
-              onClick={() => setShowOriginal(true)}
-              className="p-1.5 text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              title="显示原文"
-            >
-              <PanelLeft className="w-3.5 h-3.5" />
-            </button>
-          )}
           <button
             onClick={handleExportPdf}
             disabled={resumeSections.length === 0}
@@ -318,7 +309,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onMouseUp={handleMouseUp}
             className="w-[35%] overflow-y-auto bg-gray-50/80 canvas-no-print"
           >
-            <OriginalResumePanel sections={originalSections} highlightSectionId={highlightSectionId} highlightText={highlightText} onHide={() => setShowOriginal(false)} />
+            <OriginalResumePanel sections={originalSections} highlightSectionId={highlightSectionId} highlightText={highlightText} />
           </div>
         )}
 
@@ -334,6 +325,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             originalSections={originalSections}
             pendingEdits={pendingEdits}
             onContentChange={onSectionContentChange}
+            showOriginal={showOriginal}
+            onToggleOriginal={() => setShowOriginal(prev => !prev)}
           />
         </div>
       </div>
