@@ -7,46 +7,6 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Pencil, Eye, ChevronDown, Trash2, Plus, Check, X, PenLine } from 'lucide-react';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
-/**
- * 清理简历文本：
- * 1. 把单独占一行的 bullet（•·-）合并到下一行前面
- * 2. 修复句中意外断行（上一行末尾不是标点/bullet，下一行开头不是 bullet/空行）
- */
-export function cleanResumeContent(raw: string): string {
-  const lines = raw.split('\n');
-  const merged: string[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
-
-    // 单独的 bullet 符号（•, ·, -, *, ●, ○），合并到下一行
-    if (/^[•·\-*●○]$/.test(trimmed) && i + 1 < lines.length) {
-      const nextLine = lines[i + 1].trim();
-      if (nextLine) {
-        merged.push(`${trimmed} ${nextLine}`);
-        i++; // 跳过下一行
-        continue;
-      }
-    }
-
-    // 检测句中断行：上一行末尾不是句末标点，当前行也不是 bullet/空行开头
-    if (
-      merged.length > 0 &&
-      trimmed &&
-      !/^[•·\-*●○\d]/.test(trimmed) &&        // 当前行不是 bullet 或编号开头
-      !/[。！？.!?\n]$/.test(merged[merged.length - 1].trim()) && // 上一行不以句末标点结尾
-      !/[：:；;]$/.test(merged[merged.length - 1].trim())          // 上一行也不以冒号分号结尾
-    ) {
-      merged[merged.length - 1] = merged[merged.length - 1].trimEnd() + trimmed;
-      continue;
-    }
-
-    merged.push(lines[i]);
-  }
-
-  return merged.join('\n');
-}
-
 interface ResumePanelProps {
   sections: ResumeSection[];
   pendingEdits: PendingEdit[];
@@ -215,66 +175,6 @@ const SECTION_TYPE_CONFIG: Record<string, { label: string; color: string; bg: st
 };
 
 /**
- * 判断一行是否是 bullet 行
- */
-function isBulletLine(line: string): boolean {
-  return /^\s*[•·\-*●○]\s/.test(line) || /^\s*\d+[.)]\s/.test(line);
-}
-
-/**
- * 提取 bullet 行的文本（去掉前缀符号）
- */
-function extractBulletText(line: string): string {
-  return line.replace(/^\s*[•·\-*●○]\s*/, '').replace(/^\s*\d+[.)]\s*/, '');
-}
-
-/**
- * 将纯文本渲染为结构化排版的 React 节点
- */
-function renderFormattedContent(text: string, keyPrefix = ''): React.ReactNode[] {
-  const lines = text.split('\n');
-  const elements: React.ReactNode[] = [];
-  let bulletGroup: string[] = [];
-  let groupIdx = 0;
-
-  const flushBullets = () => {
-    if (bulletGroup.length === 0) return;
-    elements.push(
-      <ul key={`${keyPrefix}ul-${groupIdx}`} className="list-disc pl-5 space-y-1.5">
-        {bulletGroup.map((item, i) => (
-          <li key={i} className="text-sm text-gray-600 leading-relaxed">{item}</li>
-        ))}
-      </ul>
-    );
-    bulletGroup = [];
-    groupIdx++;
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      flushBullets();
-      elements.push(<div key={`${keyPrefix}sp-${i}`} className="h-1.5" />);
-      continue;
-    }
-
-    if (isBulletLine(trimmed)) {
-      bulletGroup.push(extractBulletText(trimmed));
-    } else {
-      flushBullets();
-      elements.push(
-        <p key={`${keyPrefix}p-${i}`} className="text-sm text-gray-600 leading-relaxed">{trimmed}</p>
-      );
-    }
-  }
-
-  flushBullets();
-  return elements;
-}
-
-/**
  * 字符级 LCS diff：对比 original 和 suggested，只标记真正变化的部分
  */
 interface DiffPart { type: 'same' | 'del' | 'add'; text: string }
@@ -357,7 +257,7 @@ function renderContentWithDiff(
   sectionEdits: { edit: PendingEdit; idx: number }[],
 ): React.ReactNode {
   if (sectionEdits.length === 0) {
-    return <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>;
+    return <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{content}</div>;
   }
 
   const latestEdit = sectionEdits[sectionEdits.length - 1].edit;
@@ -365,7 +265,7 @@ function renderContentWithDiff(
   return (
     <div className="space-y-3">
       {/* 正常渲染替换后的段落内容 */}
-      <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>
+      <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{content}</div>
       {/* diff 对比卡片 */}
       <div className="rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0]/50 px-4 py-3">
         <div className="text-[11px] font-medium text-[#CA7C5E] mb-2">修改对比</div>
@@ -529,8 +429,8 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
               ) : mode === 'diff' && hasEdits ? (
                 renderContentWithDiff(section.content, sectionEdits)
               ) : (
-                <div className="space-y-2">
-                  {renderFormattedContent(cleanResumeContent(section.content))}
+                <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                  {section.content}
                 </div>
               )}
             </div>
