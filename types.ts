@@ -165,6 +165,7 @@ export interface ResumeVersion {
   jdContent: string | null;      // 关联的 JD 内容（Sparky 生成版本时）
   createdAt: number;             // Date.now()
   updatedAt: number;             // 最近编辑时间
+  isProtected?: boolean;         // 受保护版本（如"原始简历"），不可删除
 }
 
 export enum AppState {

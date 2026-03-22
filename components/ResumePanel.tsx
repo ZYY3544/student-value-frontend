@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Pencil, Eye, FileText, PanelLeftClose, PanelLeftOpen, ChevronDown, Trash2, Plus, Check, X, PenLine } from 'lucide-react';
+import { Pencil, Eye, ChevronDown, Trash2, Plus, Check, X, PenLine } from 'lucide-react';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 /**
@@ -49,19 +49,8 @@ export function cleanResumeContent(raw: string): string {
 
 interface ResumePanelProps {
   sections: ResumeSection[];
-  originalSections: ResumeSection[];
   pendingEdits: PendingEdit[];
   onContentChange: (sectionId: string, content: string) => void;
-  showOriginal?: boolean;
-  onToggleOriginal?: () => void;
-  // Version management
-  versions?: ResumeVersion[];
-  activeVersionId?: string | null;
-  onSaveVersion?: () => void;
-  onSwitchVersion?: (versionId: string) => void;
-  onDeleteVersion?: (versionId: string) => void;
-  onRenameVersion?: (versionId: string, newName: string) => void;
-  hasPendingJdVersion?: boolean;
 }
 
 // 版本选择器下拉组件
@@ -158,20 +147,24 @@ export const VersionSelector: React.FC<{
                         </span>
                       </div>
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setRenamingId(v.id); setRenameValue(v.name); }}
-                          className="p-1 text-gray-300 hover:text-gray-600 rounded"
-                          title="重命名"
-                        >
-                          <PenLine className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(v.id); }}
-                          className="p-1 text-gray-300 hover:text-red-500 rounded"
-                          title="删除版本"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {!v.isProtected && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setRenamingId(v.id); setRenameValue(v.name); }}
+                            className="p-1 text-gray-300 hover:text-gray-600 rounded"
+                            title="重命名"
+                          >
+                            <PenLine className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {!v.isProtected && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(v.id); }}
+                            className="p-1 text-gray-300 hover:text-red-500 rounded"
+                            title="删除版本"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -505,190 +498,13 @@ const SectionEditor: React.FC<{
 };
 
 /**
- * 渲染带精确文本高亮的内容：保持原始排版结构，在行内对匹配部分加 mark
- */
-function renderFormattedContentWithHighlight(
-  raw: string,
-  highlightText: string,
-  keyPrefix = '',
-): React.ReactNode[] {
-  const content = cleanResumeContent(raw);
-
-  // 1. 找到高亮区间 [hlStart, hlEnd) —— 精确匹配 or 模糊匹配
-  let hlStart = content.indexOf(highlightText);
-  let hlLen = highlightText.length;
-
-  if (hlStart === -1) {
-    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
-    const normContent = normalize(content);
-    const normHighlight = normalize(highlightText);
-    const normIdx = normContent.indexOf(normHighlight);
-    if (normIdx === -1) return renderFormattedContent(content, keyPrefix);
-
-    // 映射归一化位置回原始位置
-    let origIdx = 0, normPos = 0;
-    while (normPos < normIdx && origIdx < content.length) {
-      if (/\s/.test(content[origIdx]) && (origIdx === 0 || /\s/.test(content[origIdx - 1]))) { origIdx++; continue; }
-      origIdx++; normPos++;
-    }
-    hlStart = origIdx;
-    hlLen = 0;
-    let normMatchLen = 0;
-    while (normMatchLen < normHighlight.length && hlStart + hlLen < content.length) {
-      if (/\s/.test(content[hlStart + hlLen]) && hlLen > 0 && /\s/.test(content[hlStart + hlLen - 1])) { hlLen++; continue; }
-      hlLen++; normMatchLen++;
-    }
-  }
-
-  const hlEnd = hlStart + hlLen;
-
-  // 2. 行内高亮辅助：给定文本及其在 content 中的起始偏移，返回带 <mark> 的节点
-  const applyHighlight = (text: string, textStart: number, key: string): React.ReactNode => {
-    const textEnd = textStart + text.length;
-    if (textEnd <= hlStart || textStart >= hlEnd) return text; // 无重叠
-    if (textStart >= hlStart && textEnd <= hlEnd) {
-      return <mark key={key} className="bg-amber-200/70 rounded px-0.5">{text}</mark>;
-    }
-    // 部分重叠
-    const oStart = Math.max(0, hlStart - textStart);
-    const oEnd = Math.min(text.length, hlEnd - textStart);
-    return (
-      <React.Fragment key={key}>
-        {oStart > 0 && text.slice(0, oStart)}
-        <mark className="bg-amber-200/70 rounded px-0.5">{text.slice(oStart, oEnd)}</mark>
-        {oEnd < text.length && text.slice(oEnd)}
-      </React.Fragment>
-    );
-  };
-
-  // 3. 逐行处理（与 renderFormattedContent 结构完全一致，仅在文本渲染时加高亮）
-  const lines = content.split('\n');
-  const elements: React.ReactNode[] = [];
-  let bulletGroup: { text: string; textStart: number }[] = [];
-  let groupIdx = 0;
-  let offset = 0;
-
-  const flushBullets = () => {
-    if (bulletGroup.length === 0) return;
-    elements.push(
-      <ul key={`${keyPrefix}ul-${groupIdx}`} className="list-disc pl-5 space-y-1.5">
-        {bulletGroup.map((item, i) => (
-          <li key={i} className="text-sm text-gray-600 leading-relaxed">
-            {applyHighlight(item.text, item.textStart, `${keyPrefix}hl-${groupIdx}-${i}`)}
-          </li>
-        ))}
-      </ul>
-    );
-    bulletGroup = [];
-    groupIdx++;
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      flushBullets();
-      elements.push(<div key={`${keyPrefix}sp-${i}`} className="h-1.5" />);
-      offset += line.length + 1;
-      continue;
-    }
-
-    const leadingSpaces = line.length - line.trimStart().length;
-
-    if (isBulletLine(trimmed)) {
-      const bulletText = extractBulletText(trimmed);
-      const prefixLen = trimmed.length - bulletText.length;
-      bulletGroup.push({ text: bulletText, textStart: offset + leadingSpaces + prefixLen });
-    } else {
-      flushBullets();
-      elements.push(
-        <p key={`${keyPrefix}p-${i}`} className="text-sm text-gray-600 leading-relaxed">
-          {applyHighlight(trimmed, offset + leadingSpaces, `${keyPrefix}hl-p-${i}`)}
-        </p>
-      );
-    }
-    offset += line.length + 1;
-  }
-
-  flushBullets();
-  return elements;
-}
-
-/**
- * OriginalResumePanel - 三栏布局中间的原文只读面板
- */
-export const OriginalResumePanel: React.FC<{
-  sections: ResumeSection[];
-  highlightSectionId?: string | null;
-  highlightText?: string | null;
-}> = ({ sections, highlightSectionId, highlightText }) => {
-  if (sections.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-400">
-        <p className="text-sm">暂无原始简历</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 space-y-5">
-      <div className="mb-2">
-        <h2 className="text-base font-bold text-gray-800">简历原文</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">初始版本，仅供参考对比</p>
-      </div>
-
-      {sections.map((section) => {
-        const typeConfig = SECTION_TYPE_CONFIG[section.type] || SECTION_TYPE_CONFIG.other;
-        const isHighlighted = section.id === highlightSectionId;
-        const hasTextHighlight = isHighlighted && !!highlightText;
-
-        return (
-          <div
-            key={section.id}
-            data-section-id={section.id}
-            className={`rounded-2xl border transition-all duration-300 ${
-              hasTextHighlight
-                ? 'border-amber-200 bg-white/60'
-                : isHighlighted
-                  ? 'bg-amber-50/80 border-amber-200 shadow-md shadow-amber-50'
-                  : 'border-gray-100 bg-white/60'
-            }`}
-          >
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50 min-h-[46px]">
-              <h3 className="text-sm font-semibold text-gray-700">{section.title}</h3>
-              <div className="ml-auto w-[22px] h-[22px]" />
-            </div>
-            <div className="px-5 py-4 space-y-2" data-section-content>
-              {hasTextHighlight
-                ? renderFormattedContentWithHighlight(section.content, highlightText, `orig-${section.id}-`)
-                : renderFormattedContent(cleanResumeContent(section.content))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-/**
- * ResumePanel - 右栏优化版本面板
+ * ResumePanel - 右栏简历面板
  * 三态循环：diff（查看修改）→ editing（编辑）→ clean（干净预览）→ diff ...
  */
 export const ResumePanel: React.FC<ResumePanelProps> = ({
   sections,
-  originalSections,
   pendingEdits,
   onContentChange,
-  showOriginal,
-  onToggleOriginal,
-  versions = [],
-  activeVersionId = null,
-  onSaveVersion,
-  onSwitchVersion,
-  onDeleteVersion,
-  onRenameVersion,
-  hasPendingJdVersion,
 }) => {
   const [sectionModes, setSectionModes] = useState<Record<string, SectionMode>>({});
 
@@ -718,26 +534,15 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
 
   return (
     <div className="p-6 space-y-5">
-      <div className="mb-2 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-gray-800">优化版本</h2>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-0.5">
-            {pendingEdits.length > 0
-              ? '绿色为新增内容，红色删除线为原文，点击铅笔可编辑'
-              : '当前显示原文，AI 改写后将自动显示 diff 对比'}
-          </p>
+      <div className="mb-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-bold text-gray-800">简历</h2>
         </div>
-        {onToggleOriginal && (
-          <button
-            onClick={onToggleOriginal}
-            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
-            title={showOriginal ? '隐藏原文' : '显示原文'}
-          >
-            {showOriginal ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
-          </button>
-        )}
+        <p className="text-[11px] text-gray-400 mt-0.5">
+          {pendingEdits.length > 0
+            ? '绿色为新增内容，红色删除线为原文，点击铅笔可编辑'
+            : 'AI 改写后将自动显示 diff 对比，点击铅笔可手动编辑'}
+        </p>
       </div>
 
       {sections.map((section) => {

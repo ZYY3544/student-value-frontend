@@ -191,18 +191,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     }
     return [];
   });
-  // 简历原文快照（冻结，不随编辑变化，用于三栏对比）
-  const [originalSections, setOriginalSections] = useState<ResumeSection[]>(() => {
-    if (result.resumeSections?.length) {
-      return result.resumeSections.map((sec, i) => ({
-        id: `section-${i}`,
-        type: sec.type,
-        title: sec.title,
-        content: sec.content,
-      }));
-    }
-    return [];
-  });
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
   const [parsedJd, setParsedJd] = useState<ParsedJd | null>(null);
   const [jdChecklist, setJdChecklist] = useState<JdMatchItem[]>([]);
@@ -263,12 +251,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [versions]);
 
   const handleDeleteVersion = useCallback((versionId: string) => {
+    // 受保护版本（原始简历）不可删除
+    const target = versions.find(v => v.id === versionId);
+    if (target?.isProtected) return;
     setVersions(prev => prev.filter(v => v.id !== versionId));
     if (activeVersionId === versionId) {
       // 切回未保存的编辑状态
       setActiveVersionId(null);
     }
-  }, [activeVersionId]);
+  }, [activeVersionId, versions]);
 
   const handleRenameVersion = useCallback((versionId: string, newName: string) => {
     setVersions(prev => prev.map(v =>
@@ -336,12 +327,27 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [versions.length, pendingJdContent]);
 
-  // 兜底：当 resumeSections 首次有数据时，同步冻结为原文快照
+  // 首次进入画布时，自动创建"原始简历"版本（不可删除）
+  const originalVersionCreatedRef = useRef(false);
   useEffect(() => {
-    if (originalSections.length === 0 && resumeSections.length > 0) {
-      setOriginalSections(resumeSections.map(s => ({ ...s })));
-    }
-  }, [resumeSections, originalSections.length]);
+    if (originalVersionCreatedRef.current) return;
+    if (resumeSections.length === 0) return;
+    // 检查 versions 中是否已有受保护的原始简历版本
+    const hasOriginal = versions.some(v => v.isProtected);
+    if (hasOriginal) { originalVersionCreatedRef.current = true; return; }
+    originalVersionCreatedRef.current = true;
+    const originalVersion: ResumeVersion = {
+      id: crypto.randomUUID(),
+      name: '原始简历',
+      sections: resumeSections.map(s => ({ ...s })),
+      pendingEdits: [],
+      jdContent: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      isProtected: true,
+    };
+    setVersions(prev => [originalVersion, ...prev]);
+  }, [resumeSections, versions]);
 
   const assessmentContext = useMemo(() => {
     const dims = result.resumeExpression?.dimensions || {};
@@ -394,10 +400,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         if (data.success) {
           if (data.data.status === 'ready') {
             setResumeSections(data.data.sections);
-            // 首次拿到时同步冻结为原文快照
-            if (originalSections.length === 0) {
-              setOriginalSections(data.data.sections.map((s: any) => ({ ...s })));
-            }
           } else {
             setTimeout(fetchSections, 1500);
           }
@@ -629,11 +631,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         content: s.content,
       }));
       setResumeSections(mapped);
-      if (originalSections.length === 0) {
-        setOriginalSections(mapped.map(s => ({ ...s })));
-      }
     }
-  }, [resumeSections.length, originalSections.length]);
+  }, [resumeSections.length]);
 
   // 共享的 chat props
   const chatProps = {
@@ -658,7 +657,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       <CanvasView
         {...chatProps}
         resumeSections={resumeSections}
-        originalSections={originalSections}
         pendingEdits={pendingEdits}
         onEditSuggestion={handleEditSuggestion}
         onAcceptEdit={handleAcceptEdit}

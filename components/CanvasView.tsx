@@ -1,15 +1,14 @@
 /**
- * CanvasView - 全屏简历画布（三栏布局）
- * 左侧：AI 对话面板
- * 中间：简历原文（只读，供参考对比）
- * 右侧：优化版本（Word 式 diff 高亮 + 自由编辑 + 版本管理）
+ * CanvasView - 全屏简历画布（两栏布局）
+ * 左侧：AI 对话面板（Sparky）
+ * 右侧：简历（可编辑，带 diff 高亮 + 版本管理）
  */
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { ArrowLeft, Download, Sparkles } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
-import { ResumePanel, OriginalResumePanel, VersionSelector } from './ResumePanel';
+import { ResumePanel, VersionSelector } from './ResumePanel';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 // 选中文本快捷操作
@@ -33,7 +32,6 @@ interface CanvasViewProps {
   apiBase: string;
   // Canvas state
   resumeSections: ResumeSection[];
-  originalSections: ResumeSection[];
   pendingEdits: PendingEdit[];
   onEditSuggestion: (edit: Omit<PendingEdit, 'status'>) => void;
   onAcceptEdit: (sectionId: string) => void;
@@ -61,7 +59,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   setIsLoading,
   apiBase,
   resumeSections,
-  originalSections,
   pendingEdits,
   onEditSuggestion,
   onAcceptEdit,
@@ -78,19 +75,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   assessmentContext,
 }) => {
 
-  // 被改段落高亮跟踪（中间栏联动）
-  const [highlightSectionId, setHighlightSectionId] = useState<string | null>(null);
-  const [highlightText, setHighlightText] = useState<string | null>(null);
-  const highlightTextRef = useRef<string | null>(null);
-  const highlightSectionIdRef = useRef<string | null>(null);
-  highlightTextRef.current = highlightText;
-  highlightSectionIdRef.current = highlightSectionId;
-
-  const [showOriginal, setShowOriginal] = useState(true);
-  const originalRef = useRef<HTMLDivElement>(null);
   const optimizedRef = useRef<HTMLDivElement>(null);
-  const isSyncing = useRef(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // 记录最近一次选中文本的 section 信息，用于 enrichment
+  const lastSelectionRef = useRef<{ text: string; sectionId: string } | null>(null);
 
   // 从 DOM 节点向上查找所属 section
   const findSectionFromNode = useCallback((node: Node | null): { id: string; title: string } | null => {
@@ -98,19 +87,19 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     while (el) {
       const sectionId = el.getAttribute('data-section-id');
       if (sectionId) {
-        const sec = originalSections.find(s => s.id === sectionId) || resumeSections.find(s => s.id === sectionId);
+        const sec = resumeSections.find(s => s.id === sectionId);
         if (sec) return { id: sectionId, title: sec.title };
       }
       const elId = el.getAttribute('id');
       if (elId?.startsWith('resume-')) {
         const secId = elId.replace('resume-', '');
-        const sec = resumeSections.find(s => s.id === secId) || originalSections.find(s => s.id === secId);
+        const sec = resumeSections.find(s => s.id === secId);
         if (sec) return { id: secId, title: sec.title };
       }
       el = el.parentElement;
     }
     return null;
-  }, [originalSections, resumeSections]);
+  }, [resumeSections]);
 
   // 选中文本浮动工具栏状态
   const [selectionToolbar, setSelectionToolbar] = useState<{
@@ -122,43 +111,20 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   } | null>(null);
   const [externalMessage, setExternalMessage] = useState<string | null>(null);
 
-  // 同步滚动
-  const handleScroll = useCallback((source: 'original' | 'optimized') => {
-    if (isSyncing.current) return;
-    isSyncing.current = true;
-    const from = source === 'original' ? originalRef.current : optimizedRef.current;
-    const to = source === 'original' ? optimizedRef.current : originalRef.current;
-    if (from && to) {
-      const ratio = from.scrollTop / (from.scrollHeight - from.clientHeight || 1);
-      to.scrollTop = ratio * (to.scrollHeight - to.clientHeight || 1);
-    }
-    requestAnimationFrame(() => { isSyncing.current = false; });
-  }, []);
-
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
-    const frontendText = highlightTextRef.current;
-    const frontendSectionId = highlightSectionIdRef.current;
+    const sel = lastSelectionRef.current;
     const enrichedEdit = {
       ...edit,
-      ...(frontendText ? { original: frontendText } : {}),
-      ...(frontendSectionId ? { sectionId: frontendSectionId } : {}),
+      ...(sel?.text ? { original: sel.text } : {}),
+      ...(sel?.sectionId ? { sectionId: sel.sectionId } : {}),
     };
     onEditSuggestion(enrichedEdit);
-    setHighlightSectionId(edit.sectionId || frontendSectionId);
+    lastSelectionRef.current = null;
   }, [onEditSuggestion]);
 
   const handleAcceptEdit = useCallback((sectionId: string) => {
-    setHighlightSectionId(null);
-    setHighlightText(null);
     onAcceptEdit(sectionId);
   }, [onAcceptEdit]);
-
-  useEffect(() => {
-    if (highlightSectionId && originalRef.current) {
-      const el = originalRef.current.querySelector(`[data-section-id="${highlightSectionId}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [highlightSectionId]);
 
   const handleMouseUp = useCallback(() => {
     requestAnimationFrame(() => {
@@ -168,9 +134,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       if (text.length < 6) return;
       const anchor = sel.anchorNode;
       if (!anchor) return;
-      const inOriginal = originalRef.current?.contains(anchor);
       const inOptimized = optimizedRef.current?.contains(anchor);
-      if (!inOriginal && !inOptimized) return;
+      if (!inOptimized) return;
       const anchorEl = anchor instanceof Element ? anchor : anchor.parentElement;
       if (!anchorEl?.closest('[data-section-content]')) return;
       const sectionInfo = findSectionFromNode(anchor);
@@ -241,10 +206,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Main content — 两栏布局 */}
       <div className="flex-1 flex overflow-hidden divide-x divide-gray-100">
         {/* 左栏: Chat */}
-        <div className={`${showOriginal ? 'w-[30%]' : 'w-[40%]'} min-w-[280px] flex flex-col bg-white transition-all duration-300 canvas-no-print`}>
+        <div className="w-[40%] min-w-[280px] flex flex-col bg-white canvas-no-print">
           <CanvasChat
             sessionId={sessionId}
             messages={messages}
@@ -264,32 +229,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           />
         </div>
 
-        {/* 中栏: 简历原文（只读） */}
-        {showOriginal && (
-          <div
-            ref={originalRef}
-            onScroll={() => handleScroll('original')}
-            onMouseUp={handleMouseUp}
-            className="w-[35%] overflow-y-auto bg-gray-50/80 canvas-no-print"
-          >
-            <OriginalResumePanel sections={originalSections} highlightSectionId={highlightSectionId} highlightText={highlightText} />
-          </div>
-        )}
-
-        {/* 右栏: 优化版本 */}
+        {/* 右栏: 简历（可编辑） */}
         <div
           ref={optimizedRef}
-          onScroll={() => handleScroll('optimized')}
           onMouseUp={handleMouseUp}
-          className={`${showOriginal ? 'w-[35%]' : 'w-[60%]'} overflow-y-auto bg-white transition-all duration-300 canvas-print-area`}
+          className="w-[60%] overflow-y-auto bg-white canvas-print-area"
         >
           <ResumePanel
             sections={resumeSections}
-            originalSections={originalSections}
             pendingEdits={pendingEdits}
             onContentChange={onSectionContentChange}
-            showOriginal={showOriginal}
-            onToggleOriginal={() => setShowOriginal(prev => !prev)}
           />
         </div>
       </div>
@@ -312,8 +261,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
               key={action.label}
               onClick={() => {
                 if (selectionToolbar.sectionId) {
-                  setHighlightSectionId(selectionToolbar.sectionId);
-                  setHighlightText(selectionToolbar.text);
+                  lastSelectionRef.current = {
+                    text: selectionToolbar.text,
+                    sectionId: selectionToolbar.sectionId,
+                  };
                 }
                 const display = action.display(selectionToolbar.text);
                 const prompt = action.prompt(selectionToolbar.text, selectionToolbar.sectionTitle);
@@ -341,21 +292,21 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
                 <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">1</span>
                 <div>
                   <span className="font-semibold text-gray-800">对话改写</span>
-                  <span className="text-gray-500"> — 直接跟 Sparky 说你想改哪里，它会在原文中标记并在优化版本中给出修改</span>
+                  <span className="text-gray-500"> — 直接跟 Sparky 说你想改哪里，它会给出修改建议并在右侧显示 diff 对比</span>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">2</span>
                 <div>
                   <span className="font-semibold text-gray-800">选中润色</span>
-                  <span className="text-gray-500"> — 选中原文中的任意段落，点击"润色"，Sparky 直接帮你改</span>
+                  <span className="text-gray-500"> — 选中右侧简历中的任意段落，点击"润色"，Sparky 直接帮你改</span>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">3</span>
                 <div>
                   <span className="font-semibold text-gray-800">自由编辑</span>
-                  <span className="text-gray-500"> — 你也可以直接在右侧优化版本中手动编辑</span>
+                  <span className="text-gray-500"> — 你也可以直接在右侧简历中点击铅笔图标手动编辑</span>
                 </div>
               </div>
             </div>
