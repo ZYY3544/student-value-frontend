@@ -469,7 +469,9 @@ const App: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">意向企业</label>
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-slate-700">意向企业</label>
+                    </div>
                     <input
                       type="text"
                       placeholder="例如：腾讯（选填）"
