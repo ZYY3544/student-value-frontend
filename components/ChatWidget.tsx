@@ -126,7 +126,7 @@ const cleanSystemTags = (text: string) => text.replace(/\[RESUME_INSIGHT:.*?\]/g
 
 // Markdown 渲染
 // 可点击的动作关键词：出现在 **xx** 中时渲染为可点击链接
-const ACTION_KEYWORDS = new Set(['解读报告', '报告解读']);
+const ACTION_KEYWORDS = new Set(['解读报告', '报告解读', '简历画布']);
 
 export const formatContent = (text: string, onAction?: (action: string) => void) => {
   text = cleanSystemTags(text);
