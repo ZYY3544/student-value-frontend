@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit, ResumeExpression, JobComparison, ParsedJd, JdMatchItem } from '../types';
+import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit, ResumeExpression, JobComparison, ParsedJd, JdMatchItem, ResumeVersion } from '../types';
 import { supabase } from '../lib/supabase';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell, Search,
@@ -209,6 +209,72 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   // ref 追踪最新 pendingEdits，避免 handleEditSuggestion 闭包捕获旧值
   const pendingEditsRef = useRef<PendingEdit[]>([]);
   pendingEditsRef.current = pendingEdits;
+
+  // ===== 版本管理 =====
+  const versionStorageKey = `resume_versions_${userId || 'anonymous'}`;
+  const [versions, setVersions] = useState<ResumeVersion[]>(() => {
+    try {
+      const saved = localStorage.getItem(versionStorageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+
+  // 持久化到 localStorage
+  useEffect(() => {
+    localStorage.setItem(versionStorageKey, JSON.stringify(versions));
+  }, [versions, versionStorageKey]);
+
+  // 自动保存：当前编辑内容同步到活跃版本
+  useEffect(() => {
+    if (!activeVersionId) return;
+    setVersions(prev => prev.map(v =>
+      v.id === activeVersionId
+        ? { ...v, sections: resumeSections.map(s => ({ ...s })), pendingEdits: [...pendingEdits], updatedAt: Date.now() }
+        : v
+    ));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeSections, pendingEdits, activeVersionId]);
+
+  const handleSaveVersion = useCallback(() => {
+    if (versions.length >= 5) return;
+    // 自动递增命名
+    const manualCount = versions.filter(v => /^版本 \d+$/.test(v.name)).length;
+    const name = `版本 ${manualCount + 1}`;
+    const newVersion: ResumeVersion = {
+      id: crypto.randomUUID(),
+      name,
+      sections: resumeSections.map(s => ({ ...s })),
+      pendingEdits: pendingEdits.map(e => ({ ...e })),
+      jdContent: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    setVersions(prev => [...prev, newVersion]);
+    setActiveVersionId(newVersion.id);
+  }, [versions, resumeSections, pendingEdits]);
+
+  const handleSwitchVersion = useCallback((versionId: string) => {
+    const target = versions.find(v => v.id === versionId);
+    if (!target) return;
+    setActiveVersionId(versionId);
+    setResumeSections(target.sections.map(s => ({ ...s })));
+    setPendingEdits(target.pendingEdits.map(e => ({ ...e })));
+  }, [versions]);
+
+  const handleDeleteVersion = useCallback((versionId: string) => {
+    setVersions(prev => prev.filter(v => v.id !== versionId));
+    if (activeVersionId === versionId) {
+      // 切回未保存的编辑状态
+      setActiveVersionId(null);
+    }
+  }, [activeVersionId]);
+
+  const handleRenameVersion = useCallback((versionId: string, newName: string) => {
+    setVersions(prev => prev.map(v =>
+      v.id === versionId ? { ...v, name: newName } : v
+    ));
+  }, []);
 
   // 兜底：当 resumeSections 首次有数据时，同步冻结为原文快照
   useEffect(() => {
@@ -531,8 +597,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onAcceptEdit={handleAcceptEdit}
         onSectionContentChange={handleSectionContentChange}
         onExitCanvas={() => setViewMode('report')}
-        parsedJd={parsedJd}
-        setParsedJd={setParsedJd}
+        versions={versions}
+        activeVersionId={activeVersionId}
+        onSaveVersion={handleSaveVersion}
+        onSwitchVersion={handleSwitchVersion}
+        onDeleteVersion={handleDeleteVersion}
+        onRenameVersion={handleRenameVersion}
       />
     );
   }

@@ -4,8 +4,8 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Pencil, Eye, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { ResumeSection, PendingEdit } from '../types';
+import { Pencil, Eye, FileText, PanelLeftClose, PanelLeftOpen, ChevronDown, Trash2, Plus, Check, X } from 'lucide-react';
+import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 /**
  * 清理简历文本：
@@ -54,7 +54,145 @@ interface ResumePanelProps {
   onContentChange: (sectionId: string, content: string) => void;
   showOriginal?: boolean;
   onToggleOriginal?: () => void;
+  // Version management
+  versions?: ResumeVersion[];
+  activeVersionId?: string | null;
+  onSaveVersion?: () => void;
+  onSwitchVersion?: (versionId: string) => void;
+  onDeleteVersion?: (versionId: string) => void;
+  onRenameVersion?: (versionId: string, newName: string) => void;
 }
+
+// 版本选择器下拉组件
+function formatTime(ts: number): string {
+  const d = new Date(ts);
+  return `${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+}
+
+const VersionSelector: React.FC<{
+  versions: ResumeVersion[];
+  activeVersionId: string | null;
+  onSave: () => void;
+  onSwitch: (id: string) => void;
+  onDelete: (id: string) => void;
+  onRename: (id: string, name: string) => void;
+}> = ({ versions, activeVersionId, onSave, onSwitch, onDelete, onRename }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const activeVersion = versions.find(v => v.id === activeVersionId);
+  const atLimit = versions.length >= 5;
+
+  useEffect(() => {
+    if (renamingId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingId]);
+
+  const handleRenameSubmit = (id: string) => {
+    const trimmed = renameValue.trim();
+    if (trimmed) onRename(id, trimmed);
+    setRenamingId(null);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => { setIsOpen(prev => !prev); setConfirmDeleteId(null); setRenamingId(null); }}
+        className="flex items-center gap-1 px-2 py-0.5 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+      >
+        <span className="max-w-[120px] truncate">{activeVersion ? activeVersion.name : '当前编辑'}</span>
+        <ChevronDown className="w-3 h-3" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-[199]" onClick={() => { setIsOpen(false); setConfirmDeleteId(null); setRenamingId(null); }} />
+          <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-[200] py-1 overflow-hidden">
+            {/* 已保存版本列表 */}
+            {versions.length > 0 ? (
+              versions.map(v => (
+                <div key={v.id} className="group relative">
+                  {confirmDeleteId === v.id ? (
+                    <div className="flex items-center justify-between px-3 py-2 bg-red-50">
+                      <span className="text-xs text-red-600">确认删除？</span>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { onDelete(v.id); setConfirmDeleteId(null); }} className="p-1 text-red-600 hover:bg-red-100 rounded">
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={`flex items-center px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${v.id === activeVersionId ? 'bg-blue-50/50' : ''}`}
+                      onClick={() => { onSwitch(v.id); setIsOpen(false); }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        {renamingId === v.id ? (
+                          <input
+                            ref={renameInputRef}
+                            value={renameValue}
+                            onChange={e => setRenameValue(e.target.value)}
+                            onBlur={() => handleRenameSubmit(v.id)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleRenameSubmit(v.id); if (e.key === 'Escape') setRenamingId(null); }}
+                            onClick={e => e.stopPropagation()}
+                            className="text-sm text-gray-800 bg-white border border-[#0A66C2] rounded px-1.5 py-0.5 outline-none w-full"
+                          />
+                        ) : (
+                          <span
+                            className="text-sm text-gray-800 truncate block"
+                            onDoubleClick={(e) => { e.stopPropagation(); setRenamingId(v.id); setRenameValue(v.name); }}
+                            title="双击重命名"
+                          >
+                            {v.name}
+                            {v.id === activeVersionId && <span className="ml-1.5 text-[10px] text-[#0A66C2] font-medium">当前</span>}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-gray-400 block mt-0.5">
+                          {formatTime(v.updatedAt || v.createdAt)}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(v.id); }}
+                        className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded"
+                        title="删除版本"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-3 text-xs text-gray-400 text-center">暂无保存的版本</div>
+            )}
+
+            {/* 分隔线 + 保存按钮 */}
+            <div className="h-px bg-gray-100 my-1" />
+            <button
+              onClick={() => { if (!atLimit) { onSave(); setIsOpen(false); } }}
+              disabled={atLimit}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                atLimit ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+              }`}
+              title={atLimit ? '最多保存 5 个版本，请先删除' : ''}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              {atLimit ? '已达上限，请先删除' : '保存当前为新版本'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 // 每个 section 的显示模态
 type SectionMode = 'diff' | 'editing' | 'clean';
@@ -530,6 +668,12 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
   onContentChange,
   showOriginal,
   onToggleOriginal,
+  versions = [],
+  activeVersionId = null,
+  onSaveVersion,
+  onSwitchVersion,
+  onDeleteVersion,
+  onRenameVersion,
 }) => {
   const [sectionModes, setSectionModes] = useState<Record<string, SectionMode>>({});
 
@@ -561,7 +705,19 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
     <div className="p-6 space-y-5">
       <div className="mb-2 flex items-start justify-between">
         <div>
-          <h2 className="text-base font-bold text-gray-800">优化版本</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-800">优化版本</h2>
+            {onSaveVersion && onSwitchVersion && onDeleteVersion && onRenameVersion && (
+              <VersionSelector
+                versions={versions}
+                activeVersionId={activeVersionId}
+                onSave={onSaveVersion}
+                onSwitch={onSwitchVersion}
+                onDelete={onDeleteVersion}
+                onRename={onRenameVersion}
+              />
+            )}
+          </div>
           <p className="text-[11px] text-gray-400 mt-0.5">
             {pendingEdits.length > 0
               ? '绿色为新增内容，红色删除线为原文，点击铅笔可编辑'

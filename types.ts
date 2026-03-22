@@ -156,6 +156,17 @@ export interface JdMatchItem {
   suggestion?: string;
 }
 
+// 简历版本快照
+export interface ResumeVersion {
+  id: string;                    // uuid
+  name: string;                  // 用户可编辑名称
+  sections: ResumeSection[];     // 各段落内容快照
+  pendingEdits: PendingEdit[];   // diff 状态快照
+  jdContent: string | null;      // 关联的 JD 内容（Sparky 生成版本时）
+  createdAt: number;             // Date.now()
+  updatedAt: number;             // 最近编辑时间
+}
+
 export enum AppState {
   AUTH = 'AUTH',
   FORM = 'FORM',
