@@ -386,23 +386,41 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         body: JSON.stringify({ sessionId, jdText }),
       });
       if (!res.ok) throw new Error('优化失败');
+      // JD 模式：edit 直接应用（不显示卡片），只收集用于替换计数
+      let jdEditCount = 0;
       await parseSseStream(
         res,
         (fullText) => {
           const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
-          for (const edit of edits) handleParsedEdit(edit);
+          // JD 模式下也处理泄露到文本中的 EDIT 块
+          for (const edit of edits) {
+            onEditSuggestion({ sectionId: edit.sectionId, original: edit.original, suggested: edit.suggested, rationale: edit.rationale });
+            jdEditCount++;
+          }
           setMessages(prev => {
             const updated = [...prev];
             updated[updated.length - 1] = { role: 'assistant', content: displayText };
             return updated;
           });
         },
-        (edit) => handleParsedEdit({ sectionId: edit.sectionId, original: edit.original, suggested: edit.suggested, rationale: edit.rationale }),
+        (edit) => {
+          // 直接应用到 resumeSections，不走 handleParsedEdit（不缓冲卡片）
+          onEditSuggestion({ sectionId: edit.sectionId, original: edit.original, suggested: edit.suggested, rationale: edit.rationale });
+          jdEditCount++;
+        },
         undefined,
         (phase) => { onJdPhaseChange?.(phase); },
         (diagData) => { setJdDiagnosisData(diagData as JdDiagnosisData); },
       );
       jdSuccessRef.current = true;
+      // 自动接受所有 pending edits（清除 diff 高亮）
+      if (jdEditCount > 0 && onAcceptEdit) {
+        // 延迟让 UI 渲染完毕
+        setTimeout(() => {
+          const edits = pendingEdits;
+          for (const e of edits) onAcceptEdit(e.sectionId);
+        }, 500);
+      }
     } catch (err) {
       console.error('JD auto-optimize failed:', err);
       setMessages(prev => {
@@ -411,12 +429,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         return updated;
       });
     } finally {
-      if (pendingEditCardsRef.current.length > 0) {
-        setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
-        pendingEditCardsRef.current = [];
-      }
       setIsLoading(false);
-      if (streamHasEditRef.current) setLastStreamHadEdit(true);
       onJdPhaseChange?.(null);
       if (jdSuccessRef.current) {
         onJdVersionCreate?.(jdText);
@@ -606,9 +619,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                           <PixelCat size={16} />
                         </span>
                         <span className="text-xs">
-                          {jdPhase === 'parsing' ? 'Sparky 正在解析 JD...' :
-                           jdPhase === 'diagnosing' ? 'Sparky 正在诊断匹配度...' :
-                           jdPhase === 'rewriting' ? 'Sparky 正在改写简历...' :
+                          {jdPhase === 'parsing' ? 'Sparky 正在分析 JD，比对你的简历和岗位要求...' :
+                           jdPhase === 'diagnosing' ? 'Sparky 正在生成诊断结果...' :
+                           jdPhase === 'rewriting' ? 'Sparky 正在思考如何改进你的简历...' :
                            'Sparky 正在思考...'}
                         </span>
                       </span>
