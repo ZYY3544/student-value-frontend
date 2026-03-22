@@ -139,28 +139,36 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [isLoading, setIsLoading] = useState(false);
   const savedMsgCount = useRef(0);
   const dbSessionId = useRef<string | null>(null);
+  const dbCreateFailed = useRef(false); // 403/RLS 失败后停止重试
 
   // 新对话时重置持久化状态
   useEffect(() => {
     if (!sessionId) {
       savedMsgCount.current = 0;
       dbSessionId.current = null;
+      dbCreateFailed.current = false;
     }
   }, [sessionId]);
 
-  // 将新消息持久化到 Supabase
+  // 将新消息持久化到 Supabase（失败后退避，不无限重试）
   useEffect(() => {
-    if (!userId || !sessionId || messages.length <= savedMsgCount.current) return;
+    if (!userId || !sessionId || dbCreateFailed.current) return;
+    if (messages.length <= savedMsgCount.current) return;
 
     const newMessages = messages.slice(savedMsgCount.current);
     const createSessionAndSave = async () => {
       // 首次保存时创建 chat_sessions 记录
       if (!dbSessionId.current) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('chat_sessions')
           .insert({ user_id: userId, phase: 'opening' })
           .select('id')
           .single();
+        if (error) {
+          console.warn('[Supabase] chat_sessions insert failed, stopping retries:', error.message);
+          dbCreateFailed.current = true;
+          return;
+        }
         if (data) dbSessionId.current = data.id;
       }
 
@@ -171,7 +179,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         role: m.role,
         content: m.content,
       }));
-      await supabase.from('chat_messages').insert(rows);
+      const { error } = await supabase.from('chat_messages').insert(rows);
+      if (error) {
+        console.warn('[Supabase] chat_messages insert failed:', error.message);
+        return;
+      }
       savedMsgCount.current = messages.length;
     };
     createSessionAndSave().catch(console.error);
@@ -413,6 +425,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
   // AI 编辑建议：按 sectionId 定位，在段落内局部替换（精确 → 容错）
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
+    console.log('[EditSuggestion] called with:', { sectionId: edit.sectionId, original: edit.original?.slice(0, 80), suggested: edit.suggested?.slice(0, 80) });
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
