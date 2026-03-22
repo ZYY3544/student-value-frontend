@@ -135,13 +135,17 @@ const ACTION_KEYWORDS = new Set(Object.keys(ACTION_BUTTON_CONFIG));
 
 /** 从消息文本中提取出现的 action 关键词（去重，保持出现顺序） */
 export const extractActions = (text: string): string[] => {
-  // 系统自动跳转提示不需要按钮（如"好的，正在为你打开简历画布模式"）
+  // 系统自动跳转提示不需要按钮
   if (text.startsWith('好的，正在为你打开')) return [];
   const found: string[] = [];
   for (const kw of ACTION_KEYWORDS) {
     if (text.includes(kw) && !found.some(f => ACTION_BUTTON_CONFIG[f]?.label === ACTION_BUTTON_CONFIG[kw]?.label)) {
       found.push(kw);
     }
+  }
+  // 兜底：报告解读消息（含"能力""简历""定价"三个维度）如果没提到简历画布，也加按钮
+  if (text.length > 200 && text.includes('简历') && text.includes('改') && !found.some(f => ACTION_BUTTON_CONFIG[f]?.label === '进入简历画布 →')) {
+    found.push('简历画布');
   }
   return found;
 };

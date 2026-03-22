@@ -280,11 +280,20 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [pendingJdContent, setPendingJdContent] = useState<string | null>(null);
 
   function extractJdName(jdContent: string): string {
-    const companyMatch = jdContent.match(/(?:公司|企业|集团)[：:]\s*(.{2,15})/);
-    const titleMatch = jdContent.match(/(?:岗位|职位|招聘)[：:]\s*(.{2,20})/);
+    // 1. 尝试匹配首行标题格式："公司 · 岗位" 或 "公司 - 岗位"
+    const firstLine = jdContent.trim().split('\n')[0].trim();
+    const titleLineMatch = firstLine.match(/^(.{2,15})\s*[·\-|]\s*(.{2,20})$/);
+    if (titleLineMatch) return `${titleLineMatch[1].trim()} · ${titleLineMatch[2].trim()}`;
+    // 2. 尝试匹配"公司：xxx"格式
+    const companyMatch = jdContent.match(/(?:公司|企业|集团|单位)[：:名]\s*(.{2,15})/);
+    const titleMatch = jdContent.match(/(?:岗位|职位|招聘)[：:名]\s*(.{2,20})/);
     const company = companyMatch?.[1]?.replace(/[,，。.、\s]+$/, '') || '';
     const title = titleMatch?.[1]?.replace(/[,，。.、\s]+$/, '') || '';
-    return company && title ? `${company} · ${title}` : company || title || 'JD 版本';
+    if (company && title) return `${company} · ${title}`;
+    if (company || title) return company || title;
+    // 3. 首行不超过 25 字就当标题用
+    if (firstLine.length <= 25 && firstLine.length >= 4) return firstLine;
+    return 'JD 版本';
   }
 
   // JD 优化完成后自动创建版本
