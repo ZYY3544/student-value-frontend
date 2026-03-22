@@ -46,6 +46,8 @@ interface CanvasViewProps {
   onRenameVersion: (versionId: string, newName: string) => void;
   onJdVersionCreate: (jdContent: string) => void;
   hasPendingJdVersion: boolean;
+  // 润色选中文本：前端知道替换什么，GPT 只负责给改写结果
+  onSetPendingSelection: (sel: { text: string; sectionId: string } | null) => void;
   // Not needed but passed through
   assessmentContext?: any;
   resumeText?: string;
@@ -72,14 +74,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onRenameVersion,
   onJdVersionCreate,
   hasPendingJdVersion,
+  onSetPendingSelection,
   assessmentContext,
 }) => {
 
   const optimizedRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-
-  // 记录最近一次选中文本的 section 信息，用于 enrichment
-  const lastSelectionRef = useRef<{ text: string; sectionId: string } | null>(null);
 
   // 从 DOM 节点向上查找所属 section
   const findSectionFromNode = useCallback((node: Node | null): { id: string; title: string } | null => {
@@ -112,14 +112,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   const [externalMessage, setExternalMessage] = useState<string | null>(null);
 
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
-    const sel = lastSelectionRef.current;
-    // 只用 selection 的 sectionId 来兜底定位，不覆盖 original（避免 original/suggested 语义不匹配）
-    const enrichedEdit = {
-      ...edit,
-      ...(sel?.sectionId ? { sectionId: sel.sectionId } : {}),
-    };
-    onEditSuggestion(enrichedEdit);
-    lastSelectionRef.current = null;
+    // 直接转发，matchTarget 由 ResultView 的 pendingSelection 决定
+    onEditSuggestion(edit);
   }, [onEditSuggestion]);
 
   const handleAcceptEdit = useCallback((sectionId: string) => {
@@ -261,10 +255,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
               key={action.label}
               onClick={() => {
                 if (selectionToolbar.sectionId) {
-                  lastSelectionRef.current = {
+                  onSetPendingSelection({
                     text: selectionToolbar.text,
                     sectionId: selectionToolbar.sectionId,
-                  };
+                  });
                 }
                 const display = action.display(selectionToolbar.text);
                 const prompt = action.prompt(selectionToolbar.text, selectionToolbar.sectionTitle);

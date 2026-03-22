@@ -210,6 +210,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const pendingEditsRef = useRef<PendingEdit[]>([]);
   pendingEditsRef.current = pendingEdits;
 
+  // 润色选中文本：前端存储用户选中的文本和 sectionId，替换时用它定位而不是 GPT 的 original
+  const [pendingSelection, setPendingSelection] = useState<{ text: string; sectionId: string } | null>(null);
+  const pendingSelectionRef = useRef(pendingSelection);
+  pendingSelectionRef.current = pendingSelection;
+
   // ===== 版本管理 =====
   const versionStorageKey = `resume_versions_${userId || 'anonymous'}`;
   const [versions, setVersions] = useState<ResumeVersion[]>(() => {
@@ -423,65 +428,47 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     fetchSections();
   }, [sessionId, resumeSections.length]);
 
-  // AI 编辑建议：按 sectionId 定位，在段落内局部替换（精确 → 容错）
+  // AI 编辑建议：优先用前端选中文本定位（同源，100% 匹配），GPT original 仅做 diff 展示
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
-    console.log('[EditSuggestion] called with:', { sectionId: edit.sectionId, original: edit.original?.slice(0, 80), suggested: edit.suggested?.slice(0, 80) });
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
 
-    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
+    const sel = pendingSelectionRef.current;
+    const matchTarget = sel?.text || edit.original;
+    const targetSectionId = sel?.sectionId || edit.sectionId;
 
-    // 按 sectionId 定位目标段落，局部替换
+    console.log('[EditSuggestion] called with:', {
+      sectionId: targetSectionId,
+      matchTarget: matchTarget?.slice(0, 80),
+      suggested: edit.suggested?.slice(0, 80),
+      source: sel ? 'pendingSelection' : 'edit.original',
+    });
+
+    // 按 sectionId 定位目标段落，用前端选中文本做局部替换
     setResumeSections(prev => {
-      const idx = prev.findIndex(s => s.id === edit.sectionId);
+      const idx = prev.findIndex(s => s.id === targetSectionId);
       if (idx === -1) {
-        console.warn('[EditSuggestion] section not found:', edit.sectionId);
+        console.warn('[EditSuggestion] section not found:', targetSectionId);
         return prev;
       }
       const sec = prev[idx];
+
+      if (!sec.content.includes(matchTarget)) {
+        console.warn('[EditSuggestion] matchTarget not found in section', targetSectionId);
+        console.log('[EditSuggestion] matchTarget:', JSON.stringify(matchTarget?.substring(0, 100)));
+        console.log('[EditSuggestion] sec.content first 100:', JSON.stringify(sec.content?.substring(0, 100)));
+        return prev;
+      }
+
       const updated = [...prev];
-
-      // 1. 精确匹配
-      if (sec.content.includes(edit.original)) {
-        updated[idx] = { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
-        return updated;
-      }
-
-      // 2. 容错：去掉空格和换行差异再试
-      const normContent = normalize(sec.content);
-      const normOriginal = normalize(edit.original);
-      if (normContent.includes(normOriginal)) {
-        // 用逐字符扫描找到原始 content 中对应的起止位置
-        let ci = 0, matchStart = -1, matchLen = 0;
-        const normIdx = normContent.indexOf(normOriginal);
-        let normPos = 0;
-        // 映射 normIdx 回原始位置
-        while (normPos < normIdx && ci < sec.content.length) {
-          if (/\s/.test(sec.content[ci]) && ci > 0 && /\s/.test(sec.content[ci - 1])) { ci++; continue; }
-          ci++; normPos++;
-        }
-        matchStart = ci;
-        let normMatchLen = 0;
-        while (normMatchLen < normOriginal.length && ci < sec.content.length) {
-          if (/\s/.test(sec.content[ci]) && ci > matchStart && /\s/.test(sec.content[ci - 1])) { ci++; matchLen++; continue; }
-          ci++; matchLen++; normMatchLen++;
-        }
-        if (matchStart >= 0 && matchLen > 0) {
-          updated[idx] = {
-            ...sec,
-            content: sec.content.slice(0, matchStart) + edit.suggested + sec.content.slice(matchStart + matchLen),
-          };
-          return updated;
-        }
-      }
-
-      console.log('[EditSuggestion] edit.original:', JSON.stringify(edit.original?.substring(0, 100)));
-      console.log('[EditSuggestion] sec.content first 100:', JSON.stringify(sec.content?.substring(0, 100)));
-      console.warn('[EditSuggestion] original not found even after normalization', edit.sectionId);
-      return prev;
+      updated[idx] = { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
+      return updated;
     });
+
+    // 清除 pendingSelection
+    setPendingSelection(null);
 
     // diff 元数据：同段落新 edit 替换旧 edit，不同段落追加
     setPendingEdits(prev => {
@@ -623,6 +610,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onRenameVersion={handleRenameVersion}
         onJdVersionCreate={handleJdVersionCreate}
         hasPendingJdVersion={!!pendingJdContent}
+        onSetPendingSelection={setPendingSelection}
       />
     );
   }
