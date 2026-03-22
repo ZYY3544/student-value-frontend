@@ -664,13 +664,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             </div>
 
             <div className={`space-y-4 ${salaryLoading ? 'opacity-50 transition-opacity' : ''}`}>
-              {filteredComparisons.map((job, idx) => (
-                <div key={idx} className={`px-5 py-3 rounded-2xl border ${idx === 0 ? 'border-[#0A66C2]/30 bg-blue-50/30' : 'border-gray-100 bg-gray-50'}`}>
+              {filteredComparisons.map((job, idx) => {
+                const isTarget = job.jobFunction === inputData.jobFunction;
+                return (
+                <div key={idx} className={`px-5 py-3 rounded-2xl border ${isTarget ? 'border-[#0A66C2]/30 bg-blue-50/30' : 'border-gray-100 bg-gray-50'}`}>
                   <div className="flex items-center">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-base font-bold text-gray-800">{job.jobFunction}</span>
-                        {idx === 0 && <span className="text-xs bg-[#0A66C2] text-white px-2 py-0.5 rounded-full">目标方向</span>}
+                        {isTarget && <span className="text-xs bg-[#0A66C2] text-white px-2 py-0.5 rounded-full">目标方向</span>}
                       </div>
                       {job.coreDuties && (
                         <p className="text-xs text-gray-400"><span className="text-gray-500 font-medium">岗位核心职责：</span>{job.coreDuties}</p>
@@ -681,7 +683,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <p className="text-xs text-gray-400 mt-4 leading-relaxed">说明：以上薪酬数据为月度基本工资（税前现金性收入），薪酬范围仅供参考。</p>

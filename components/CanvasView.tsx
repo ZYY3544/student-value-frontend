@@ -10,7 +10,7 @@ import { ArrowLeft, Download, PanelLeft, Sparkles, FileSearch } from 'lucide-rea
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, OriginalResumePanel } from './ResumePanel';
-import { ResumeSection, PendingEdit, ParsedJd } from '../types';
+import { ResumeSection, PendingEdit, ParsedJd, JdMatchItem } from '../types';
 
 // 选中文本快捷操作
 // display: 用户可见的消息（自然语言）
