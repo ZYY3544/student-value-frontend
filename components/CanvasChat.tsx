@@ -419,7 +419,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                 >
                   {msg.role === 'assistant' ? (
                     msg.content ? (
-                      formatContent(msg.content, (action) => sendMessage(action))
+                      formatContent(msg.content)
                     ) : jdPhase && isLastAssistant ? (
                       <span className="flex items-center gap-2 text-gray-400">
                         <span className="animate-pulse">

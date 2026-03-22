@@ -125,10 +125,26 @@ function isStatusLine(line: string): boolean {
 const cleanSystemTags = (text: string) => text.replace(/\[RESUME_INSIGHT:.*?\]/g, '').trim();
 
 // Markdown 渲染
-// 可点击的动作关键词：出现在 **xx** 中时渲染为可点击链接
-const ACTION_KEYWORDS = new Set(['解读报告', '报告解读', '简历画布']);
+// 气泡底部按钮配置：keyword → { label, action 标识 }
+const ACTION_BUTTON_CONFIG: Record<string, { label: string; action: string }> = {
+  '解读报告': { label: '解读报告 →', action: 'send:解读报告' },
+  '报告解读': { label: '解读报告 →', action: 'send:报告解读' },
+  '简历画布': { label: '进入简历画布 →', action: 'send:简历画布' },
+};
+const ACTION_KEYWORDS = new Set(Object.keys(ACTION_BUTTON_CONFIG));
 
-export const formatContent = (text: string, onAction?: (action: string) => void) => {
+/** 从消息文本中提取出现的 action 关键词（去重，保持出现顺序） */
+export const extractActions = (text: string): string[] => {
+  const found: string[] = [];
+  for (const kw of ACTION_KEYWORDS) {
+    if (text.includes(kw) && !found.some(f => ACTION_BUTTON_CONFIG[f]?.label === ACTION_BUTTON_CONFIG[kw]?.label)) {
+      found.push(kw);
+    }
+  }
+  return found;
+};
+
+export const formatContent = (text: string) => {
   text = cleanSystemTags(text);
   // 清理全角空格和连续多余空格（LLM 偶尔产生）
   text = text.replace(/\u3000/g, ' ').replace(/ {2,}/g, ' ');
@@ -143,17 +159,13 @@ export const formatContent = (text: string, onAction?: (action: string) => void)
   // 判断是否为分隔行（| --- | --- | 格式）
   const isSeparatorRow = (l: string) => /^\|[\s:]*-{2,}[\s:]*(\|[\s:]*-{2,}[\s:]*)+\|$/.test(l.trim());
 
-  // 渲染行内 markdown（加粗 + 链接 + 可点击动作）
+  // 渲染行内 markdown（加粗 + 链接）
   const renderInline = (content: string, keyPrefix: string) => {
     content = content.replace(/「解读报告」/g, '**解读报告**');
     const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        const inner = part.slice(2, -2);
-        if (onAction && ACTION_KEYWORDS.has(inner)) {
-          return <span key={`${keyPrefix}-${i}`} onClick={() => onAction(inner)} className="font-bold text-[#CA7C5E] underline decoration-[#CA7C5E]/40 cursor-pointer hover:decoration-[#CA7C5E]">{inner}</span>;
-        }
-        return <span key={`${keyPrefix}-${i}`} className="font-bold text-[#CA7C5E]">{inner}</span>;
+        return <span key={`${keyPrefix}-${i}`} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
       }
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (linkMatch) {
@@ -1088,10 +1100,30 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                     </span>
                   ) : (
                     <>
-                      {formatContent(msg.content.replace('[CAREER_FORM]', ''), (action) => sendMessage(action))}
+                      {formatContent(msg.content.replace('[CAREER_FORM]', ''))}
                       {msg.content.includes('[CAREER_FORM]') && (
                         <CareerForm onSubmit={(answers) => sendMessage(answers)} />
                       )}
+                      {(() => {
+                        const actions = extractActions(msg.content);
+                        if (!actions.length) return null;
+                        return (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {actions.map((kw) => {
+                              const cfg = ACTION_BUTTON_CONFIG[kw];
+                              return (
+                                <button
+                                  key={kw}
+                                  onClick={() => sendMessage(cfg.action.replace('send:', ''))}
+                                  className="px-4 py-2 bg-[#0A66C2] text-white text-xs font-medium rounded-full hover:bg-[#094fa3] transition-colors"
+                                >
+                                  {cfg.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </>
                   )
                 ) : (
