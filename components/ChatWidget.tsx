@@ -161,7 +161,11 @@ export const formatContent = (text: string) => {
 
   // 渲染行内 markdown（加粗 + 链接）
   const renderInline = (content: string, keyPrefix: string) => {
+    // 将「解读报告」转为加粗；action 关键词的加粗标记还原为普通文本（底部已有按钮）
     content = content.replace(/「解读报告」/g, '**解读报告**');
+    for (const kw of ACTION_KEYWORDS) {
+      content = content.replaceAll(`**${kw}**`, kw);
+    }
     const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -1115,7 +1119,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                                 <button
                                   key={kw}
                                   onClick={() => sendMessage(cfg.action.replace('send:', ''))}
-                                  className="px-4 py-2 bg-[#0A66C2] text-white text-xs font-medium rounded-full hover:bg-[#094fa3] transition-colors"
+                                  className="px-4 py-2 bg-[#CA7C5E] text-white text-xs font-medium rounded-full hover:bg-[#b5694e] transition-colors"
                                 >
                                   {cfg.label}
                                 </button>
