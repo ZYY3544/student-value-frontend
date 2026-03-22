@@ -420,9 +420,14 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     // 归一化函数：去 bullet 符号、合并空白，用于模糊匹配
     const normalize = (s: string) => s.replace(/^[\s•·\-*●○]+/gm, '').replace(/\s+/g, ' ').trim();
 
-    // 再优化场景：同 section 已有 pending edit，内容已被替换为旧 suggested，
-    // 用旧 suggested 作为匹配目标来替换为新 suggested
-    const existingEdit = pendingEditsRef.current.find(e => e.sectionId === edit.sectionId);
+    // 再优化场景：只有当新 edit 的 original 和已有 edit 的 suggested 匹配时，才算再优化
+    // （即用户对同一段文字点了"再优化"）。不同段落的编辑不互相干扰。
+    const existingEdit = pendingEditsRef.current.find(e =>
+      e.sectionId === edit.sectionId && (
+        e.suggested === edit.original ||
+        normalize(e.suggested) === normalize(edit.original)
+      )
+    );
     const matchTarget = existingEdit ? existingEdit.suggested : edit.original;
 
     // 立即应用编辑到 section 内容
@@ -523,10 +528,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       });
     }
 
-    // 存储 diff 元数据：同 section 已有 edit 时更新而非追加
+    // 存储 diff 元数据：再优化替换已有 edit，新段落追加
     if (existingEdit) {
       setPendingEdits(prev => prev.map(e =>
-        e.sectionId === edit.sectionId ? { ...edit, status: 'pending' as const } : e
+        e.sectionId === edit.sectionId && (e.suggested === existingEdit.suggested || normalize(e.suggested) === normalize(existingEdit.suggested))
+          ? { ...edit, status: 'pending' as const }
+          : e
       ));
     } else {
       setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
