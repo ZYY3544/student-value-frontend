@@ -411,46 +411,37 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     fetchSections();
   }, [sessionId, resumeSections.length]);
 
-  // AI 编辑建议：按 section index 精确定位 + 替换，不做全局搜索
+  // AI 编辑建议：按 sectionId 定位，直接用 suggested 替换整段内容，不做文本匹配
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
 
-    // 再优化检测：新 edit 的 original 恰好等于同段落已有 edit 的 suggested
-    const existingEdit = pendingEditsRef.current.find(e =>
-      e.sectionId === edit.sectionId && e.suggested === edit.original
-    );
-    const matchTarget = existingEdit ? existingEdit.suggested : edit.original;
-
-    // 按 sectionId 精确定位目标段落，只在该段落内替换，绝不跨段
+    // 按 sectionId 定位目标段落，直接写入 suggested
     setResumeSections(prev => {
       const idx = prev.findIndex(s => s.id === edit.sectionId);
       if (idx === -1) {
         console.warn('[EditSuggestion] section not found:', edit.sectionId);
         return prev;
       }
-      const sec = prev[idx];
-      if (!sec.content.includes(matchTarget)) {
-        console.warn('[EditSuggestion] original not found in section', edit.sectionId);
-        return prev;
-      }
       const updated = [...prev];
-      updated[idx] = { ...sec, content: sec.content.replace(matchTarget, edit.suggested) };
+      updated[idx] = { ...prev[idx], content: edit.suggested };
       return updated;
     });
 
-    // diff 元数据：再优化替换已有 edit，新段落追加
-    if (existingEdit) {
-      setPendingEdits(prev => prev.map(e =>
-        e.sectionId === edit.sectionId && e.suggested === matchTarget
-          ? { ...edit, status: 'pending' as const }
-          : e
-      ));
-    } else {
-      setPendingEdits(prev => [...prev, { ...edit, status: 'pending' }]);
-    }
+    // diff 元数据：同段落新 edit 替换旧 edit，不同段落追加
+    setPendingEdits(prev => {
+      const hasExisting = prev.some(e => e.sectionId === edit.sectionId);
+      if (hasExisting) {
+        return prev.map(e =>
+          e.sectionId === edit.sectionId
+            ? { ...edit, status: 'pending' as const }
+            : e
+        );
+      }
+      return [...prev, { ...edit, status: 'pending' }];
+    });
 
     // 通知后端
     if (sessionId) {

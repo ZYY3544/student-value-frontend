@@ -347,18 +347,11 @@ const DiffMark: React.FC<{
   );
 };
 
-/**
- * AcceptedMark - 已采纳的修改：淡绿背景标记，不显示 diff 对比
- */
-const AcceptedMark: React.FC<{ text: string }> = ({ text }) => (
-  <span className="bg-green-50 text-gray-700 rounded px-0.5 text-sm border-b border-green-200">
-    {text}
-  </span>
-);
 
 /**
  * 渲染带 diff 高亮的内容
- * 在已应用的内容中查找 suggested 文本，标记为绿色；original 显示为红色删除线
+ * content 已经是 suggested（整段替换后的内容），
+ * diff 由 pendingEdits 里的 original vs suggested 字符级对比生成，不做文本匹配定位
  */
 function renderContentWithDiff(
   content: string,
@@ -368,93 +361,19 @@ function renderContentWithDiff(
     return <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>;
   }
 
-  // 在 content 中查找每个 edit 的 suggested 文本位置
-  type Match = { start: number; end: number; edit: PendingEdit; idx: number };
-  const matched: Match[] = [];
-  const normalize = (s: string) => s.split(/\s+/).join(' ');
+  // 取最新的 edit（同段落只保留一个）
+  const latestEdit = sectionEdits[sectionEdits.length - 1].edit;
 
-  for (const { edit, idx } of sectionEdits) {
-    // 精确匹配 suggested
-    const pos = content.indexOf(edit.suggested);
-    if (pos !== -1) {
-      matched.push({ start: pos, end: pos + edit.suggested.length, edit, idx });
-    } else {
-      // 模糊匹配：忽略空白差异
-      const normSuggested = normalize(edit.suggested);
-      let found = false;
-      for (let i = 0; i < content.length && !found; i++) {
-        for (let len = normSuggested.length; len <= normSuggested.length + 50; len++) {
-          if (i + len > content.length) break;
-          const candidate = content.slice(i, i + len);
-          if (normalize(candidate) === normSuggested) {
-            matched.push({ start: i, end: i + len, edit, idx });
-            found = true;
-            break;
-          }
-        }
-      }
-      // 找不到则跳过（用户可能已手动修改）
-    }
-  }
-
-  matched.sort((a, b) => a.start - b.start);
-
-  // 去除重叠
-  const nonOverlapping: Match[] = [];
-  for (const m of matched) {
-    const last = nonOverlapping[nonOverlapping.length - 1];
-    if (!last || m.start >= last.end) {
-      nonOverlapping.push(m);
-    }
-  }
-
-  // 没有可匹配的 diff，渲染为普通内容
-  if (nonOverlapping.length === 0) {
-    return <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>;
-  }
-
-  // 切分文本为 plain + diff 片段
-  const fragments: React.ReactNode[] = [];
-  let cursor = 0;
-
-  for (let i = 0; i < nonOverlapping.length; i++) {
-    const m = nonOverlapping[i];
-
-    if (cursor < m.start) {
-      const plainText = content.slice(cursor, m.start);
-      fragments.push(
-        <React.Fragment key={`plain-${i}`}>
-          {renderFormattedContent(cleanResumeContent(plainText), `plain-${i}-`)}
-        </React.Fragment>
-      );
-    }
-
-    fragments.push(
-      m.edit.status === 'accepted' ? (
-        <AcceptedMark key={`diff-${i}`} text={content.slice(m.start, m.end)} />
-      ) : (
-        <DiffMark
-          key={`diff-${i}`}
-          original={m.edit.original}
-          suggested={m.edit.suggested}
-          rationale={m.edit.rationale}
-        />
-      )
-    );
-
-    cursor = m.end;
-  }
-
-  if (cursor < content.length) {
-    const remaining = content.slice(cursor);
-    fragments.push(
-      <React.Fragment key="tail">
-        {renderFormattedContent(cleanResumeContent(remaining), 'tail-')}
-      </React.Fragment>
-    );
-  }
-
-  return <div className="space-y-2">{fragments}</div>;
+  // 直接用 original 和 suggested 做字符级 diff，不需要在 content 里定位
+  return (
+    <div className="space-y-2">
+      <DiffMark
+        original={latestEdit.original}
+        suggested={latestEdit.suggested}
+        rationale={latestEdit.rationale}
+      />
+    </div>
+  );
 }
 
 /**
