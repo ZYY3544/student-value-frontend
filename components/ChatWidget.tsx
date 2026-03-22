@@ -125,7 +125,10 @@ function isStatusLine(line: string): boolean {
 const cleanSystemTags = (text: string) => text.replace(/\[RESUME_INSIGHT:.*?\]/g, '').trim();
 
 // Markdown 渲染
-export const formatContent = (text: string) => {
+// 可点击的动作关键词：出现在 **xx** 中时渲染为可点击链接
+const ACTION_KEYWORDS = new Set(['解读报告', '报告解读']);
+
+export const formatContent = (text: string, onAction?: (action: string) => void) => {
   text = cleanSystemTags(text);
   // 清理全角空格和连续多余空格（LLM 偶尔产生）
   text = text.replace(/\u3000/g, ' ').replace(/ {2,}/g, ' ');
@@ -140,13 +143,17 @@ export const formatContent = (text: string) => {
   // 判断是否为分隔行（| --- | --- | 格式）
   const isSeparatorRow = (l: string) => /^\|[\s:]*-{2,}[\s:]*(\|[\s:]*-{2,}[\s:]*)+\|$/.test(l.trim());
 
-  // 渲染行内 markdown（加粗 + 链接）
+  // 渲染行内 markdown（加粗 + 链接 + 可点击动作）
   const renderInline = (content: string, keyPrefix: string) => {
     content = content.replace(/「解读报告」/g, '**解读报告**');
     const parts = content.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <span key={`${keyPrefix}-${i}`} className="font-bold text-[#CA7C5E]">{part.slice(2, -2)}</span>;
+        const inner = part.slice(2, -2);
+        if (onAction && ACTION_KEYWORDS.has(inner)) {
+          return <span key={`${keyPrefix}-${i}`} onClick={() => onAction(inner)} className="font-bold text-[#CA7C5E] underline decoration-[#CA7C5E]/40 cursor-pointer hover:decoration-[#CA7C5E]">{inner}</span>;
+        }
+        return <span key={`${keyPrefix}-${i}`} className="font-bold text-[#CA7C5E]">{inner}</span>;
       }
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (linkMatch) {
@@ -1081,7 +1088,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                     </span>
                   ) : (
                     <>
-                      {formatContent(msg.content.replace('[CAREER_FORM]', ''))}
+                      {formatContent(msg.content.replace('[CAREER_FORM]', ''), (action) => sendMessage(action))}
                       {msg.content.includes('[CAREER_FORM]') && (
                         <CareerForm onSubmit={(answers) => sendMessage(answers)} />
                       )}
