@@ -1125,6 +1125,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                         <CareerForm onSubmit={(answers) => sendMessage(answers)} />
                       )}
                       {(() => {
+                        // 流式输出期间不渲染 action 按钮，等 SSE 结束后再显示
+                        const isStreamingThis = isLoading && idx === messages.length - 1;
+                        if (isStreamingThis) return null;
                         const actions = extractActions(msg.content);
                         if (!actions.length) return null;
                         return (
