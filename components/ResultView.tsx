@@ -411,23 +411,61 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     fetchSections();
   }, [sessionId, resumeSections.length]);
 
-  // AI 编辑建议：按 sectionId 定位，直接用 suggested 替换整段内容，不做文本匹配
+  // AI 编辑建议：按 sectionId 定位，在段落内局部替换（精确 → 容错）
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
 
-    // 按 sectionId 定位目标段落，直接写入 suggested
+    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
+
+    // 按 sectionId 定位目标段落，局部替换
     setResumeSections(prev => {
       const idx = prev.findIndex(s => s.id === edit.sectionId);
       if (idx === -1) {
         console.warn('[EditSuggestion] section not found:', edit.sectionId);
         return prev;
       }
+      const sec = prev[idx];
       const updated = [...prev];
-      updated[idx] = { ...prev[idx], content: edit.suggested };
-      return updated;
+
+      // 1. 精确匹配
+      if (sec.content.includes(edit.original)) {
+        updated[idx] = { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+        return updated;
+      }
+
+      // 2. 容错：去掉空格和换行差异再试
+      const normContent = normalize(sec.content);
+      const normOriginal = normalize(edit.original);
+      if (normContent.includes(normOriginal)) {
+        // 用逐字符扫描找到原始 content 中对应的起止位置
+        let ci = 0, matchStart = -1, matchLen = 0;
+        const normIdx = normContent.indexOf(normOriginal);
+        let normPos = 0;
+        // 映射 normIdx 回原始位置
+        while (normPos < normIdx && ci < sec.content.length) {
+          if (/\s/.test(sec.content[ci]) && ci > 0 && /\s/.test(sec.content[ci - 1])) { ci++; continue; }
+          ci++; normPos++;
+        }
+        matchStart = ci;
+        let normMatchLen = 0;
+        while (normMatchLen < normOriginal.length && ci < sec.content.length) {
+          if (/\s/.test(sec.content[ci]) && ci > matchStart && /\s/.test(sec.content[ci - 1])) { ci++; matchLen++; continue; }
+          ci++; matchLen++; normMatchLen++;
+        }
+        if (matchStart >= 0 && matchLen > 0) {
+          updated[idx] = {
+            ...sec,
+            content: sec.content.slice(0, matchStart) + edit.suggested + sec.content.slice(matchStart + matchLen),
+          };
+          return updated;
+        }
+      }
+
+      console.warn('[EditSuggestion] original not found even after normalization', edit.sectionId);
+      return prev;
     });
 
     // diff 元数据：同段落新 edit 替换旧 edit，不同段落追加

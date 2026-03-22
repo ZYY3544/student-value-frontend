@@ -350,8 +350,7 @@ const DiffMark: React.FC<{
 
 /**
  * 渲染带 diff 高亮的内容
- * content 已经是 suggested（整段替换后的内容），
- * diff 由 pendingEdits 里的 original vs suggested 字符级对比生成，不做文本匹配定位
+ * 先正常渲染替换后的 section.content，再在底部展示 diff 对比卡片（original vs suggested）
  */
 function renderContentWithDiff(
   content: string,
@@ -361,17 +360,21 @@ function renderContentWithDiff(
     return <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>;
   }
 
-  // 取最新的 edit（同段落只保留一个）
   const latestEdit = sectionEdits[sectionEdits.length - 1].edit;
 
-  // 直接用 original 和 suggested 做字符级 diff，不需要在 content 里定位
   return (
-    <div className="space-y-2">
-      <DiffMark
-        original={latestEdit.original}
-        suggested={latestEdit.suggested}
-        rationale={latestEdit.rationale}
-      />
+    <div className="space-y-3">
+      {/* 正常渲染替换后的段落内容 */}
+      <div className="space-y-2">{renderFormattedContent(cleanResumeContent(content))}</div>
+      {/* diff 对比卡片 */}
+      <div className="rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0]/50 px-4 py-3">
+        <div className="text-[11px] font-medium text-[#CA7C5E] mb-2">修改对比</div>
+        <DiffMark
+          original={latestEdit.original}
+          suggested={latestEdit.suggested}
+          rationale={latestEdit.rationale}
+        />
+      </div>
     </div>
   );
 }
