@@ -477,6 +477,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         }
       }
 
+      console.log('[EditSuggestion] edit.original:', JSON.stringify(edit.original?.substring(0, 100)));
+      console.log('[EditSuggestion] sec.content first 100:', JSON.stringify(sec.content?.substring(0, 100)));
       console.warn('[EditSuggestion] original not found even after normalization', edit.sectionId);
       return prev;
     });
