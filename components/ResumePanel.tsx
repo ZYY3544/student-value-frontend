@@ -61,6 +61,7 @@ interface ResumePanelProps {
   onSwitchVersion?: (versionId: string) => void;
   onDeleteVersion?: (versionId: string) => void;
   onRenameVersion?: (versionId: string, newName: string) => void;
+  hasPendingJdVersion?: boolean;
 }
 
 // 版本选择器下拉组件
@@ -76,7 +77,8 @@ const VersionSelector: React.FC<{
   onSwitch: (id: string) => void;
   onDelete: (id: string) => void;
   onRename: (id: string, name: string) => void;
-}> = ({ versions, activeVersionId, onSave, onSwitch, onDelete, onRename }) => {
+  hasPendingJd?: boolean;
+}> = ({ versions, activeVersionId, onSave, onSwitch, onDelete, onRename, hasPendingJd }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -172,6 +174,13 @@ const VersionSelector: React.FC<{
               ))
             ) : (
               <div className="px-3 py-3 text-xs text-gray-400 text-center">暂无保存的版本</div>
+            )}
+
+            {/* 版本满 + 有待保存的 JD 版本时提示 */}
+            {hasPendingJd && atLimit && (
+              <div className="mx-2 my-1 px-2.5 py-2 bg-amber-50 rounded-lg text-[11px] text-amber-700 leading-relaxed">
+                JD 改写结果已暂存，删除一个版本后将自动保存
+              </div>
             )}
 
             {/* 分隔线 + 保存按钮 */}
@@ -674,6 +683,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
   onSwitchVersion,
   onDeleteVersion,
   onRenameVersion,
+  hasPendingJdVersion,
 }) => {
   const [sectionModes, setSectionModes] = useState<Record<string, SectionMode>>({});
 
@@ -715,6 +725,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                 onSwitch={onSwitchVersion}
                 onDelete={onDeleteVersion}
                 onRename={onRenameVersion}
+                hasPendingJd={hasPendingJdVersion}
               />
             )}
           </div>

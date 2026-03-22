@@ -276,19 +276,27 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     ));
   }, []);
 
-  // JD 优化完成后自动创建版本，从 JD 内容提取"公司 · 岗位"命名
-  const handleJdVersionCreate = useCallback((jdContent: string) => {
-    if (versions.length >= 5) return;
-    // 提取公司名和岗位名
+  // JD 版本暂存：版本满时保留 JD 内容，等用户删版本后可一键保存
+  const [pendingJdContent, setPendingJdContent] = useState<string | null>(null);
+
+  function extractJdName(jdContent: string): string {
     const companyMatch = jdContent.match(/(?:公司|企业|集团)[：:]\s*(.{2,15})/);
     const titleMatch = jdContent.match(/(?:岗位|职位|招聘)[：:]\s*(.{2,20})/);
     const company = companyMatch?.[1]?.replace(/[,，。.、\s]+$/, '') || '';
     const title = titleMatch?.[1]?.replace(/[,，。.、\s]+$/, '') || '';
-    const name = company && title ? `${company} · ${title}` : company || title || `JD 版本`;
+    return company && title ? `${company} · ${title}` : company || title || 'JD 版本';
+  }
 
+  // JD 优化完成后自动创建版本
+  const handleJdVersionCreate = useCallback((jdContent: string) => {
+    if (versions.length >= 5) {
+      // 版本已满，暂存 JD 内容，改写结果保留在当前 sections 中
+      setPendingJdContent(jdContent);
+      return;
+    }
     const newVersion: ResumeVersion = {
       id: crypto.randomUUID(),
-      name,
+      name: extractJdName(jdContent),
       sections: resumeSections.map(s => ({ ...s })),
       pendingEdits: pendingEdits.map(e => ({ ...e })),
       jdContent,
@@ -297,7 +305,27 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     };
     setVersions(prev => [...prev, newVersion]);
     setActiveVersionId(newVersion.id);
+    setPendingJdContent(null);
   }, [versions, resumeSections, pendingEdits]);
+
+  // 删除版本后，如果有暂存的 JD 内容，自动保存
+  useEffect(() => {
+    if (pendingJdContent && versions.length < 5) {
+      const newVersion: ResumeVersion = {
+        id: crypto.randomUUID(),
+        name: extractJdName(pendingJdContent),
+        sections: resumeSections.map(s => ({ ...s })),
+        pendingEdits: pendingEdits.map(e => ({ ...e })),
+        jdContent: pendingJdContent,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      setVersions(prev => [...prev, newVersion]);
+      setActiveVersionId(newVersion.id);
+      setPendingJdContent(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versions.length, pendingJdContent]);
 
   // 兜底：当 resumeSections 首次有数据时，同步冻结为原文快照
   useEffect(() => {
@@ -627,6 +655,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onDeleteVersion={handleDeleteVersion}
         onRenameVersion={handleRenameVersion}
         onJdVersionCreate={handleJdVersionCreate}
+        hasPendingJdVersion={!!pendingJdContent}
       />
     );
   }

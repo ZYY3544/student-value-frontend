@@ -103,14 +103,22 @@ interface CanvasChatProps {
   onJdOptimizeConsumed?: () => void;
   onJdPhaseChange?: (phase: string | null) => void;
   onJdVersionCreate?: (jdContent: string) => void;
+  versionCount?: number;
 }
 
-// JD 自动检测：长文本 + 含 JD 特征关键词
-const JD_KEYWORDS = ['岗位职责', '任职要求', '职位描述', '工作职责', '工作内容', '学历要求', '招聘', '岗位要求', '职位要求', '任职资格'];
+// JD 自动检测：长文本 + 多个 JD 特征关键词 + 结构性判断
+const JD_KEYWORDS = ['岗位职责', '任职要求', '职位描述', '工作职责', '工作内容', '学历要求', '岗位要求', '职位要求', '任职资格'];
 function detectJd(text: string): boolean {
-  if (text.length < 150) return false;
+  if (text.length < 200) return false;
   const matchCount = JD_KEYWORDS.filter(kw => text.includes(kw)).length;
-  return matchCount >= 2;
+  // 3 个以上关键词直接命中
+  if (matchCount >= 3) return true;
+  // 2 个关键词 + 结构性特征（编号列表、分号分隔等 JD 典型格式）
+  if (matchCount >= 2) {
+    const hasListFormat = /(?:^|\n)\s*(?:\d[.、)）]|[-·•])\s*.{4,}/m.test(text);
+    return hasListFormat;
+  }
+  return false;
 }
 
 const MAX_INPUT_LENGTH = 5000;
@@ -134,10 +142,14 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   onJdOptimizeConsumed,
   onJdPhaseChange,
   onJdVersionCreate,
+  versionCount = 0,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const jdSuccessRef = useRef(false);
+  // JD 确认暂存：detectJd 命中后暂存原文，等用户确认后再走优化
+  const [pendingJdText, setPendingJdText] = useState<string | null>(null);
   // 追踪当前流式输出是否产生了编辑建议
   const streamHasEditRef = useRef(false);
   const [lastStreamHadEdit, setLastStreamHadEdit] = useState(false);
@@ -187,11 +199,23 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       setFrozenEditCards(prev => ({ ...prev, [lastAssistantIdx]: currentEditCards }));
     }
 
+    // JD 检测到 → 显示确认消息，暂存原文，等用户点"开始定制"
+    if (isJd) {
+      const titleMatch = messageToSend.match(/(?:岗位|职位|招聘)[：:]\s*(.{2,20})/);
+      const titleHint = titleMatch ? `（${titleMatch[1].replace(/[,，。.、\s]+$/, '')}）` : '';
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: `${messageToSend.slice(0, 100)}...` },
+        { role: 'assistant', content: `[JD_CONFIRM${titleHint}]` },
+      ]);
+      setPendingJdText(messageToSend);
+      if (!overrideText) setInputValue('');
+      return;
+    }
+
     // 显示用户消息
     if (text.startsWith('[CANVAS_AUTO_START]')) {
       // 自动开场：隐藏
-    } else if (isJd) {
-      setMessages(prev => [...prev, { role: 'user', content: `[JD 已识别] ${messageToSend.slice(0, 80)}...` }]);
     } else if (quickMatch) {
       setMessages(prev => [...prev, { role: 'user', content: quickMatch[1] }]);
     } else {
@@ -205,51 +229,6 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setCurrentEditCards([]);
     setLastStreamHadEdit(false);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-
-    // JD 检测到 → 走 /api/chat/jd-auto-optimize
-    if (isJd) {
-      try {
-        onJdPhaseChange?.('parsing');
-        const res = await fetch(`${apiBase}/api/chat/jd-auto-optimize`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, jdText: messageToSend }),
-        });
-        if (!res.ok) throw new Error('优化失败');
-        await parseSseStream(
-          res,
-          (fullText) => {
-            const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
-            for (const edit of edits) handleParsedEdit(edit);
-            setMessages(prev => {
-              const updated = [...prev];
-              updated[updated.length - 1] = { role: 'assistant', content: displayText };
-              return updated;
-            });
-          },
-          (edit) => handleParsedEdit({ sectionId: edit.sectionId, original: edit.original, suggested: edit.suggested, rationale: edit.rationale }),
-          undefined,
-          (phase) => { onJdPhaseChange?.(phase); },
-        );
-      } catch (err) {
-        console.error('JD auto-optimize failed:', err);
-        setMessages(prev => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: '抱歉，JD 优化过程中遇到问题，请重试。' };
-          return updated;
-        });
-      } finally {
-        if (pendingEditCardsRef.current.length > 0) {
-          setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
-          pendingEditCardsRef.current = [];
-        }
-        setIsLoading(false);
-        if (streamHasEditRef.current) setLastStreamHadEdit(true);
-        onJdPhaseChange?.(null);
-        onJdVersionCreate?.(messageToSend);
-      }
-      return;
-    }
 
     try {
       const controller = new AbortController();
@@ -320,6 +299,82 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   // 外部消息注入（选中文本快捷操作）
   const sendMessageRef = useRef(sendMessage);
   sendMessageRef.current = sendMessage;
+
+  // JD 确认 → 用户点"开始定制"
+  const runJdOptimize = useCallback(async () => {
+    if (!pendingJdText || !sessionId) return;
+    const jdText = pendingJdText;
+    setPendingJdText(null);
+
+    // 冻结 editCards
+    if (currentEditCards.length > 0) {
+      const lastAssistantIdx = messages.length - 1;
+      setFrozenEditCards(prev => ({ ...prev, [lastAssistantIdx]: currentEditCards }));
+    }
+    setIsLoading(true);
+    streamHasEditRef.current = false;
+    processedEditsRef.current.clear();
+    pendingEditCardsRef.current = [];
+    setCurrentEditCards([]);
+    setLastStreamHadEdit(false);
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+    try {
+      onJdPhaseChange?.('parsing');
+      const res = await fetch(`${apiBase}/api/chat/jd-auto-optimize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, jdText }),
+      });
+      if (!res.ok) throw new Error('优化失败');
+      await parseSseStream(
+        res,
+        (fullText) => {
+          const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
+          for (const edit of edits) handleParsedEdit(edit);
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: 'assistant', content: displayText };
+            return updated;
+          });
+        },
+        (edit) => handleParsedEdit({ sectionId: edit.sectionId, original: edit.original, suggested: edit.suggested, rationale: edit.rationale }),
+        undefined,
+        (phase) => { onJdPhaseChange?.(phase); },
+      );
+      jdSuccessRef.current = true;
+    } catch (err) {
+      console.error('JD auto-optimize failed:', err);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: 'assistant', content: '抱歉，JD 优化过程中遇到问题，请重试。' };
+        return updated;
+      });
+    } finally {
+      if (pendingEditCardsRef.current.length > 0) {
+        setCurrentEditCards(prev => [...prev, ...pendingEditCardsRef.current]);
+        pendingEditCardsRef.current = [];
+      }
+      setIsLoading(false);
+      if (streamHasEditRef.current) setLastStreamHadEdit(true);
+      onJdPhaseChange?.(null);
+      if (jdSuccessRef.current) {
+        onJdVersionCreate?.(jdText);
+        jdSuccessRef.current = false;
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingJdText, sessionId, apiBase, resumeSections]);
+
+  // JD 确认 → 用户点"不用，继续聊"
+  const handleJdDecline = useCallback(() => {
+    if (!pendingJdText) return;
+    const text = pendingJdText;
+    setPendingJdText(null);
+    // 移除确认消息，把原文当普通消息发送
+    setMessages(prev => prev.filter(m => !m.content.startsWith('[JD_CONFIRM')));
+    sendMessageRef.current(text);
+  }, [pendingJdText]);
 
   useEffect(() => {
     if (externalMessage) {
@@ -477,7 +532,32 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                   }`}
                 >
                   {msg.role === 'assistant' ? (
-                    msg.content ? (
+                    msg.content?.startsWith('[JD_CONFIRM') ? (
+                      <>
+                        <span className="text-sm text-gray-700">
+                          我检测到你发了一份岗位描述{msg.content.match(/\((.+?)\)/)?.[1] ? `（${msg.content.match(/\((.+?)\)/)?.[1]}）` : ''}，需要我根据这份 JD 帮你生成一个定制版本吗？
+                        </span>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={runJdOptimize}
+                            disabled={versionCount >= 5}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                              versionCount >= 5
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-[#0A66C2] text-white hover:bg-[#084e96]'
+                            }`}
+                          >
+                            {versionCount >= 5 ? '版本已满，请先删除一个' : '开始定制'}
+                          </button>
+                          <button
+                            onClick={handleJdDecline}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            不用，继续聊
+                          </button>
+                        </div>
+                      </>
+                    ) : msg.content ? (
                       formatContent(msg.content)
                     ) : jdPhase && isLastAssistant ? (
                       <span className="flex items-center gap-2 text-gray-400">
