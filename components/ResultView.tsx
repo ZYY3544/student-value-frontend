@@ -512,6 +512,70 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     setPendingEdits(prev => prev.filter(e => e.editId !== editId));
   }, [sessionId]);
 
+  // JD 优化：直接替换 content + 添加高亮区间（不走 pendingEdits）
+  const handleDirectReplace = useCallback((sectionId: string, original: string, suggested: string): boolean => {
+    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
+    let success = false;
+
+    setResumeSections(prev => {
+      const idx = prev.findIndex(s => s.id === sectionId);
+      if (idx === -1) return prev;
+      const sec = prev[idx];
+      const updated = [...prev];
+
+      // 精确匹配
+      const pos = sec.content.indexOf(original);
+      if (pos !== -1) {
+        const newContent = sec.content.slice(0, pos) + suggested + sec.content.slice(pos + original.length);
+        updated[idx] = {
+          ...sec,
+          content: newContent,
+          highlightRanges: [...(sec.highlightRanges || []), { start: pos, end: pos + suggested.length }],
+        };
+        success = true;
+        return updated;
+      }
+
+      // normalize fallback
+      const normContent = normalize(sec.content);
+      const normOriginal = normalize(original);
+      const normIdx = normContent.indexOf(normOriginal);
+      if (normIdx !== -1) {
+        let ci = 0, normPos = 0;
+        while (normPos < normIdx && ci < sec.content.length) {
+          if (/\s/.test(sec.content[ci]) && ci > 0 && /\s/.test(sec.content[ci - 1])) { ci++; continue; }
+          ci++; normPos++;
+        }
+        const matchStart = ci;
+        let matchLen = 0, normMatchLen = 0;
+        while (normMatchLen < normOriginal.length && ci < sec.content.length) {
+          if (/\s/.test(sec.content[ci]) && ci > matchStart && /\s/.test(sec.content[ci - 1])) { ci++; matchLen++; continue; }
+          ci++; matchLen++; normMatchLen++;
+        }
+        if (matchLen > 0) {
+          const newContent = sec.content.slice(0, matchStart) + suggested + sec.content.slice(matchStart + matchLen);
+          updated[idx] = {
+            ...sec,
+            content: newContent,
+            highlightRanges: [...(sec.highlightRanges || []), { start: matchStart, end: matchStart + suggested.length }],
+          };
+          success = true;
+          return updated;
+        }
+      }
+
+      console.warn('[DirectReplace] original not found', sectionId);
+      return prev;
+    });
+
+    return success;
+  }, []);
+
+  // 清除所有高亮
+  const clearHighlights = useCallback(() => {
+    setResumeSections(prev => prev.map(sec => ({ ...sec, highlightRanges: undefined })));
+  }, []);
+
   // 手动编辑简历段落 + 自动保存
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSectionContentChange = useCallback((sectionId: string, newContent: string) => {
@@ -619,6 +683,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onJdVersionCreate={handleJdVersionCreate}
         hasPendingJdVersion={!!pendingJdContent}
         onSetPendingSelection={setPendingSelection}
+        onDirectReplace={handleDirectReplace}
+        clearHighlights={clearHighlights}
       />
     );
   }

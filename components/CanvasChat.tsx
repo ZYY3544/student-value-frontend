@@ -99,6 +99,9 @@ interface CanvasChatProps {
   pendingEdits?: PendingEdit[];
   onAcceptEdit?: (editId: string) => void;
   resumeSections?: ResumeSection[];
+  // JD 优化：直接替换 + 高亮
+  onDirectReplace?: (sectionId: string, original: string, suggested: string) => boolean;
+  clearHighlights?: () => void;
 }
 
 // JD 自动检测：长文本 + 多个 JD 特征关键词 + 结构性判断
@@ -130,6 +133,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   pendingEdits = [],
   onAcceptEdit,
   resumeSections = [],
+  onDirectReplace,
+  clearHighlights,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -283,18 +288,17 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const sendMessageRef = useRef(sendMessage);
   sendMessageRef.current = sendMessage;
 
-  // JD 弹窗提交 → 调用 /api/chat/jd-optimize，结果批量写入 pendingEdits
+  // JD 弹窗提交 → 调用 /api/chat/jd-optimize，逐条直接替换 + 高亮
   const handleJdSubmit = useCallback(async () => {
     const jdText = jdInput.trim();
     if (!jdText || isLoading || !sessionId) return;
     setShowJdModal(false);
     setJdInput('');
 
-    // 显示用户消息 + loading
     setMessages(prev => [
       ...prev,
       { role: 'user', content: `上传 JD：${jdText.slice(0, 80)}...` },
-      { role: 'assistant', content: 'Sparky 正在分析 JD 并生成改写建议...' },
+      { role: 'assistant', content: '正在分析 JD...' },
     ]);
     setIsLoading(true);
 
@@ -313,23 +317,59 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       const { data } = await res.json();
       const { job_essence, overall_gap, edits } = data;
 
-      // 对话区展示诊断摘要
-      const summary = `**岗位本质：**${job_essence}\n**匹配距离：**${overall_gap}\n\n共找到 ${edits.length} 处可优化内容，已在右侧简历中标出，你可以逐个查看并采纳。`;
+      // 展示诊断摘要
+      const summaryBase = `**岗位本质：**${job_essence}\n**匹配距离：**${overall_gap}`;
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: 'assistant', content: summary };
+        updated[updated.length - 1] = { role: 'assistant', content: summaryBase };
         return updated;
       });
 
-      // 批量写入 pendingEdits，复用润色的替换机制
-      for (const edit of edits) {
-        onEditSuggestion({
-          sectionId: edit.sectionId,
-          original: edit.original,
-          suggested: edit.suggested,
-          rationale: edit.reason,
+      // 逐条替换，每条间隔 500ms 展示进度
+      let successCount = 0;
+      for (let i = 0; i < edits.length; i++) {
+        const edit = edits[i];
+        // 进度提示
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: 'assistant',
+            content: `${summaryBase}\n\n正在优化第 ${i + 1}/${edits.length} 处...`,
+          };
+          return updated;
+        });
+
+        await new Promise(r => setTimeout(r, 500));
+
+        // 直接替换 content + 高亮
+        const ok = onDirectReplace?.(edit.sectionId, edit.original, edit.suggested);
+        if (ok) successCount++;
+
+        // 更新进度
+        const progressLines = Array.from({ length: i + 1 }, (_, j) => `✓ 第 ${j + 1} 处已优化`).join('\n');
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: 'assistant',
+            content: `${summaryBase}\n\n${progressLines}${i < edits.length - 1 ? `\n正在优化第 ${i + 2}/${edits.length} 处...` : ''}`,
+          };
+          return updated;
         });
       }
+
+      // 完成
+      const allProgress = Array.from({ length: edits.length }, (_, j) => `✓ 第 ${j + 1} 处已优化`).join('\n');
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: 'assistant',
+          content: `${summaryBase}\n\n${allProgress}\n\n全部优化完成！共修改 ${successCount} 处，已在右侧高亮标出。\n不满意的地方可以选中文本让我重新改。`,
+        };
+        return updated;
+      });
+
+      // 30 秒后清除高亮
+      setTimeout(() => { clearHighlights?.(); }, 30000);
     } catch (err: any) {
       console.error('JD optimize failed:', err);
       const errorMsg = err.message?.includes('已用完') ? err.message : '抱歉，JD 优化过程中遇到问题，请重试。';
@@ -341,7 +381,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [jdInput, isLoading, sessionId, apiBase, onEditSuggestion]);
+  }, [jdInput, isLoading, sessionId, apiBase, onDirectReplace, clearHighlights]);
 
   useEffect(() => {
     if (externalMessage) {

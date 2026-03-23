@@ -124,6 +124,7 @@ export interface ResumeSection {
   type: string;          // "education" | "internship" | "project" | "skill" | "other"
   title: string;         // "字节跳动-产品实习"
   content: string;       // 当前内容（采纳编辑后更新）
+  highlightRanges?: { start: number; end: number }[]; // JD 优化后的高亮区间，自动淡出
 }
 
 export interface PendingEdit {

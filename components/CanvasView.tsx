@@ -48,6 +48,9 @@ interface CanvasViewProps {
   hasPendingJdVersion: boolean;
   // 润色选中文本：前端知道替换什么，GPT 只负责给改写结果
   onSetPendingSelection: (sel: { text: string; sectionId: string } | null) => void;
+  // JD 优化：直接替换 + 高亮
+  onDirectReplace: (sectionId: string, original: string, suggested: string) => boolean;
+  clearHighlights: () => void;
   // Not needed but passed through
   assessmentContext?: any;
   resumeText?: string;
@@ -75,6 +78,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onJdVersionCreate,
   hasPendingJdVersion,
   onSetPendingSelection,
+  onDirectReplace,
+  clearHighlights,
   assessmentContext,
 }) => {
 
@@ -218,6 +223,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             pendingEdits={pendingEdits}
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
+            onDirectReplace={onDirectReplace}
+            clearHighlights={clearHighlights}
           />
         </div>
 

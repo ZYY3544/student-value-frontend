@@ -252,6 +252,29 @@ const DiffMark: React.FC<{
  * 渲染带 inline diff 高亮的内容
  * content 是原文（未替换），在 edit.original 的位置嵌入 DiffMark，前后正常渲染
  */
+/** 渲染带绿色高亮的内容（JD 优化后标记改过的区间） */
+function renderWithHighlights(content: string, ranges: { start: number; end: number }[]): React.ReactNode {
+  if (!ranges.length) return content;
+  const sorted = [...ranges].sort((a, b) => a.start - b.start);
+  const fragments: React.ReactNode[] = [];
+  let cursor = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const r = sorted[i];
+    const start = Math.max(r.start, cursor);
+    const end = Math.min(r.end, content.length);
+    if (start > end) continue;
+    if (cursor < start) fragments.push(content.slice(cursor, start));
+    fragments.push(
+      <span key={i} className="bg-green-50 border-b-2 border-green-200 rounded-sm transition-colors duration-1000">
+        {content.slice(start, end)}
+      </span>
+    );
+    cursor = end;
+  }
+  if (cursor < content.length) fragments.push(content.slice(cursor));
+  return fragments;
+}
+
 function findOriginalPosition(content: string, original: string): { start: number; length: number } | null {
   // 精确匹配
   const pos = content.indexOf(original);
@@ -497,6 +520,10 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                 />
               ) : mode === 'diff' && hasEdits ? (
                 renderContentWithDiff(section.content, sectionEdits)
+              ) : section.highlightRanges?.length ? (
+                <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                  {renderWithHighlights(section.content, section.highlightRanges)}
+                </div>
               ) : (
                 <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
                   {section.content}
