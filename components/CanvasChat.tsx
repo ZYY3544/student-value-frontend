@@ -322,12 +322,20 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       const elapsed = Date.now() - analyzeStart;
       if (elapsed < 3000) await new Promise(r => setTimeout(r, 3000 - elapsed));
 
-      // 展示诊断摘要
+      // 流式展示诊断摘要（逐字输出）
       const summaryBase = `**岗位任职要求分析**\n${job_essence}\n\n**简历竞争力分析**\n${overall_gap}`;
-      setMessages(prev => {
-        const updated = [...prev];
-        updated[updated.length - 1] = { role: 'assistant', content: summaryBase };
-        return updated;
+      const STREAM_SPEED = 20; // ms per character
+      await new Promise<void>(resolve => {
+        let ci = 0;
+        const timer = setInterval(() => {
+          ci = Math.min(ci + 1, summaryBase.length);
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: 'assistant', content: summaryBase.slice(0, ci) };
+            return updated;
+          });
+          if (ci >= summaryBase.length) { clearInterval(timer); resolve(); }
+        }, STREAM_SPEED);
       });
 
       // 逐条替换，每条间隔 500ms 展示进度
