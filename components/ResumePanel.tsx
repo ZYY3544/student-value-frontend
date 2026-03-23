@@ -252,6 +252,33 @@ const DiffMark: React.FC<{
  * 渲染带 inline diff 高亮的内容
  * content 是原文（未替换），在 edit.original 的位置嵌入 DiffMark，前后正常渲染
  */
+function findOriginalPosition(content: string, original: string): { start: number; length: number } | null {
+  // 精确匹配
+  const pos = content.indexOf(original);
+  if (pos !== -1) return { start: pos, length: original.length };
+
+  // normalize fallback：去掉空格换行差异
+  const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
+  const normContent = normalize(content);
+  const normOriginal = normalize(original);
+  const normIdx = normContent.indexOf(normOriginal);
+  if (normIdx === -1) return null;
+
+  // 映射回原始位置
+  let ci = 0, normPos = 0;
+  while (normPos < normIdx && ci < content.length) {
+    if (/\s/.test(content[ci]) && ci > 0 && /\s/.test(content[ci - 1])) { ci++; continue; }
+    ci++; normPos++;
+  }
+  const matchStart = ci;
+  let matchLen = 0, normMatchLen = 0;
+  while (normMatchLen < normOriginal.length && ci < content.length) {
+    if (/\s/.test(content[ci]) && ci > matchStart && /\s/.test(content[ci - 1])) { ci++; matchLen++; continue; }
+    ci++; matchLen++; normMatchLen++;
+  }
+  return matchLen > 0 ? { start: matchStart, length: matchLen } : null;
+}
+
 function renderContentWithDiff(
   content: string,
   sectionEdits: { edit: PendingEdit; idx: number }[],
@@ -261,9 +288,9 @@ function renderContentWithDiff(
   }
 
   const latestEdit = sectionEdits[sectionEdits.length - 1].edit;
-  const pos = content.indexOf(latestEdit.original);
+  const match = findOriginalPosition(content, latestEdit.original);
 
-  if (pos === -1) {
+  if (!match) {
     // 找不到原文位置，fallback 到底部卡片
     return (
       <div className="space-y-3">
@@ -276,8 +303,8 @@ function renderContentWithDiff(
     );
   }
 
-  const before = content.slice(0, pos);
-  const after = content.slice(pos + latestEdit.original.length);
+  const before = content.slice(0, match.start);
+  const after = content.slice(match.start + match.length);
 
   return (
     <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">

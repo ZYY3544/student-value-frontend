@@ -455,21 +455,49 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     setPendingSelection(null);
   }, []);
 
-  // 接受 AI 改写：此时才真正替换 content
+  // 接受 AI 改写：此时才真正替换 content（精确匹配 → normalize fallback）
   const handleAcceptEdit = useCallback((sectionId: string) => {
     const edit = pendingEditsRef.current.find(e => e.sectionId === sectionId);
     if (edit) {
+      const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
       setResumeSections(prev => {
         const idx = prev.findIndex(s => s.id === sectionId);
         if (idx === -1) return prev;
         const sec = prev[idx];
-        if (!sec.content.includes(edit.original)) {
-          console.warn('[AcceptEdit] original not found in section', sectionId);
-          return prev;
-        }
         const updated = [...prev];
-        updated[idx] = { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
-        return updated;
+
+        // 精确匹配
+        if (sec.content.includes(edit.original)) {
+          updated[idx] = { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+          return updated;
+        }
+
+        // normalize fallback：去掉空格换行差异再试
+        const normContent = normalize(sec.content);
+        const normOriginal = normalize(edit.original);
+        if (normContent.includes(normOriginal)) {
+          // 逐字符映射找到原始位置
+          let ci = 0;
+          const normIdx = normContent.indexOf(normOriginal);
+          let normPos = 0;
+          while (normPos < normIdx && ci < sec.content.length) {
+            if (/\s/.test(sec.content[ci]) && ci > 0 && /\s/.test(sec.content[ci - 1])) { ci++; continue; }
+            ci++; normPos++;
+          }
+          const matchStart = ci;
+          let matchLen = 0, normMatchLen = 0;
+          while (normMatchLen < normOriginal.length && ci < sec.content.length) {
+            if (/\s/.test(sec.content[ci]) && ci > matchStart && /\s/.test(sec.content[ci - 1])) { ci++; matchLen++; continue; }
+            ci++; matchLen++; normMatchLen++;
+          }
+          if (matchLen > 0) {
+            updated[idx] = { ...sec, content: sec.content.slice(0, matchStart) + edit.suggested + sec.content.slice(matchStart + matchLen) };
+            return updated;
+          }
+        }
+
+        console.warn('[AcceptEdit] original not found even after normalization', sectionId);
+        return prev;
       });
 
       // 通知后端

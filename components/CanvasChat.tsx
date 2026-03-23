@@ -283,14 +283,65 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const sendMessageRef = useRef(sendMessage);
   sendMessageRef.current = sendMessage;
 
-  // JD 弹窗提交 → 后续逻辑待重写，当前只关闭弹窗
-  const handleJdSubmit = useCallback(() => {
+  // JD 弹窗提交 → 调用 /api/chat/jd-optimize，结果批量写入 pendingEdits
+  const handleJdSubmit = useCallback(async () => {
     const jdText = jdInput.trim();
-    if (!jdText) return;
+    if (!jdText || isLoading || !sessionId) return;
     setShowJdModal(false);
     setJdInput('');
-    // TODO: JD 优化流程待重写，当前提交后不执行任何操作
-  }, [jdInput]);
+
+    // 显示用户消息 + loading
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: `上传 JD：${jdText.slice(0, 80)}...` },
+      { role: 'assistant', content: '' },
+    ]);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${apiBase}/api/chat/jd-optimize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, jdText }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+
+      const { data } = await res.json();
+      const { job_essence, overall_gap, edits } = data;
+
+      // 对话区展示诊断摘要
+      const summary = `**岗位本质：**${job_essence}\n**匹配距离：**${overall_gap}\n\n共找到 ${edits.length} 处可优化内容，已在右侧简历中标出，你可以逐个查看并采纳。`;
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: 'assistant', content: summary };
+        return updated;
+      });
+
+      // 批量写入 pendingEdits，复用润色的替换机制
+      for (const edit of edits) {
+        onEditSuggestion({
+          sectionId: edit.sectionId,
+          original: edit.original,
+          suggested: edit.suggested,
+          rationale: edit.reason,
+        });
+      }
+    } catch (err: any) {
+      console.error('JD optimize failed:', err);
+      const errorMsg = err.message?.includes('已用完') ? err.message : '抱歉，JD 优化过程中遇到问题，请重试。';
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: 'assistant', content: errorMsg };
+        return updated;
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [jdInput, isLoading, sessionId, apiBase, onEditSuggestion]);
 
   useEffect(() => {
     if (externalMessage) {
