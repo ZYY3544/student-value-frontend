@@ -139,9 +139,10 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // JD 上传弹窗（保留 UI，提交后作为普通消息发送）
+  // JD 上传弹窗
   const [showJdModal, setShowJdModal] = useState(false);
   const [jdInput, setJdInput] = useState('');
+  const [jdRemaining, setJdRemaining] = useState<number | null>(null);
   // 追踪当前流式输出是否产生了编辑建议
   const streamHasEditRef = useRef(false);
   const [lastStreamHadEdit, setLastStreamHadEdit] = useState(false);
@@ -315,8 +316,10 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
 
-      const { data } = await res.json();
+      const resJson = await res.json();
+      const { data, remaining } = resJson;
       const { job_essence, overall_gap, optimization_plan, edits } = data;
+      if (remaining !== undefined) setJdRemaining(remaining);
 
       // "正在分析 JD..." 至少显示 3 秒
       const elapsed = Date.now() - analyzeStart;
@@ -534,7 +537,16 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         {/* JD 上传快捷入口 */}
         <div className="flex items-center gap-2 mb-2">
           <button
-            onClick={() => setShowJdModal(true)}
+            onClick={() => {
+              setShowJdModal(true);
+              // 获取剩余次数
+              if (sessionId) {
+                fetch(`${apiBase}/api/chat/jd-remaining?sessionId=${sessionId}`)
+                  .then(r => r.json())
+                  .then(d => setJdRemaining(d.remaining ?? null))
+                  .catch(() => {});
+              }
+            }}
             disabled={isLoading || !sessionId}
             className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-gray-500 border border-gray-200 rounded-lg hover:text-[#0A66C2] hover:border-[#0A66C2]/30 hover:bg-blue-50/50 transition-colors disabled:opacity-40"
           >
@@ -574,13 +586,20 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20">
           <div className="bg-white rounded-2xl shadow-2xl w-[520px] p-7">
             <h3 className="text-lg font-bold text-gray-900 mb-2">上传目标 JD</h3>
-            <p className="text-xs text-gray-400 mb-4">粘贴岗位 JD 全文或网址，Sparky 将针对该岗位定制化优化你的简历</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs text-gray-400">粘贴岗位 JD 全文，Sparky 将针对该岗位定制化优化你的简历</p>
+              {jdRemaining !== null && (
+                <span className={`text-xs font-medium ${jdRemaining > 0 ? 'text-gray-400' : 'text-red-500'}`}>
+                  今日剩余 {jdRemaining}/5 次
+                </span>
+              )}
+            </div>
             <textarea
               value={jdInput}
               onChange={e => setJdInput(e.target.value)}
-              placeholder="粘贴 JD 内容或 URL..."
+              placeholder="粘贴 JD 内容..."
               className="w-full h-48 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 resize-none"
-              disabled={isLoading}
+              disabled={isLoading || jdRemaining === 0}
             />
             <div className="flex justify-end gap-3 mt-4">
               <button
@@ -591,10 +610,10 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
               </button>
               <button
                 onClick={handleJdSubmit}
-                disabled={!jdInput.trim() || isLoading}
+                disabled={!jdInput.trim() || isLoading || jdRemaining === 0}
                 className="px-5 py-2 bg-[#0A66C2] text-white text-sm font-semibold rounded-xl hover:bg-[#084e96] disabled:opacity-40 transition-colors"
               >
-                开始分析
+                {jdRemaining === 0 ? '今日次数已用完' : '开始分析'}
               </button>
             </div>
           </div>
