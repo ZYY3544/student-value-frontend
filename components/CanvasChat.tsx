@@ -101,6 +101,19 @@ interface CanvasChatProps {
   resumeSections?: ResumeSection[];
 }
 
+// JD 自动检测：长文本 + 多个 JD 特征关键词 + 结构性判断
+const JD_KEYWORDS = ['岗位职责', '任职要求', '职位描述', '工作职责', '工作内容', '学历要求', '岗位要求', '职位要求', '任职资格'];
+function detectJd(text: string): boolean {
+  if (text.length < 200) return false;
+  const matchCount = JD_KEYWORDS.filter(kw => text.includes(kw)).length;
+  if (matchCount >= 3) return true;
+  if (matchCount >= 2) {
+    const hasListFormat = /(?:^|\n)\s*(?:\d[.、)）]|[-·•])\s*.{4,}/m.test(text);
+    return hasListFormat;
+  }
+  return false;
+}
+
 const MAX_INPUT_LENGTH = 5000;
 
 export const CanvasChat: React.FC<CanvasChatProps> = ({
@@ -163,6 +176,17 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     // 解析快捷操作标记 [QUICK:用户可见文本]LLM指令
     const quickMatch = text.match(/^\[QUICK:(.+?)\]/);
     const messageToSend = quickMatch ? text.slice(quickMatch[0].length) : text;
+
+    // JD 自动检测：用户直接粘贴了 JD 文本 → 引导去点上传按钮
+    if (!quickMatch && detectJd(messageToSend)) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: `${messageToSend.slice(0, 100)}...` },
+        { role: 'assistant', content: '你发的内容看起来是一份岗位描述（JD），点击输入框旁边的「上传 JD」按钮可以获得更精准的定制化改写。' },
+      ]);
+      if (!overrideText) setInputValue('');
+      return;
+    }
 
     // 冻结当前 editCards 到上一条 assistant 消息
     if (currentEditCards.length > 0) {
@@ -259,13 +283,13 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const sendMessageRef = useRef(sendMessage);
   sendMessageRef.current = sendMessage;
 
-  // JD 弹窗提交 → 作为普通消息发送给 Sparky
+  // JD 弹窗提交 → 后续逻辑待重写，当前只关闭弹窗
   const handleJdSubmit = useCallback(() => {
     const jdText = jdInput.trim();
     if (!jdText) return;
     setShowJdModal(false);
     setJdInput('');
-    sendMessageRef.current(`请根据以下 JD 帮我优化简历：\n\n${jdText}`);
+    // TODO: JD 优化流程待重写，当前提交后不执行任何操作
   }, [jdInput]);
 
   useEffect(() => {

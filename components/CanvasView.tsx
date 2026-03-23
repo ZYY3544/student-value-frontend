@@ -218,8 +218,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             pendingEdits={pendingEdits}
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
-            onJdVersionCreate={onJdVersionCreate}
-            versionCount={versions.length}
           />
         </div>
 
