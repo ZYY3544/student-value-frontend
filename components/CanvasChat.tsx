@@ -301,6 +301,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       { role: 'assistant', content: '正在分析 JD...' },
     ]);
     setIsLoading(true);
+    const analyzeStart = Date.now();
 
     try {
       const res = await fetch(`${apiBase}/api/chat/jd-optimize`, {
@@ -316,6 +317,10 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
 
       const { data } = await res.json();
       const { job_essence, overall_gap, edits } = data;
+
+      // "正在分析 JD..." 至少显示 3 秒
+      const elapsed = Date.now() - analyzeStart;
+      if (elapsed < 3000) await new Promise(r => setTimeout(r, 3000 - elapsed));
 
       // 展示诊断摘要
       const summaryBase = `**岗位本质：**${job_essence}\n**匹配距离：**${overall_gap}`;
