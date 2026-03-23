@@ -179,7 +179,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           <span className="text-sm font-bold text-gray-800">简历画布</span>
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-6">
           <VersionSelector
             versions={versions}
             activeVersionId={activeVersionId}
