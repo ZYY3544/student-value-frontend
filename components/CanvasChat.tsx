@@ -97,7 +97,7 @@ interface CanvasChatProps {
   onExternalMessageConsumed?: () => void;
   autoStartPrompt?: string;
   pendingEdits?: PendingEdit[];
-  onAcceptEdit?: (sectionId: string) => void;
+  onAcceptEdit?: (editId: string) => void;
   resumeSections?: ResumeSection[];
 }
 
@@ -294,7 +294,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setMessages(prev => [
       ...prev,
       { role: 'user', content: `上传 JD：${jdText.slice(0, 80)}...` },
-      { role: 'assistant', content: '' },
+      { role: 'assistant', content: 'Sparky 正在分析 JD 并生成改写建议...' },
     ]);
     setIsLoading(true);
 
@@ -366,7 +366,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   const handleAccept = useCallback(() => {
     if (!pendingEdits.length || !onAcceptEdit) return;
     const latestEdit = pendingEdits[pendingEdits.length - 1];
-    onAcceptEdit(latestEdit.sectionId);
+    onAcceptEdit(latestEdit.editId);
     setLastStreamHadEdit(false);
     // 冻结当前卡片到历史，然后清除
     if (currentEditCards.length > 0) {

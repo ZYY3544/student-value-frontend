@@ -287,30 +287,63 @@ function renderContentWithDiff(
     return <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{content}</div>;
   }
 
-  const latestEdit = sectionEdits[sectionEdits.length - 1].edit;
-  const match = findOriginalPosition(content, latestEdit.original);
+  // 找到所有 edit 在 content 中的位置，按位置排序
+  type MatchedEdit = { start: number; length: number; edit: PendingEdit };
+  const matched: MatchedEdit[] = [];
+  const unmatched: PendingEdit[] = [];
 
-  if (!match) {
-    // 找不到原文位置，fallback 到底部卡片
-    return (
-      <div className="space-y-3">
-        <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{content}</div>
-        <div className="rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0]/50 px-4 py-3">
-          <div className="text-[11px] font-medium text-[#CA7C5E] mb-2">修改对比</div>
-          <DiffMark original={latestEdit.original} suggested={latestEdit.suggested} rationale={latestEdit.rationale} />
-        </div>
-      </div>
-    );
+  for (const { edit } of sectionEdits) {
+    const pos = findOriginalPosition(content, edit.original);
+    if (pos) {
+      matched.push({ start: pos.start, length: pos.length, edit });
+    } else {
+      unmatched.push(edit);
+    }
   }
 
-  const before = content.slice(0, match.start);
-  const after = content.slice(match.start + match.length);
+  matched.sort((a, b) => a.start - b.start);
+
+  // 去除重叠
+  const nonOverlapping: MatchedEdit[] = [];
+  for (const m of matched) {
+    const last = nonOverlapping[nonOverlapping.length - 1];
+    if (!last || m.start >= last.start + last.length) {
+      nonOverlapping.push(m);
+    }
+  }
+
+  if (nonOverlapping.length === 0 && unmatched.length === 0) {
+    return <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{content}</div>;
+  }
+
+  // 切割渲染：plain → DiffMark → plain → DiffMark → ...
+  const fragments: React.ReactNode[] = [];
+  let cursor = 0;
+
+  for (let i = 0; i < nonOverlapping.length; i++) {
+    const m = nonOverlapping[i];
+    if (cursor < m.start) {
+      fragments.push(content.slice(cursor, m.start));
+    }
+    fragments.push(
+      <DiffMark key={m.edit.editId} original={m.edit.original} suggested={m.edit.suggested} rationale={m.edit.rationale} />
+    );
+    cursor = m.start + m.length;
+  }
+  if (cursor < content.length) {
+    fragments.push(content.slice(cursor));
+  }
 
   return (
-    <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-      {before}
-      <DiffMark original={latestEdit.original} suggested={latestEdit.suggested} rationale={latestEdit.rationale} />
-      {after}
+    <div className="space-y-3">
+      <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{fragments}</div>
+      {/* 匹配不上的 edit fallback 到底部卡片 */}
+      {unmatched.map(edit => (
+        <div key={edit.editId} className="rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0]/50 px-4 py-3">
+          <div className="text-[11px] font-medium text-[#CA7C5E] mb-2">修改对比</div>
+          <DiffMark original={edit.original} suggested={edit.suggested} rationale={edit.rationale} />
+        </div>
+      ))}
     </div>
   );
 }

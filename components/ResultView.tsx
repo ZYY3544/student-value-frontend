@@ -429,7 +429,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [sessionId, resumeSections.length]);
 
   // AI 编辑建议：不替换 content，只存 pendingEdits（content 在接受时才改）
-  const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
+  // 每个 edit 都有 editId，同 section 可有多个 edit（JD 优化场景）
+  const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status' | 'editId'>) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
@@ -439,29 +440,23 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const matchTarget = sel?.text || edit.original;
     const targetSectionId = sel?.sectionId || edit.sectionId;
 
-    // 只存 diff 元数据，不动 resumeSections
-    setPendingEdits(prev => {
-      const hasExisting = prev.some(e => e.sectionId === targetSectionId);
-      if (hasExisting) {
-        return prev.map(e =>
-          e.sectionId === targetSectionId
-            ? { ...edit, sectionId: targetSectionId, original: matchTarget, status: 'pending' as const }
-            : e
-        );
-      }
-      return [...prev, { ...edit, sectionId: targetSectionId, original: matchTarget, status: 'pending' }];
-    });
+    // 一律追加，不覆盖（同 section 可能有多个 edit）
+    setPendingEdits(prev => [
+      ...prev,
+      { ...edit, editId: crypto.randomUUID(), sectionId: targetSectionId, original: matchTarget, status: 'pending' },
+    ]);
 
     setPendingSelection(null);
   }, []);
 
   // 接受 AI 改写：此时才真正替换 content（精确匹配 → normalize fallback）
-  const handleAcceptEdit = useCallback((sectionId: string) => {
-    const edit = pendingEditsRef.current.find(e => e.sectionId === sectionId);
+  // 接受单个 edit（按 editId 定位），替换 content 后移除该 edit
+  const handleAcceptEdit = useCallback((editId: string) => {
+    const edit = pendingEditsRef.current.find(e => e.editId === editId);
     if (edit) {
       const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
       setResumeSections(prev => {
-        const idx = prev.findIndex(s => s.id === sectionId);
+        const idx = prev.findIndex(s => s.id === edit.sectionId);
         if (idx === -1) return prev;
         const sec = prev[idx];
         const updated = [...prev];
@@ -472,11 +467,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           return updated;
         }
 
-        // normalize fallback：去掉空格换行差异再试
+        // normalize fallback
         const normContent = normalize(sec.content);
         const normOriginal = normalize(edit.original);
         if (normContent.includes(normOriginal)) {
-          // 逐字符映射找到原始位置
           let ci = 0;
           const normIdx = normContent.indexOf(normOriginal);
           let normPos = 0;
@@ -496,7 +490,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           }
         }
 
-        console.warn('[AcceptEdit] original not found even after normalization', sectionId);
+        console.warn('[AcceptEdit] original not found', edit.sectionId);
         return prev;
       });
 
@@ -507,7 +501,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionId,
-            sectionId,
+            sectionId: edit.sectionId,
             action: 'accept',
             suggestedText: edit.suggested,
             originalText: edit.original,
@@ -515,7 +509,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         }).catch(err => console.error('Failed to notify edit:', err));
       }
     }
-    setPendingEdits(prev => prev.filter(e => e.sectionId !== sectionId));
+    setPendingEdits(prev => prev.filter(e => e.editId !== editId));
   }, [sessionId]);
 
   // 手动编辑简历段落 + 自动保存

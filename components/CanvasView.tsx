@@ -34,7 +34,7 @@ interface CanvasViewProps {
   resumeSections: ResumeSection[];
   pendingEdits: PendingEdit[];
   onEditSuggestion: (edit: Omit<PendingEdit, 'status'>) => void;
-  onAcceptEdit: (sectionId: string) => void;
+  onAcceptEdit: (editId: string) => void;
   onSectionContentChange: (sectionId: string, content: string) => void;
   onExitCanvas: () => void;
   // Version management
@@ -116,8 +116,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     onEditSuggestion(edit);
   }, [onEditSuggestion]);
 
-  const handleAcceptEdit = useCallback((sectionId: string) => {
-    onAcceptEdit(sectionId);
+  const handleAcceptEdit = useCallback((editId: string) => {
+    onAcceptEdit(editId);
   }, [onAcceptEdit]);
 
   const handleMouseUp = useCallback(() => {

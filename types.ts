@@ -127,6 +127,7 @@ export interface ResumeSection {
 }
 
 export interface PendingEdit {
+  editId: string;        // 唯一标识，用于定位单个 edit
   sectionId: string;
   original: string;      // 被替换的原文
   suggested: string;     // 建议替换为
