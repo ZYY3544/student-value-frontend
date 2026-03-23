@@ -323,7 +323,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       if (elapsed < 3000) await new Promise(r => setTimeout(r, 3000 - elapsed));
 
       // 展示诊断摘要
-      const summaryBase = `**岗位本质：**${job_essence}\n**匹配距离：**${overall_gap}`;
+      const summaryBase = `**岗位任职要求分析**\n${job_essence}\n\n**简历竞争力分析**\n${overall_gap}`;
       setMessages(prev => {
         const updated = [...prev];
         updated[updated.length - 1] = { role: 'assistant', content: summaryBase };
