@@ -207,12 +207,18 @@
           margin: 0;
         }
 
-        /* 隐藏所有内容 */
-        body > * { display: none !important; }
         body { background: white !important; margin: 0 !important; padding: 0 !important; }
-        #root { display: none !important; }
+
+        /* 隐藏 #root 下所有内容，但保留 #root 本身 */
+        #root > * { visibility: hidden !important; height: 0 !important; overflow: hidden !important; }
 
         /* 只显示 PrintableResume */
+        #printable-resume,
+        #printable-resume * {
+          visibility: visible !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
         #printable-resume {
           display: block !important;
           position: fixed !important;
