@@ -341,45 +341,49 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         }, STREAM_SPEED);
       });
 
-      // 逐条替换，每条间隔 500ms 展示进度
+      // 逐条替换：spinner → 2.5s → 替换 → ✓ 完成，每条一行
       let successCount = 0;
+      const doneLines: string[] = [];
+
       for (let i = 0; i < edits.length; i++) {
         const edit = edits[i];
-        // 进度提示
+
+        // 显示 spinner + "正在优化第 X 处..."
+        const spinnerLine = `⏳ 正在优化第 ${i + 1} 处...`;
         setMessages(prev => {
           const updated = [...prev];
           updated[updated.length - 1] = {
             role: 'assistant',
-            content: `${summaryBase}\n\n正在优化第 ${i + 1}/${edits.length} 处...`,
+            content: `${summaryBase}\n\n${doneLines.join('\n')}${doneLines.length ? '\n' : ''}${spinnerLine}`,
           };
           return updated;
         });
 
-        await new Promise(r => setTimeout(r, 500));
+        // 等待 2.5 秒让用户感受到"正在分析"
+        await new Promise(r => setTimeout(r, 2500));
 
-        // 直接替换 content + 高亮
+        // 执行替换（右侧流式高亮由 StreamHighlight 组件处理）
         const ok = onDirectReplace?.(edit.sectionId, edit.original, edit.suggested);
         if (ok) successCount++;
 
-        // 更新进度
-        const progressLines = Array.from({ length: i + 1 }, (_, j) => `✓ 第 ${j + 1} 处已优化`).join('\n');
+        // 替换完成，更新为 ✓
+        doneLines.push(`✓ 第 ${i + 1} 处已优化`);
         setMessages(prev => {
           const updated = [...prev];
           updated[updated.length - 1] = {
             role: 'assistant',
-            content: `${summaryBase}\n\n${progressLines}${i < edits.length - 1 ? `\n正在优化第 ${i + 2}/${edits.length} 处...` : ''}`,
+            content: `${summaryBase}\n\n${doneLines.join('\n')}`,
           };
           return updated;
         });
       }
 
-      // 完成
-      const allProgress = Array.from({ length: edits.length }, (_, j) => `✓ 第 ${j + 1} 处已优化`).join('\n');
+      // 全部完成
       setMessages(prev => {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: 'assistant',
-          content: `${summaryBase}\n\n${allProgress}\n\n全部优化完成！共修改 ${successCount} 处，已在右侧高亮标出。\n不满意的地方可以选中文本让我重新改。`,
+          content: `${summaryBase}\n\n${doneLines.join('\n')}\n\n全部优化完成！共修改 ${successCount} 处，已在右侧高亮标出。\n不满意的地方可以选中文本让我重新改。`,
         };
         return updated;
       });
