@@ -230,9 +230,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     localStorage.setItem(versionStorageKey, JSON.stringify(versions));
   }, [versions, versionStorageKey]);
 
-  // 自动保存：当前编辑内容同步到活跃版本
+  // 自动保存：当前编辑内容同步到活跃版本（原始简历除外）
   useEffect(() => {
     if (!activeVersionId) return;
+    const active = versions.find(v => v.id === activeVersionId);
+    if (active?.versionType === 'original') return; // 原始简历只读
     setVersions(prev => prev.map(v =>
       v.id === activeVersionId
         ? { ...v, sections: resumeSections.map(s => ({ ...s })), pendingEdits: [...pendingEdits], updatedAt: Date.now() }
@@ -240,24 +242,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     ));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeSections, pendingEdits, activeVersionId]);
-
-  const handleSaveVersion = useCallback(() => {
-    if (versions.length >= 5) return;
-    // 自动递增命名
-    const manualCount = versions.filter(v => /^版本 \d+$/.test(v.name)).length;
-    const name = `版本 ${manualCount + 1}`;
-    const newVersion: ResumeVersion = {
-      id: crypto.randomUUID(),
-      name,
-      sections: resumeSections.map(s => ({ ...s })),
-      pendingEdits: pendingEdits.map(e => ({ ...e })),
-      jdContent: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    setVersions(prev => [...prev, newVersion]);
-    setActiveVersionId(newVersion.id);
-  }, [versions, resumeSections, pendingEdits]);
 
   const handleSwitchVersion = useCallback((versionId: string) => {
     const target = versions.find(v => v.id === versionId);
@@ -268,27 +252,22 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [versions]);
 
   const handleDeleteVersion = useCallback((versionId: string) => {
-    // 受保护版本（原始简历）不可删除
     const target = versions.find(v => v.id === versionId);
-    if (target?.isProtected) return;
+    // 只有 JD 版本可删除
+    if (target?.versionType !== 'jd') return;
     setVersions(prev => prev.filter(v => v.id !== versionId));
     if (activeVersionId === versionId) {
-      // 切回未保存的编辑状态
-      setActiveVersionId(null);
+      // 删除当前版本后切回通用版
+      const general = versions.find(v => v.versionType === 'general');
+      if (general) {
+        setActiveVersionId(general.id);
+        setResumeSections(general.sections.map(s => ({ ...s })));
+        setPendingEdits(general.pendingEdits.map(e => ({ ...e })));
+      }
     }
   }, [activeVersionId, versions]);
 
-  const handleRenameVersion = useCallback((versionId: string, newName: string) => {
-    setVersions(prev => prev.map(v =>
-      v.id === versionId ? { ...v, name: newName } : v
-    ));
-  }, []);
-
-  // JD 版本暂存：版本满时保留 JD 内容，等用户删版本后可一键保存
-  const [pendingJdContent, setPendingJdContent] = useState<string | null>(null);
-
   function extractJdName(jdContent: string): string {
-    // 1. 尝试匹配首行标题格式："公司 · 岗位" 或 "公司 - 岗位"
     const firstLine = jdContent.trim().split('\n')[0].trim();
     const titleLineMatch = firstLine.match(/^(.{2,15})\s*[·\-|]\s*(.{2,20})$/);
     if (titleLineMatch) return `${titleLineMatch[1].trim()} · ${titleLineMatch[2].trim()}`;
@@ -304,13 +283,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return 'JD 版本';
   }
 
-  // JD 优化完成后自动创建版本
+  // JD 优化完成后：基于通用版 fork 一个 JD 版本
   const handleJdVersionCreate = useCallback((jdContent: string) => {
-    if (versions.length >= 5) {
-      // 版本已满，暂存 JD 内容，改写结果保留在当前 sections 中
-      setPendingJdContent(jdContent);
-      return;
-    }
+    const jdCount = versions.filter(v => v.versionType === 'jd').length;
+    if (jdCount >= 5) return; // JD 版本上限
     const newVersion: ResumeVersion = {
       id: crypto.randomUUID(),
       name: extractJdName(jdContent),
@@ -319,52 +295,54 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       jdContent,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      versionType: 'jd',
     };
     setVersions(prev => [...prev, newVersion]);
     setActiveVersionId(newVersion.id);
-    setPendingJdContent(null);
   }, [versions, resumeSections, pendingEdits]);
 
-  // 删除版本后，如果有暂存的 JD 内容，自动保存
+  // 首次进入画布时，自动创建"原始简历"和"通用版"
+  const versionInitRef = useRef(false);
   useEffect(() => {
-    if (pendingJdContent && versions.length < 5) {
-      const newVersion: ResumeVersion = {
-        id: crypto.randomUUID(),
-        name: extractJdName(pendingJdContent),
-        sections: resumeSections.map(s => ({ ...s })),
-        pendingEdits: pendingEdits.map(e => ({ ...e })),
-        jdContent: pendingJdContent,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-      setVersions(prev => [...prev, newVersion]);
-      setActiveVersionId(newVersion.id);
-      setPendingJdContent(null);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [versions.length, pendingJdContent]);
-
-  // 首次进入画布时，自动创建"原始简历"版本（不可删除）
-  const originalVersionCreatedRef = useRef(false);
-  useEffect(() => {
-    if (originalVersionCreatedRef.current) return;
+    if (versionInitRef.current) return;
     if (resumeSections.length === 0) return;
-    // 检查 versions 中是否已有受保护的原始简历版本
-    const hasOriginal = versions.some(v => v.isProtected);
-    if (hasOriginal) { originalVersionCreatedRef.current = true; return; }
-    originalVersionCreatedRef.current = true;
+    const hasGeneral = versions.some(v => v.versionType === 'general');
+    if (hasGeneral) {
+      // 已有版本，激活通用版
+      versionInitRef.current = true;
+      if (!activeVersionId) {
+        const general = versions.find(v => v.versionType === 'general');
+        if (general) setActiveVersionId(general.id);
+      }
+      return;
+    }
+    versionInitRef.current = true;
+    const now = Date.now();
     const originalVersion: ResumeVersion = {
       id: crypto.randomUUID(),
       name: '原始简历',
       sections: resumeSections.map(s => ({ ...s })),
       pendingEdits: [],
       jdContent: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
       isProtected: true,
+      versionType: 'original',
     };
-    setVersions(prev => [originalVersion, ...prev]);
-  }, [resumeSections, versions]);
+    const generalVersion: ResumeVersion = {
+      id: crypto.randomUUID(),
+      name: '通用版',
+      sections: resumeSections.map(s => ({ ...s })),
+      pendingEdits: [],
+      jdContent: null,
+      createdAt: now,
+      updatedAt: now,
+      isProtected: true,
+      versionType: 'general',
+    };
+    setVersions(prev => [...prev, generalVersion, originalVersion]);
+    setActiveVersionId(generalVersion.id);
+  }, [resumeSections, versions, activeVersionId]);
 
   const assessmentContext = useMemo(() => {
     const dims = result.resumeExpression?.dimensions || {};
@@ -688,12 +666,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onExitCanvas={() => setViewMode('report')}
         versions={versions}
         activeVersionId={activeVersionId}
-        onSaveVersion={handleSaveVersion}
         onSwitchVersion={handleSwitchVersion}
         onDeleteVersion={handleDeleteVersion}
-        onRenameVersion={handleRenameVersion}
         onJdVersionCreate={handleJdVersionCreate}
-        hasPendingJdVersion={!!pendingJdContent}
         onSetPendingSelection={setPendingSelection}
         onDirectReplace={handleDirectReplace}
         clearHighlights={clearHighlights}

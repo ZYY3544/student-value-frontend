@@ -40,12 +40,9 @@ interface CanvasViewProps {
   // Version management
   versions: ResumeVersion[];
   activeVersionId: string | null;
-  onSaveVersion: () => void;
   onSwitchVersion: (versionId: string) => void;
   onDeleteVersion: (versionId: string) => void;
-  onRenameVersion: (versionId: string, newName: string) => void;
   onJdVersionCreate: (jdContent: string) => void;
-  hasPendingJdVersion: boolean;
   // 润色选中文本：前端知道替换什么，GPT 只负责给改写结果
   onSetPendingSelection: (sel: { text: string; sectionId: string } | null) => void;
   // JD 优化：直接替换 + 高亮
@@ -71,17 +68,17 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onExitCanvas,
   versions,
   activeVersionId,
-  onSaveVersion,
   onSwitchVersion,
   onDeleteVersion,
-  onRenameVersion,
   onJdVersionCreate,
-  hasPendingJdVersion,
   onSetPendingSelection,
   onDirectReplace,
   clearHighlights,
   assessmentContext,
 }) => {
+
+  const activeVersion = versions.find(v => v.id === activeVersionId);
+  const isReadOnly = activeVersion?.versionType === 'original';
 
   const optimizedRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -188,11 +185,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           <VersionSelector
             versions={versions}
             activeVersionId={activeVersionId}
-            onSave={onSaveVersion}
             onSwitch={onSwitchVersion}
             onDelete={onDeleteVersion}
-            onRename={onRenameVersion}
-            hasPendingJd={hasPendingJdVersion}
           />
           <button
             onClick={handleExportPdf}
@@ -238,6 +232,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             sections={resumeSections}
             pendingEdits={pendingEdits}
             onContentChange={onSectionContentChange}
+            readOnly={isReadOnly}
           />
         </div>
       </div>

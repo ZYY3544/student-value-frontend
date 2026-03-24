@@ -161,13 +161,14 @@ export interface JdMatchItem {
 // 简历版本快照
 export interface ResumeVersion {
   id: string;                    // uuid
-  name: string;                  // 用户可编辑名称
+  name: string;                  // 版本显示名称
   sections: ResumeSection[];     // 各段落内容快照
   pendingEdits: PendingEdit[];   // diff 状态快照
-  jdContent: string | null;      // 关联的 JD 内容（Sparky 生成版本时）
+  jdContent: string | null;      // 关联的 JD 内容
   createdAt: number;             // Date.now()
   updatedAt: number;             // 最近编辑时间
-  isProtected?: boolean;         // 受保护版本（如"原始简历"），不可删除
+  isProtected?: boolean;         // 受保护版本，不可删除
+  versionType?: 'original' | 'general' | 'jd';  // 原始简历 | 通用版 | JD版本
 }
 
 export enum AppState {

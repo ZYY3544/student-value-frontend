@@ -4,13 +4,14 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Pencil, Eye, ChevronDown, Trash2, Plus, Check, X, PenLine } from 'lucide-react';
+import { Pencil, Eye, ChevronDown, Trash2, Check, X } from 'lucide-react';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 interface ResumePanelProps {
   sections: ResumeSection[];
   pendingEdits: PendingEdit[];
   onContentChange: (sectionId: string, content: string) => void;
+  readOnly?: boolean;
 }
 
 // 版本选择器下拉组件
@@ -22,138 +23,88 @@ function formatTime(ts: number): string {
 export const VersionSelector: React.FC<{
   versions: ResumeVersion[];
   activeVersionId: string | null;
-  onSave: () => void;
   onSwitch: (id: string) => void;
   onDelete: (id: string) => void;
-  onRename: (id: string, name: string) => void;
-  hasPendingJd?: boolean;
-}> = ({ versions, activeVersionId, onSave, onSwitch, onDelete, onRename, hasPendingJd }) => {
+}> = ({ versions, activeVersionId, onSwitch, onDelete }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const activeVersion = versions.find(v => v.id === activeVersionId);
-  const atLimit = versions.length >= 5;
 
-  useEffect(() => {
-    if (renamingId && renameInputRef.current) {
-      renameInputRef.current.focus();
-      renameInputRef.current.select();
-    }
-  }, [renamingId]);
+  // 排序：通用版在前，JD版本按时间，原始简历在最后
+  const sorted = [...versions].sort((a, b) => {
+    if (a.versionType === 'general') return -1;
+    if (b.versionType === 'general') return 1;
+    if (a.versionType === 'original') return 1;
+    if (b.versionType === 'original') return -1;
+    return a.createdAt - b.createdAt;
+  });
 
-  const handleRenameSubmit = (id: string) => {
-    const trimmed = renameValue.trim();
-    if (trimmed) onRename(id, trimmed);
-    setRenamingId(null);
-  };
+  const jdCount = versions.filter(v => v.versionType === 'jd').length;
 
   return (
     <div className="relative">
       <button
-        onClick={() => { setIsOpen(prev => !prev); setConfirmDeleteId(null); setRenamingId(null); }}
+        onClick={() => { setIsOpen(prev => !prev); setConfirmDeleteId(null); }}
         className="flex items-center gap-1 px-2 py-0.5 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
       >
-        <span className="max-w-[120px] truncate">{activeVersion ? activeVersion.name : '版本管理'}</span>
+        <span className="max-w-[160px] truncate">{activeVersion ? activeVersion.name : '版本管理'}</span>
+        {activeVersion?.versionType === 'general' && <span className="text-[10px] text-gray-400 ml-0.5">自动保存</span>}
         <ChevronDown className="w-3 h-3" />
       </button>
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-[199]" onClick={() => { setIsOpen(false); setConfirmDeleteId(null); setRenamingId(null); }} />
+          <div className="fixed inset-0 z-[199]" onClick={() => { setIsOpen(false); setConfirmDeleteId(null); }} />
           <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-[200] py-1 overflow-hidden">
-            {/* 已保存版本列表 */}
-            {versions.length > 0 ? (
-              versions.map(v => (
-                <div key={v.id} className="group relative">
-                  {confirmDeleteId === v.id ? (
-                    <div className="flex items-center justify-between px-3 py-2 bg-red-50">
-                      <span className="text-xs text-red-600">确认删除？</span>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => { onDelete(v.id); setConfirmDeleteId(null); }} className="p-1 text-red-600 hover:bg-red-100 rounded">
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setConfirmDeleteId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded">
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+            {sorted.map(v => (
+              <div key={v.id} className="group relative">
+                {confirmDeleteId === v.id ? (
+                  <div className="flex items-center justify-between px-3 py-2 bg-red-50">
+                    <span className="text-xs text-red-600">确认删除？</span>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { onDelete(v.id); setConfirmDeleteId(null); }} className="p-1 text-red-600 hover:bg-red-100 rounded">
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setConfirmDeleteId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  ) : (
-                    <div
-                      className={`flex items-center px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${v.id === activeVersionId ? 'bg-blue-50/50' : ''}`}
-                      onClick={() => { onSwitch(v.id); setIsOpen(false); }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        {renamingId === v.id ? (
-                          <input
-                            ref={renameInputRef}
-                            value={renameValue}
-                            onChange={e => setRenameValue(e.target.value)}
-                            onBlur={() => handleRenameSubmit(v.id)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleRenameSubmit(v.id); if (e.key === 'Escape') setRenamingId(null); }}
-                            onClick={e => e.stopPropagation()}
-                            className="text-sm text-gray-800 bg-white border border-[#0A66C2] rounded px-1.5 py-0.5 outline-none w-full"
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-800 truncate block">
-                            {v.name}
-                            {v.id === activeVersionId && <span className="ml-1.5 text-[10px] text-[#0A66C2] font-medium">当前</span>}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-gray-400 block mt-0.5">
-                          {formatTime(v.updatedAt || v.createdAt)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
-                        {!v.isProtected && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setRenamingId(v.id); setRenameValue(v.name); }}
-                            className="p-1 text-gray-300 hover:text-gray-600 rounded"
-                            title="重命名"
-                          >
-                            <PenLine className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {!v.isProtected && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(v.id); }}
-                            className="p-1 text-gray-300 hover:text-red-500 rounded"
-                            title="删除版本"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`flex items-center px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${v.id === activeVersionId ? 'bg-blue-50/50' : ''}`}
+                    onClick={() => { onSwitch(v.id); setIsOpen(false); }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-gray-800 truncate block">
+                        {v.name}
+                        {v.id === activeVersionId && <span className="ml-1.5 text-[10px] text-[#0A66C2] font-medium">编辑中</span>}
+                        {v.versionType === 'original' && v.id !== activeVersionId && <span className="ml-1.5 text-[10px] text-gray-400">只读</span>}
+                      </span>
+                      {v.versionType === 'jd' && (
+                        <span className="text-[10px] text-gray-400 block mt-0.5">{formatTime(v.createdAt)}</span>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="px-3 py-3 text-xs text-gray-400 text-center">暂无保存的版本</div>
-            )}
+                    {v.versionType === 'jd' && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(v.id); }}
+                        className="p-1 text-gray-300 hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-all"
+                        title="删除版本"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
 
-            {/* 版本满 + 有待保存的 JD 版本时提示 */}
-            {hasPendingJd && atLimit && (
+            {jdCount >= 5 && (
               <div className="mx-2 my-1 px-2.5 py-2 bg-amber-50 rounded-lg text-[11px] text-amber-700 leading-relaxed">
-                JD 改写结果已暂存，删除一个版本后将自动保存
+                JD 版本已达上限（5个），请先删除再上传新 JD
               </div>
             )}
-
-            {/* 分隔线 + 保存按钮 */}
-            <div className="h-px bg-gray-100 my-1" />
-            <button
-              onClick={() => { if (!atLimit) { onSave(); setIsOpen(false); } }}
-              disabled={atLimit}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                atLimit ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-              }`}
-              title={atLimit ? '最多保存 5 个版本，请先删除' : ''}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              {atLimit ? '已达上限，请先删除' : '保存当前为新版本'}
-            </button>
           </div>
         </>
       )}
@@ -444,6 +395,7 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
   sections,
   pendingEdits,
   onContentChange,
+  readOnly = false,
 }) => {
   const [sectionModes, setSectionModes] = useState<Record<string, SectionMode>>({});
 
@@ -509,29 +461,31 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
             {/* Section header */}
             <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-50 min-h-[46px]">
               <h3 className="text-sm font-semibold text-[#CA7C5E]">{section.title}</h3>
-              {mode === 'editing' ? (
-                <button
-                  onClick={() => setSectionMode(section.id, 'clean')}
-                  className="ml-auto flex items-center gap-1 text-xs text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
-                  title="完成编辑"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  完成编辑
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    if (mode === 'clean') {
-                      setSectionMode(section.id, 'diff');
-                    } else {
-                      setSectionMode(section.id, 'editing');
-                    }
-                  }}
-                  className="ml-auto p-1 text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
-                  title={mode === 'clean' ? '查看修改' : '编辑此段落'}
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
+              {!readOnly && (
+                mode === 'editing' ? (
+                  <button
+                    onClick={() => setSectionMode(section.id, 'clean')}
+                    className="ml-auto flex items-center gap-1 text-xs text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
+                    title="完成编辑"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    完成编辑
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (mode === 'clean') {
+                        setSectionMode(section.id, 'diff');
+                      } else {
+                        setSectionMode(section.id, 'editing');
+                      }
+                    }}
+                    className="ml-auto p-1 text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
+                    title={mode === 'clean' ? '查看修改' : '编辑此段落'}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )
               )}
             </div>
 
