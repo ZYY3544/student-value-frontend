@@ -440,11 +440,19 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const matchTarget = sel?.text || edit.original;
     const targetSectionId = sel?.sectionId || edit.sectionId;
 
-    // 一律追加，不覆盖（同 section 可能有多个 edit）
-    setPendingEdits(prev => [
-      ...prev,
-      { ...edit, editId: crypto.randomUUID(), sectionId: targetSectionId, original: matchTarget, status: 'pending' },
-    ]);
+    // 同 section + 同 original 的 edit 直接替换（再优化场景），否则追加
+    const newEdit = { ...edit, editId: crypto.randomUUID(), sectionId: targetSectionId, original: matchTarget, status: 'pending' as const };
+    setPendingEdits(prev => {
+      const existingIdx = prev.findIndex(
+        e => e.sectionId === targetSectionId && e.original === matchTarget && e.status === 'pending'
+      );
+      if (existingIdx !== -1) {
+        const updated = [...prev];
+        updated[existingIdx] = newEdit;
+        return updated;
+      }
+      return [...prev, newEdit];
+    });
 
     setPendingSelection(null);
   }, []);
