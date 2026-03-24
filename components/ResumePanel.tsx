@@ -524,11 +524,12 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                 </button>
               ) : (
                 <div className="ml-auto flex items-center gap-1">
-                  {onUndo && undoStack[section.id] && (
+                  {onUndo && section.id in undoStack && (
                     <button
-                      onClick={() => onUndo(section.id)}
-                      className="p-1 text-gray-400 hover:text-[#CA7C5E] transition-colors"
-                      title="撤回上次改写"
+                      onClick={() => undoStack[section.id] && onUndo(section.id)}
+                      disabled={!undoStack[section.id]}
+                      className={`p-1 transition-colors ${undoStack[section.id] ? 'text-gray-400 hover:text-[#CA7C5E] cursor-pointer' : 'text-gray-200 cursor-not-allowed'}`}
+                      title={undoStack[section.id] ? '撤回上次改写' : '已撤回'}
                     >
                       <Undo2 className="w-3.5 h-3.5" />
                     </button>

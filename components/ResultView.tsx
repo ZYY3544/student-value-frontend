@@ -536,8 +536,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       setResumeSections(prev => prev.map(s =>
         s.id === sectionId ? { ...s, content: prevContent } : s
       ));
-      const { [sectionId]: _, ...rest } = stack;
-      return rest;
+      return { ...stack, [sectionId]: '' };
     });
   }, []);
 
