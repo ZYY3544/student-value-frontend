@@ -517,7 +517,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         }).catch(err => console.error('Failed to notify edit:', err));
       }
     }
-    setPendingEdits(prev => prev.filter(e => e.editId !== editId));
+    // 清除已接受的 edit，同时清理同 section 同 original 的残留（再优化遗留）
+    setPendingEdits(prev => prev.filter(e =>
+      e.editId !== editId &&
+      !(e.sectionId === edit.sectionId && e.original === edit.original && e.status === 'pending')
+    ));
   }, [sessionId]);
 
   // JD 优化：直接替换 content + 添加高亮区间（不走 pendingEdits）
