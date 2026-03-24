@@ -552,7 +552,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
               }
             }}
             disabled={isLoading || !sessionId}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-gray-500 border border-gray-200 rounded-lg hover:text-[#0A66C2] hover:border-[#0A66C2]/30 hover:bg-blue-50/50 transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-[#0A66C2] border border-[#0A66C2]/30 bg-blue-50/50 rounded-lg hover:bg-blue-50 hover:border-[#0A66C2]/50 transition-colors disabled:opacity-40"
           >
             <FileSearch className="w-3 h-3" />
             上传 JD
