@@ -204,7 +204,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return [];
   });
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
-  const [undoStack, setUndoStack] = useState<Record<string, string>>({});
   const [parsedJd, setParsedJd] = useState<ParsedJd | null>(null);
   const [jdChecklist, setJdChecklist] = useState<JdMatchItem[]>([]);
   // ref 追踪最新 pendingEdits，避免 handleEditSuggestion 闭包捕获旧值
@@ -470,9 +469,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         const sec = prev[idx];
         const updated = [...prev];
 
-        // 保存改前内容到撤回栈
-        setUndoStack(stack => ({ ...stack, [edit.sectionId]: sec.content }));
-
         // 精确匹配
         if (sec.content.includes(edit.original)) {
           updated[idx] = { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
@@ -527,18 +523,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       !(e.sectionId === edit.sectionId && e.original === edit.original && e.status === 'pending')
     ));
   }, [sessionId]);
-
-  // 撤回改写：恢复到接受前的 content
-  const handleUndoEdit = useCallback((sectionId: string) => {
-    setUndoStack(stack => {
-      const prevContent = stack[sectionId];
-      if (!prevContent) return stack;
-      setResumeSections(prev => prev.map(s =>
-        s.id === sectionId ? { ...s, content: prevContent } : s
-      ));
-      return { ...stack, [sectionId]: '' };
-    });
-  }, []);
 
   // JD 优化：直接替换 content + 添加高亮区间（不走 pendingEdits）
   const handleDirectReplace = useCallback((sectionId: string, original: string, suggested: string): boolean => {
@@ -713,8 +697,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onSetPendingSelection={setPendingSelection}
         onDirectReplace={handleDirectReplace}
         clearHighlights={clearHighlights}
-        undoStack={undoStack}
-        onUndoEdit={handleUndoEdit}
       />
     );
   }

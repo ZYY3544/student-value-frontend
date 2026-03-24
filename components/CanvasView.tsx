@@ -51,9 +51,6 @@ interface CanvasViewProps {
   // JD 优化：直接替换 + 高亮
   onDirectReplace: (sectionId: string, original: string, suggested: string) => boolean;
   clearHighlights: () => void;
-  // 撤回改写
-  undoStack?: Record<string, string>;
-  onUndoEdit?: (sectionId: string) => void;
   // Not needed but passed through
   assessmentContext?: any;
   resumeText?: string;
@@ -83,8 +80,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onSetPendingSelection,
   onDirectReplace,
   clearHighlights,
-  undoStack,
-  onUndoEdit,
   assessmentContext,
 }) => {
 
@@ -243,8 +238,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             sections={resumeSections}
             pendingEdits={pendingEdits}
             onContentChange={onSectionContentChange}
-            undoStack={undoStack}
-            onUndo={onUndoEdit}
           />
         </div>
       </div>

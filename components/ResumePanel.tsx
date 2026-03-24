@@ -4,15 +4,13 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Pencil, Eye, ChevronDown, Trash2, Plus, Check, X, PenLine, Undo2 } from 'lucide-react';
+import { Pencil, Eye, ChevronDown, Trash2, Plus, Check, X, PenLine } from 'lucide-react';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 interface ResumePanelProps {
   sections: ResumeSection[];
   pendingEdits: PendingEdit[];
   onContentChange: (sectionId: string, content: string) => void;
-  undoStack?: Record<string, string>;
-  onUndo?: (sectionId: string) => void;
 }
 
 // 版本选择器下拉组件
@@ -446,8 +444,6 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
   sections,
   pendingEdits,
   onContentChange,
-  undoStack = {},
-  onUndo,
 }) => {
   const [sectionModes, setSectionModes] = useState<Record<string, SectionMode>>({});
 
@@ -523,31 +519,19 @@ export const ResumePanel: React.FC<ResumePanelProps> = ({
                   完成编辑
                 </button>
               ) : (
-                <div className="ml-auto flex items-center gap-1">
-                  {onUndo && section.id in undoStack && (
-                    <button
-                      onClick={() => undoStack[section.id] && onUndo(section.id)}
-                      disabled={!undoStack[section.id]}
-                      className={`p-1 transition-colors ${undoStack[section.id] ? 'text-gray-400 hover:text-[#CA7C5E] cursor-pointer' : 'text-gray-200 cursor-not-allowed'}`}
-                      title={undoStack[section.id] ? '撤回上次改写' : '已撤回'}
-                    >
-                      <Undo2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (mode === 'clean') {
-                        setSectionMode(section.id, 'diff');
-                      } else {
-                        setSectionMode(section.id, 'editing');
-                      }
-                    }}
-                    className="p-1 text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
-                    title={mode === 'clean' ? '查看修改' : '编辑此段落'}
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    if (mode === 'clean') {
+                      setSectionMode(section.id, 'diff');
+                    } else {
+                      setSectionMode(section.id, 'editing');
+                    }
+                  }}
+                  className="ml-auto p-1 text-[#CA7C5E] hover:text-[#a8604a] transition-colors"
+                  title={mode === 'clean' ? '查看修改' : '编辑此段落'}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
               )}
             </div>
 

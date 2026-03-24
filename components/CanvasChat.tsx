@@ -366,8 +366,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         const ok = onDirectReplace?.(edit.sectionId, edit.original, edit.suggested);
         if (ok) successCount++;
 
-        // 替换完成，更新为 ✓
-        doneLines.push(`✓ 第 ${i + 1} 处已优化`);
+        // 替换完成，标记结果
+        doneLines.push(ok ? `✓ 第 ${successCount} 处已优化` : `⚠ 第 ${i + 1} 处未匹配到原文，已跳过`);
         setMessages(prev => {
           const updated = [...prev];
           updated[updated.length - 1] = {
