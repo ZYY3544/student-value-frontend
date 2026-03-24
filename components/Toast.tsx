@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, X } from 'lucide-react';
 
 interface ToastProps {
   message: string;
   visible: boolean;
   onClose: () => void;
   duration?: number;
+  type?: 'success' | 'error';
 }
 
-export const Toast: React.FC<ToastProps> = ({ message, visible, onClose, duration = 4000 }) => {
+export const Toast: React.FC<ToastProps> = ({ message, visible, onClose, duration = 4000, type = 'success' }) => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -35,8 +36,8 @@ export const Toast: React.FC<ToastProps> = ({ message, visible, onClose, duratio
         opacity: show ? 1 : 0,
       }}
     >
-      <div className="flex items-center gap-3 bg-emerald-500 text-white px-6 py-3.5 rounded-2xl shadow-lg shadow-emerald-200">
-        <CheckCircle className="w-5 h-5 shrink-0" />
+      <div className={`flex items-center gap-3 text-white px-6 py-3.5 rounded-2xl shadow-lg ${type === 'error' ? 'bg-rose-500 shadow-rose-200' : 'bg-emerald-500 shadow-emerald-200'}`}>
+        {type === 'error' ? <AlertCircle className="w-5 h-5 shrink-0" /> : <CheckCircle className="w-5 h-5 shrink-0" />}
         <span className="text-sm font-semibold whitespace-nowrap">{message}</span>
         <button
           onClick={() => { setShow(false); setTimeout(onClose, 300); }}

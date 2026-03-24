@@ -6,6 +6,7 @@ import { AuthPage } from './components/AuthPage';
 import { HistoryPage } from './components/HistoryPage';
 import { generateAssessment } from './services/geminiService';
 import { AssessmentInput, AssessmentResult, AppState } from './types';
+import { Toast } from './components/Toast';
 
 const INVITE_CODE_TTL = 24 * 3600 * 1000; // 24h in ms
 
@@ -111,7 +112,7 @@ const App: React.FC = () => {
       column: col,
       durationS,
     });
-    const url = 'https://student-value-backend.onrender.com/api/mini/update-duration';
+    const url = `${import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com'}/api/mini/update-duration`;
     if (useBeacon && navigator.sendBeacon) {
       navigator.sendBeacon(url, new Blob([payload], { type: 'application/json' }));
     } else {
@@ -167,6 +168,7 @@ const App: React.FC = () => {
   const [errors, setErrors] = useState<string[]>([]);
   const [resumeInputMode, setResumeInputMode] = useState<'upload' | 'text'>('upload');
   const [result, setResult] = useState<AssessmentResult | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const handleInputChange = (field: keyof AssessmentInput, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -216,7 +218,7 @@ const App: React.FC = () => {
     } catch (error: unknown) {
       console.error("Assessment Error:", error);
       const msg = error instanceof Error ? error.message : "未知错误";
-      alert(`评估失败：${msg}`);
+      setToast({ message: `评估失败：${msg}`, type: 'error' });
       setAppState(AppState.FORM);
     }
   };
@@ -237,11 +239,11 @@ const App: React.FC = () => {
       `w-full bg-white border ${hasError(field) ? 'border-rose-400' : 'border-slate-200'} text-sm text-slate-900 rounded-2xl py-4 px-5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300`;
 
     return (
-      <div className="flex min-h-screen bg-white font-sans text-slate-900">
+      <div className="flex flex-col md:flex-row min-h-screen bg-white font-sans text-slate-900">
         {/* Left Sidebar */}
-        <aside className="w-[400px] bg-[#0A66C2] p-12 flex flex-col relative overflow-hidden shrink-0">
+        <aside className="w-full md:w-[400px] bg-[#0A66C2] p-6 md:p-12 flex flex-col relative overflow-hidden shrink-0">
           {/* Logo */}
-          <div className="flex items-center gap-3 text-white mb-16 z-10">
+          <div className="flex items-center gap-3 text-white mb-6 md:mb-16 z-10">
             <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
               <Sparkles className="w-6 h-6 text-[#f8ea1a]" />
             </div>
@@ -249,16 +251,16 @@ const App: React.FC = () => {
           </div>
 
           {/* Hero Card */}
-          <div className="bg-white/10 rounded-[40px] p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
-            <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
+          <div className="bg-white/10 rounded-3xl md:rounded-[40px] p-6 md:p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
+            <h1 className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-6 leading-tight">
               开启评估
             </h1>
-            <p className="text-white/80 text-lg mb-12 leading-relaxed">
+            <p className="text-white/80 text-sm md:text-lg mb-6 md:mb-12 leading-relaxed hidden md:block">
               融合500强企业标配的价值评估体系与行业头部最新的薪酬数据库，结合行业HR专家精心打造的求职Agent，不仅能够精准核算您的市场价值，并由专业AI深度拆解您的优劣势，生成最能打动HR的专属简历定制方案。
             </p>
 
             {/* Feature List */}
-            <div className="space-y-8">
+            <div className="space-y-8 hidden md:block">
               <div className="flex items-center gap-4 text-white/60">
                 <div className="bg-white/10 p-2 rounded-lg">
                   <Sparkles className="w-5 h-5" />
@@ -323,22 +325,22 @@ const App: React.FC = () => {
           </div>
 
           {/* Sidebar Footer */}
-          <div className="mt-12 text-white/40 text-sm z-10">
-            &copy; 2025 校园人才估值平台. 版权所有。
+          <div className="mt-6 md:mt-12 text-white/40 text-sm z-10 hidden md:block">
+            &copy; {new Date().getFullYear()} 校园人才估值平台. 版权所有。
           </div>
 
           {/* Background Decoration - 浮动 Logo */}
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
-          <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl"></div>
-          <Diamond className="absolute top-[15%] right-[12%] w-10 h-10 text-white/[0.07] animate-float" />
-          <Diamond className="absolute top-[40%] left-[8%] w-7 h-7 text-white/[0.05] animate-float-soft" style={{ animationDelay: '1s' }} />
-          <Diamond className="absolute bottom-[25%] right-[25%] w-14 h-14 text-white/[0.06] animate-float" style={{ animationDelay: '2s' }} />
-          <Diamond className="absolute bottom-[10%] left-[20%] w-8 h-8 text-white/[0.04] animate-float-soft" style={{ animationDelay: '0.5s' }} />
-          <Diamond className="absolute top-[65%] right-[8%] w-6 h-6 text-white/[0.05] animate-float" style={{ animationDelay: '1.5s' }} />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl hidden md:block"></div>
+          <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl hidden md:block"></div>
+          <Diamond className="absolute top-[15%] right-[12%] w-10 h-10 text-white/[0.07] animate-float hidden md:block" />
+          <Diamond className="absolute top-[40%] left-[8%] w-7 h-7 text-white/[0.05] animate-float-soft hidden md:block" style={{ animationDelay: '1s' }} />
+          <Diamond className="absolute bottom-[25%] right-[25%] w-14 h-14 text-white/[0.06] animate-float hidden md:block" style={{ animationDelay: '2s' }} />
+          <Diamond className="absolute bottom-[10%] left-[20%] w-8 h-8 text-white/[0.04] animate-float-soft hidden md:block" style={{ animationDelay: '0.5s' }} />
+          <Diamond className="absolute top-[65%] right-[8%] w-6 h-6 text-white/[0.05] animate-float hidden md:block" style={{ animationDelay: '1.5s' }} />
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 bg-[#F8FAFC] p-12 overflow-y-auto">
+        <main className="flex-1 bg-[#F8FAFC] p-4 md:p-12 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             {/* Top Header */}
             <header className="flex justify-end gap-4 mb-12">
@@ -718,7 +720,13 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen">
       {renderContent()}
-
+      <Toast
+        message={toast?.message || ''}
+        visible={!!toast}
+        type={toast?.type || 'success'}
+        duration={toast?.type === 'error' ? 6000 : 4000}
+        onClose={() => setToast(null)}
+      />
     </div>
   );
 };

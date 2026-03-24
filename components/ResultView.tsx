@@ -86,7 +86,7 @@ function getResumeHealthDesc(val: number): string {
   return '您的简历健康度有待提升，继续努力！';
 }
 
-const API_BASE = 'https://student-value-backend.onrender.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com';
 
 const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
 const INDUSTRIES = ["互联网", "高科技", "金融", "大健康", "汽车", "消费品", "新零售", "地产", "泛娱乐", "教育", "农业", "通用行业"];

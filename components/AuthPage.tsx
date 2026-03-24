@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Diamond, Loader2, KeyRound } from 'lucide-react';
 
-const API_BASE = 'https://student-value-backend.onrender.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -44,25 +44,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-white font-sans text-slate-900">
+    <div className="flex flex-col md:flex-row min-h-screen bg-white font-sans text-slate-900">
       {/* Left Sidebar */}
-      <aside className="w-[400px] bg-[#0A66C2] p-12 flex flex-col relative overflow-hidden shrink-0">
-        <div className="flex items-center gap-3 text-white mb-16 z-10">
+      <aside className="w-full md:w-[400px] bg-[#0A66C2] p-8 md:p-12 flex flex-col relative overflow-hidden shrink-0">
+        <div className="flex items-center gap-3 text-white mb-8 md:mb-16 z-10">
           <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
             <Sparkles className="w-6 h-6 text-[#f8ea1a]" />
           </div>
           <span className="text-xl font-bold tracking-tight">校园人才估值平台</span>
         </div>
 
-        <div className="bg-white/10 rounded-[40px] p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
-          <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
+        <div className="bg-white/10 rounded-3xl md:rounded-[40px] p-6 md:p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-6 leading-tight">
             开始估值
           </h1>
-          <p className="text-white/80 text-lg mb-12 leading-relaxed">
+          <p className="text-white/80 text-sm md:text-lg mb-6 md:mb-12 leading-relaxed">
             融合500强企业标配的价值评估体系与行业头部最新的薪酬数据库，精准核算您的市场价值。
           </p>
 
-          <div className="space-y-6 mt-auto">
+          <div className="space-y-4 md:space-y-6 mt-auto hidden md:block">
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
               <span className="text-sm">输入验证码即可使用</span>
@@ -78,20 +78,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
           </div>
         </div>
 
-        <div className="mt-12 text-white/40 text-sm z-10">
-          &copy; 2025 校园人才估值平台. 版权所有。
+        <div className="mt-6 md:mt-12 text-white/40 text-sm z-10 hidden md:block">
+          &copy; {new Date().getFullYear()} 校园人才估值平台. 版权所有。
         </div>
 
         {/* Background Decoration */}
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl"></div>
-        <Diamond className="absolute top-[15%] right-[12%] w-10 h-10 text-white/[0.07] animate-float" />
-        <Diamond className="absolute top-[40%] left-[8%] w-7 h-7 text-white/[0.05] animate-float-soft" style={{ animationDelay: '1s' }} />
-        <Diamond className="absolute bottom-[25%] right-[25%] w-14 h-14 text-white/[0.06] animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl hidden md:block"></div>
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl hidden md:block"></div>
+        <Diamond className="absolute top-[15%] right-[12%] w-10 h-10 text-white/[0.07] animate-float hidden md:block" />
+        <Diamond className="absolute top-[40%] left-[8%] w-7 h-7 text-white/[0.05] animate-float-soft hidden md:block" style={{ animationDelay: '1s' }} />
+        <Diamond className="absolute bottom-[25%] right-[25%] w-14 h-14 text-white/[0.06] animate-float hidden md:block" style={{ animationDelay: '2s' }} />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 bg-[#F8FAFC] flex items-center justify-center p-12">
+      <main className="flex-1 bg-[#F8FAFC] flex items-center justify-center p-6 md:p-12">
         <div className="w-full max-w-md">
           <h2 className="text-3xl font-bold text-slate-900 mb-2">输入验证码</h2>
           <p className="text-slate-500 mb-8">请输入您收到的验证码以开始使用</p>

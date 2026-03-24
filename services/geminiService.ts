@@ -6,7 +6,7 @@ import { AssessmentInput, AssessmentResult, Abilities, AbilityItem } from "../ty
  */
 
 // 学生版后端 API 地址（部署后替换为 Render 地址）
-const API_BASE_URL = 'https://student-value-backend.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com';
 
 // 开发模式开关：true=使用模拟数据，false=调用真实API
 const USE_MOCK = false;
