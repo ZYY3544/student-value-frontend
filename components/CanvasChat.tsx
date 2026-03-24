@@ -564,7 +564,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             value={inputValue}
             onChange={e => setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH))}
             onKeyDown={handleKeyDown}
-            placeholder="告诉 Sparky 你想优化哪段简历...（支持粘贴 JD 全文）"
+            placeholder="上传JD，一键完成简历定制化分析与修改！"
             disabled={isLoading || !sessionId}
             rows={1}
             className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 transition-all disabled:bg-gray-100 disabled:text-gray-400 resize-none overflow-hidden"
