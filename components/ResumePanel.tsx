@@ -54,9 +54,9 @@ export const VersionSelector: React.FC<{
     <div className="relative">
       <button
         onClick={() => { setIsOpen(prev => !prev); setConfirmDeleteId(null); setRenamingId(null); }}
-        className="flex items-center gap-1 px-2 py-0.5 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+        className="flex items-center gap-1 px-2 py-0.5 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
       >
-        <span className="max-w-[120px] truncate">{activeVersion ? activeVersion.name : '当前编辑'}</span>
+        <span className="max-w-[120px] truncate">{activeVersion ? activeVersion.name : '版本管理'}</span>
         <ChevronDown className="w-3 h-3" />
       </button>
 
