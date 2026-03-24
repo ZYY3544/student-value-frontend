@@ -9,6 +9,7 @@ import { ArrowLeft, Download, Sparkles } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, VersionSelector } from './ResumePanel';
+import { PrintableResume } from './PrintableResume';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 // 选中文本快捷操作
@@ -318,6 +319,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           </div>
         </div>
       )}
+      {/* 打印专用：隐藏在页面中，window.print() 时显示 */}
+      <PrintableResume resumeSections={resumeSections} />
     </div>
   );
 };

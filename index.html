@@ -204,54 +204,25 @@
       @media print {
         @page {
           size: A4;
-          margin: 18mm 20mm;
+          margin: 0;
         }
 
-        /* 隐藏所有非简历内容 */
+        /* 隐藏所有内容 */
         body > * { display: none !important; }
         body { background: white !important; margin: 0 !important; padding: 0 !important; }
+        #root { display: none !important; }
 
-        /* 报告页打印（ResultView） */
-        .print-area {
+        /* 只显示 PrintableResume */
+        #printable-resume {
           display: block !important;
-          overflow: visible !important;
-          height: auto !important;
-          padding: 0 !important;
-        }
-        .print-area > * { break-inside: avoid; }
-        .print-area div { box-shadow: none !important; }
-        header, .no-print, [data-no-print] { display: none !important; }
-
-        /* 画布页打印（只显示右侧优化版简历） */
-        .canvas-print-area {
-          display: block !important;
-          position: static !important;
+          position: fixed !important;
+          top: 0; left: 0;
           width: 100% !important;
-          height: auto !important;
-          overflow: visible !important;
-          padding: 0 !important;
+          z-index: 99999;
         }
-        .canvas-print-area .resume-section {
-          break-inside: avoid;
-          margin-bottom: 12px;
+        #printable-resume * {
+          box-shadow: none !important;
         }
-        .canvas-print-area .section-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #1a202c;
-          border-bottom: 1px solid #e2e8f0;
-          padding-bottom: 4px;
-          margin-bottom: 8px;
-        }
-        .canvas-print-area .section-content {
-          font-size: 11px;
-          line-height: 1.7;
-          color: #2d3748;
-          white-space: pre-wrap;
-        }
-
-        /* 隐藏画布中非简历部分 */
-        .canvas-no-print { display: none !important; }
       }
 
     </style>
