@@ -253,7 +253,7 @@ const App: React.FC = () => {
           {/* Hero Card */}
           <div className="bg-white/10 rounded-3xl md:rounded-[40px] p-6 md:p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
             <h1 className="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4 leading-tight hidden md:block">
-              你的能力，比简历写的更好。
+              你的能力，<br />比简历写的更好。
             </h1>
             <p className="text-white/60 text-sm md:text-base mb-6 md:mb-10 leading-relaxed hidden md:block">
               上传简历，1 分钟拿到你的校招竞争力报告！<br />
