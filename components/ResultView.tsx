@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit, ResumeExpression, JobComparison, ParsedJd, JdMatchItem, ResumeVersion } from '../types';
 import { supabase } from '../lib/supabase';
 import {
-  TrendingUp, Target, Users, FileText, BarChart3, Bell, Search,
+  TrendingUp, Target, Users, FileText, BarChart3, Bell,
   Lightbulb, Brain, Handshake, PenTool, Shield, Award
 } from 'lucide-react';
 import {
@@ -691,11 +691,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input type="text" placeholder="Search reports..." className="bg-gray-100 border-none rounded-full pl-10 pr-4 py-2 text-sm w-64 outline-none" />
-            </div>
-            <button className="relative p-2 text-gray-500 rounded-full">
+<button className="relative p-2 text-gray-500 rounded-full">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
