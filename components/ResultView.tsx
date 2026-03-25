@@ -678,7 +678,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
   // ===== Report 模式（默认） =====
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#f8fafc] print-area">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#f5f3ef] print-area">
       {/* Navbar */}
       <header className="bg-white border-b border-gray-100 flex-shrink-0 z-50">
         <div className="px-8 h-16 flex items-center justify-between">

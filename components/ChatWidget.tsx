@@ -964,7 +964,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   );
 
   const chatContent = (
-    <div className={`bg-white border border-gray-200 rounded-3xl flex flex-col overflow-hidden shadow-sm ${isExpanded ? 'h-full' : 'h-full'}`}>
+    <div className={`bg-[#f5f3ef] border border-gray-200 rounded-3xl flex flex-col overflow-hidden shadow-sm ${isExpanded ? 'h-full' : 'h-full'}`}>
       {/* Header */}
       <div className="p-6 border-b border-gray-50">
         <div className="flex items-center justify-between mb-1">
