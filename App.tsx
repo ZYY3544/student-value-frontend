@@ -247,34 +247,38 @@ const App: React.FC = () => {
             <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
               <Sparkles className="w-6 h-6 text-[#f8ea1a]" />
             </div>
-            <span className="text-xl font-bold tracking-tight">求职加速器（校园版）</span>
+            <span className="text-xl font-bold tracking-tight">Selarin</span>
           </div>
 
           {/* Hero Card */}
           <div className="bg-white/10 rounded-3xl md:rounded-[40px] p-6 md:p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
-            <p className="text-white/80 text-sm md:text-lg mb-6 md:mb-12 leading-relaxed hidden md:block">
-              融合500强企业标配的价值评估体系与行业头部最新的薪酬数据库，结合行业HR专家精心打造的求职Agent，不仅能够精准核算您的市场价值，并由专业AI深度拆解您的优劣势，生成最能打动HR的专属简历定制方案。
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4 leading-tight hidden md:block">
+              你的能力，比简历写的更好。
+            </h1>
+            <p className="text-white/60 text-sm md:text-base mb-6 md:mb-10 leading-relaxed hidden md:block">
+              上传简历，3 分钟拿到你的校招竞争力报告。<br />
+              AI 帮你找到简历里没写出来的优势，改到 HR 想约你面试。
             </p>
 
             {/* Feature List */}
             <div className="space-y-8 hidden md:block">
               <div className="flex items-center gap-4 text-white/60">
                 <div className="bg-white/10 p-2 rounded-lg">
-                  <Sparkles className="w-5 h-5" />
+                  <Zap className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium">AI 智能分析</span>
+                <span className="text-sm font-medium">3 分钟出报告</span>
               </div>
               <div className="flex items-center gap-4 text-white/60">
                 <div className="bg-white/10 p-2 rounded-lg">
                   <BarChart3 className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium">专业竞争力报告</span>
+                <span className="text-sm font-medium">看清你值多少钱</span>
               </div>
               <div className="flex items-center gap-4 text-white/60">
                 <div className="bg-white/10 p-2 rounded-lg">
-                  <TrendingUp className="w-5 h-5" />
+                  <Sparkles className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium">个性化成长路径</span>
+                <span className="text-sm font-medium">AI 帮你改到位</span>
               </div>
 
               {/* Steps */}
