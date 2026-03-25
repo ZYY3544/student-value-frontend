@@ -1111,8 +1111,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             <div
               className={`max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === 'user'
-                  ? 'bg-[#CA7C5E] rounded-2xl p-4 text-white shadow-md'
-                  : 'bg-gray-50 rounded-2xl p-4 text-gray-700 border border-gray-100'
+                  ? 'bg-[#e8e4df] rounded-2xl p-4 text-gray-800'
+                  : 'p-4 text-gray-700'
               }`}
             >
               {msg.role === 'assistant' ? (
@@ -1187,9 +1187,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       </div>
 
       {/* Input Area */}
-      <div className="p-6 bg-white border-t border-gray-50">
+      <div className="p-6 bg-transparent border-t border-gray-100/50">
         {/* 输入框容器 */}
-        <div className="bg-gray-50 rounded-2xl mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
+        <div className="bg-white rounded-2xl border border-gray-200/60 mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
           <textarea
             ref={inputRef}
             value={inputValue}
