@@ -252,9 +252,6 @@ const App: React.FC = () => {
 
           {/* Hero Card */}
           <div className="bg-white/10 rounded-3xl md:rounded-[40px] p-6 md:p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
-            <h1 className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-6 leading-tight">
-              开启评估
-            </h1>
             <p className="text-white/80 text-sm md:text-lg mb-6 md:mb-12 leading-relaxed hidden md:block">
               融合500强企业标配的价值评估体系与行业头部最新的薪酬数据库，结合行业HR专家精心打造的求职Agent，不仅能够精准核算您的市场价值，并由专业AI深度拆解您的优劣势，生成最能打动HR的专属简历定制方案。
             </p>
