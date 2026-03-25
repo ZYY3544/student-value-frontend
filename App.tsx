@@ -327,7 +327,7 @@ const App: React.FC = () => {
 
           {/* Sidebar Footer */}
           <div className="mt-6 md:mt-12 text-white/40 text-sm z-10 hidden md:block">
-            &copy; {new Date().getFullYear()} 求职加速器（校园版）. 版权所有。
+            &copy; {new Date().getFullYear()} 铭曦管理咨询. 版权所有。
           </div>
 
           {/* Background Decoration - 浮动 Logo */}
