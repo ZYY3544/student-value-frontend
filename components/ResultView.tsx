@@ -687,7 +687,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               <div className="w-8 h-8 bg-[#0A66C2] rounded-lg flex items-center justify-center">
                 <BarChart3 className="text-white w-5 h-5" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-gray-800">Campus Talent Valuation</span>
+              <span className="text-xl font-bold tracking-tight text-gray-800">Job Accelerator</span>
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -715,8 +715,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <span className="text-xs font-bold text-[#0A66C2] tracking-widest uppercase mb-1 block">ASSESSMENT REPORT</span>
-            <h1 className="text-4xl font-bold text-gray-900">评估报告</h1>
+            <span className="text-xs font-bold text-[#0A66C2] tracking-widest uppercase mb-1 block">COMPETITIVENESS REPORT</span>
+            <h1 className="text-4xl font-bold text-gray-900">人才竞争力分析报告</h1>
           </div>
           <button
             onClick={() => window.print()}
