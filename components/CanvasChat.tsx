@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Check, RefreshCw, FileEdit } from 'lucide-react';
+import { Send, Loader2, Check, RefreshCw, FileEdit, X } from 'lucide-react';
 import { ChatMessage, formatContent, parseSseStream, PixelCat } from './ChatWidget';
 import { FileSearch } from 'lucide-react';
 import { PendingEdit, ResumeSection } from '../types';
@@ -102,6 +102,10 @@ interface CanvasChatProps {
   // JD 优化：直接替换 + 高亮
   onDirectReplace?: (sectionId: string, original: string, suggested: string) => boolean;
   clearHighlights?: () => void;
+  // 引用模式
+  quotedSelection?: { text: string; sectionId?: string; sectionTitle?: string } | null;
+  onClearQuote?: () => void;
+  onSetPendingSelection?: (sel: { text: string; sectionId: string } | null) => void;
 }
 
 // JD 自动检测：长文本 + 多个 JD 特征关键词 + 结构性判断
@@ -135,6 +139,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   resumeSections = [],
   onDirectReplace,
   clearHighlights,
+  quotedSelection,
+  onClearQuote,
+  onSetPendingSelection,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -412,14 +419,44 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
 
   // autoStart 已移除：进入画布后保留对话历史，等用户主动操作
 
+  // 引用模式：自动聚焦输入框
+  useEffect(() => {
+    if (quotedSelection) {
+      inputRef.current?.focus();
+    }
+  }, [quotedSelection]);
+
+  // 发送带引用的消息
+  const sendWithQuote = useCallback(() => {
+    const text = inputValue.trim();
+    if (!text || !quotedSelection) return;
+    const sec = quotedSelection.sectionTitle ? `[SECTION:${quotedSelection.sectionTitle}] ` : '';
+    const prompt = `[ACTION:定向改写] ${sec}[QUOTE:${quotedSelection.text}] ${text}`;
+    const display = `[QUICK:💬 ${text.slice(0, 30)}${text.length > 30 ? '...' : ''}]${prompt}`;
+    // 设置 pendingSelection 以便后续 EDIT 精确定位
+    if (quotedSelection.sectionId && onSetPendingSelection) {
+      onSetPendingSelection({
+        text: quotedSelection.text,
+        sectionId: quotedSelection.sectionId,
+      });
+    }
+    onClearQuote?.();
+    setInputValue('');
+    sendMessageRef.current(display);
+  }, [inputValue, quotedSelection, onClearQuote, onSetPendingSelection]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendMessage();
+        if (quotedSelection) {
+          sendWithQuote();
+        } else {
+          sendMessage();
+        }
       }
     },
-    [sendMessage]
+    [sendMessage, sendWithQuote, quotedSelection]
   );
 
   // 接受改写：确认替换，清除 diff，给用户反馈
@@ -558,13 +595,32 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             上传 JD
           </button>
         </div>
+        {/* 引用块 */}
+        {quotedSelection && (
+          <div className="mb-2 bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+            <div className="flex items-start gap-2 px-3 py-2">
+              <div className="flex-1 min-w-0 border-l-2 border-[#CA7C5E] pl-2.5">
+                <p className="text-xs text-gray-400 mb-0.5">引用原文</p>
+                <p className="text-sm text-gray-600 leading-relaxed truncate">
+                  {quotedSelection.text.slice(0, 80)}{quotedSelection.text.length > 80 ? '...' : ''}
+                </p>
+              </div>
+              <button
+                onClick={onClearQuote}
+                className="flex-shrink-0 mt-0.5 p-0.5 text-gray-400 hover:text-gray-600 rounded transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
         <div className="relative">
           <textarea
             ref={inputRef}
             value={inputValue}
             onChange={e => setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH))}
             onKeyDown={handleKeyDown}
-            placeholder="上传JD，一键完成定制化简历！"
+            placeholder={quotedSelection ? "输入你的改写要求，按回车发送..." : "上传JD，一键完成定制化简历！"}
             disabled={isLoading || !sessionId}
             rows={1}
             className="w-full bg-gray-50 border-none rounded-2xl pl-5 pr-14 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#CA7C5E]/20 transition-all disabled:bg-gray-100 disabled:text-gray-400 resize-none overflow-hidden"
@@ -576,7 +632,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             }}
           />
           <button
-            onClick={() => sendMessage()}
+            onClick={() => quotedSelection ? sendWithQuote() : sendMessage()}
             disabled={!inputValue.trim() || isLoading || !sessionId}
             className="absolute right-2 bottom-2 w-9 h-9 bg-[#CA7C5E] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#CA7C5E]/30 disabled:bg-gray-300 disabled:shadow-none transition-colors"
           >

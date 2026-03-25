@@ -5,7 +5,7 @@
  */
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Download, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, Sparkles, Quote } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, VersionSelector } from './ResumePanel';
@@ -113,6 +113,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     sectionTitle?: string;
   } | null>(null);
   const [externalMessage, setExternalMessage] = useState<string | null>(null);
+
+  // 引用模式：用户选中文本后点"引用"，文本出现在输入框上方
+  const [quotedSelection, setQuotedSelection] = useState<{
+    text: string;
+    sectionId?: string;
+    sectionTitle?: string;
+  } | null>(null);
 
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
     if (isReadOnly) return; // 原始简历只读，忽略改写建议
@@ -222,6 +229,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             resumeSections={resumeSections}
             onDirectReplace={onDirectReplace}
             clearHighlights={clearHighlights}
+            quotedSelection={quotedSelection}
+            onClearQuote={() => setQuotedSelection(null)}
+            onSetPendingSelection={onSetPendingSelection}
           />
         </div>
 
@@ -276,6 +286,23 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
               {action.label}
             </button>
           ))}
+          <div className="w-px h-4 bg-gray-200" />
+          <button
+            onClick={() => {
+              setQuotedSelection({
+                text: selectionToolbar.text,
+                sectionId: selectionToolbar.sectionId,
+                sectionTitle: selectionToolbar.sectionTitle,
+              });
+              setSelectionToolbar(null);
+              window.getSelection()?.removeAllRanges();
+            }}
+            disabled={isLoading}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-[#CA7C5E] hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-40"
+          >
+            <Quote className="w-3 h-3" />
+            引用
+          </button>
         </div>
       )}
 
@@ -295,8 +322,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
               <div className="flex gap-3">
                 <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">2</span>
                 <div>
-                  <span className="font-semibold text-gray-800">选中润色</span>
-                  <span className="text-gray-500"> — 选中右侧简历中的任意段落，点击"润色"，Sparky 直接帮你改</span>
+                  <span className="font-semibold text-gray-800">选中操作</span>
+                  <span className="text-gray-500"> — 选中右侧简历文本，点"润色"一键优化，或点"引用"带上你的想法让 Sparky 改</span>
                 </div>
               </div>
               <div className="flex gap-3">
