@@ -176,7 +176,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          返回报告
+          退出简历画布
         </button>
         <div className="h-5 w-px bg-gray-200" />
         <div className="flex items-center gap-2">
