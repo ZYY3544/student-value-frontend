@@ -346,8 +346,8 @@ const App: React.FC = () => {
 
             {/* Title Section */}
             <section className="mb-12">
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">个人专业信息</h2>
-              <p className="text-slate-500">填写下方详细信息，为您生成专属竞争力报告。</p>
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">个人信息</h2>
+              <p className="text-slate-500">填写下方信息，生成你的专属竞争力报告，还能直享 AI 一站式解读报告、改写简历、模拟面试等服务！</p>
             </section>
 
             {/* Form Sections */}
