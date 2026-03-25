@@ -1,9 +1,9 @@
 /**
  * CareerForm - 职业规划信息收集表单（嵌入聊天气泡中）
- * 检测 [CAREER_FORM] 标记后渲染为可交互的选择题卡片
+ * 问题逐个流式出现，每题间隔 600ms，给用户渐进式的交互体验
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface CareerFormProps {
   onSubmit: (answers: string) => void;
@@ -48,6 +48,16 @@ const LABELS: Record<string, string> = {
 export const CareerForm: React.FC<CareerFormProps> = ({ onSubmit }) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(0);
+
+  // 逐个显示问题，每隔 600ms 出现一个
+  useEffect(() => {
+    if (visibleCount >= QUESTIONS.length) return;
+    const timer = setTimeout(() => {
+      setVisibleCount(prev => prev + 1);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [visibleCount]);
 
   const allAnswered = QUESTIONS.every(q => answers[q.id]);
 
@@ -66,8 +76,11 @@ export const CareerForm: React.FC<CareerFormProps> = ({ onSubmit }) => {
 
   return (
     <div className="mt-3 space-y-4">
-      {QUESTIONS.map((q) => (
-        <div key={q.id}>
+      {QUESTIONS.slice(0, visibleCount).map((q, idx) => (
+        <div
+          key={q.id}
+          className="animate-[fadeIn_0.4s_ease-out]"
+        >
           <p className="text-sm font-semibold text-gray-700 mb-2">{q.label}</p>
           <div className="flex flex-wrap gap-2">
             {q.options.map((opt) => (
@@ -86,17 +99,19 @@ export const CareerForm: React.FC<CareerFormProps> = ({ onSubmit }) => {
           </div>
         </div>
       ))}
-      <button
-        onClick={handleSubmit}
-        disabled={!allAnswered}
-        className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-          allAnswered
-            ? 'bg-[#0A66C2] text-white hover:bg-[#084e96]'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-        }`}
-      >
-        开始分析
-      </button>
+      {visibleCount >= QUESTIONS.length && (
+        <button
+          onClick={handleSubmit}
+          disabled={!allAnswered}
+          className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors animate-[fadeIn_0.4s_ease-out] ${
+            allAnswered
+              ? 'bg-[#0A66C2] text-white hover:bg-[#084e96]'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          开始分析
+        </button>
+      )}
     </div>
   );
 };
