@@ -247,7 +247,7 @@ const App: React.FC = () => {
             <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
               <Sparkles className="w-6 h-6 text-[#f8ea1a]" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Selarin</span>
+            <span className="text-xl font-bold tracking-tight">求职加速器（校园版）</span>
           </div>
 
           {/* Hero Card */}
