@@ -180,7 +180,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     if (!text || isLoading || !sessionId) return;
 
     // 解析快捷操作标记 [QUICK:用户可见文本]LLM指令
-    const quickMatch = text.match(/^\[QUICK:(.+?)\]/);
+    const quickMatch = text.match(/^\[QUICK:([\s\S]+?)\]/);
     const messageToSend = quickMatch ? text.slice(quickMatch[0].length) : text;
 
     // JD 自动检测：用户直接粘贴了 JD 文本 → 引导去点上传按钮
