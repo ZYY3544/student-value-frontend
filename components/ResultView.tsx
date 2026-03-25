@@ -724,7 +724,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         </div>
 
         {/* 1. 你的能力底子 */}
-        <div className="bg-[#f5f3ef] rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
+        <div className="bg-[#faf9f6] rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
           {/* 标题区 */}
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
@@ -785,7 +785,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
         {/* 2. 薪酬对标 */}
         {result.jobComparisons && result.jobComparisons.length > 0 && (
-          <div className="bg-[#f5f3ef] rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
+          <div className="bg-[#faf9f6] rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
@@ -828,7 +828,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
         {/* 3. 简历诊断 */}
         {result.resumeExpression && (
-          <div className="bg-[#f5f3ef] rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
+          <div className="bg-[#faf9f6] rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
                 <FileText className="text-amber-600 w-6 h-6" />
