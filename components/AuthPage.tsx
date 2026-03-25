@@ -51,7 +51,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
           <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
             <Sparkles className="w-6 h-6 text-[#f8ea1a]" />
           </div>
-          <span className="text-xl font-bold tracking-tight">校园人才估值平台</span>
+          <span className="text-xl font-bold tracking-tight">求职加速器（校园版）</span>
         </div>
 
         <div className="bg-white/10 rounded-3xl md:rounded-[40px] p-6 md:p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
@@ -79,7 +79,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
         </div>
 
         <div className="mt-6 md:mt-12 text-white/40 text-sm z-10 hidden md:block">
-          &copy; {new Date().getFullYear()} 校园人才估值平台. 版权所有。
+          &copy; {new Date().getFullYear()} 求职加速器（校园版）. 版权所有。
         </div>
 
         {/* Background Decoration */}
