@@ -157,7 +157,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, []);
 
-  const handleExportPdf = useCallback(() => { window.print(); }, []);
+  const [showExportTip, setShowExportTip] = useState(false);
+  const handleExportPdf = useCallback(() => { setShowExportTip(true); }, []);
 
   const [showGuide, setShowGuide] = useState(() => !localStorage.getItem('canvas_guide_shown'));
   const dismissGuide = useCallback(() => {
@@ -319,8 +320,21 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           </div>
         </div>
       )}
-      {/* 打印专用：隐藏在页面中，window.print() 时显示 */}
-      <PrintableResume resumeSections={resumeSections} />
+      {/* 导出 PDF 提示弹窗 */}
+      {showExportTip && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm text-center">
+            <p className="text-lg font-semibold text-gray-800 mb-2">功能开发中</p>
+            <p className="text-sm text-gray-500 mb-6">导出 PDF 功能正在开发中，敬请期待！</p>
+            <button
+              onClick={() => setShowExportTip(false)}
+              className="px-6 py-2 bg-[#0A66C2] text-white text-sm font-medium rounded-lg hover:bg-[#004F90] transition-colors"
+            >
+              知道了
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
