@@ -343,26 +343,6 @@ const App: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 bg-[#F8FAFC] p-4 md:p-12 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
-            {/* Top Header */}
-            <header className="flex justify-end gap-4 mb-12">
-              <button
-                onClick={() => setAppState(AppState.HISTORY)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-full shadow-sm text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                <Clock className="w-4 h-4" />
-                历史记录
-              </button>
-              {auth && (
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-full shadow-sm text-sm font-medium text-slate-400 hover:text-rose-500 transition-colors"
-                  title="退出登录"
-                >
-                  <LogOut className="w-4 h-4" />
-                  退出
-                </button>
-              )}
-            </header>
 
             {/* Title Section */}
             <section className="mb-12">
