@@ -256,8 +256,8 @@ const App: React.FC = () => {
               你的能力，比简历写的更好。
             </h1>
             <p className="text-white/60 text-sm md:text-base mb-6 md:mb-10 leading-relaxed hidden md:block">
-              上传简历，3 分钟拿到你的校招竞争力报告。<br />
-              AI 帮你找到简历里没写出来的优势，改到 HR 想约你面试。
+              上传简历，1 分钟拿到你的校招竞争力报告！<br />
+              帮你找到简历里没写出来的优势，一直改到 HR 抢着约你面试！！
             </p>
 
             {/* Feature List */}
@@ -266,13 +266,13 @@ const App: React.FC = () => {
                 <div className="bg-white/10 p-2 rounded-lg">
                   <Zap className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium">3 分钟出报告</span>
+                <span className="text-sm font-medium">1 分钟出报告</span>
               </div>
               <div className="flex items-center gap-4 text-white/60">
                 <div className="bg-white/10 p-2 rounded-lg">
                   <BarChart3 className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium">看清你值多少钱</span>
+                <span className="text-sm font-medium">看清你的竞争力</span>
               </div>
               <div className="flex items-center gap-4 text-white/60">
                 <div className="bg-white/10 p-2 rounded-lg">
