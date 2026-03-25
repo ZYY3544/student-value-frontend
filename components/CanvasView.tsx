@@ -115,15 +115,17 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   const [externalMessage, setExternalMessage] = useState<string | null>(null);
 
   const handleEditSuggestion = useCallback((edit: Omit<PendingEdit, 'status'>) => {
-    // 直接转发，matchTarget 由 ResultView 的 pendingSelection 决定
+    if (isReadOnly) return; // 原始简历只读，忽略改写建议
     onEditSuggestion(edit);
-  }, [onEditSuggestion]);
+  }, [onEditSuggestion, isReadOnly]);
 
   const handleAcceptEdit = useCallback((editId: string) => {
+    if (isReadOnly) return; // 原始简历只读，不允许接受改写
     onAcceptEdit(editId);
-  }, [onAcceptEdit]);
+  }, [onAcceptEdit, isReadOnly]);
 
   const handleMouseUp = useCallback(() => {
+    if (isReadOnly) return; // 原始简历只读，不弹润色工具栏
     requestAnimationFrame(() => {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed) return;
@@ -238,8 +240,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
       </div>
 
-      {/* 选中文本浮动工具栏 */}
-      {selectionToolbar && (
+      {/* 选中文本浮动工具栏（原始简历只读模式下不显示） */}
+      {selectionToolbar && !isReadOnly && (
         <div
           ref={toolbarRef}
           className="fixed z-[100] flex items-center gap-0.5 bg-white rounded-xl shadow-xl border border-gray-200 px-1.5 py-1"
