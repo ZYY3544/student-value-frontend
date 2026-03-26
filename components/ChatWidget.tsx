@@ -452,6 +452,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef(false);
+  // 画布介绍是否已触发过（整个会话只触发一次）
+  const canvasIntroShownRef = useRef(false);
   // 用于等待 sessionId 就绪的 promise
   const sessionReadyRef = useRef<{ resolve: (id: string) => void } | null>(null);
   const sessionPromiseRef = useRef<Promise<string> | null>(null);
@@ -781,21 +783,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     )) {
       setMessages(prev => [...prev, { role: 'user', content: userDisplay }]);
       setInputValue('');
-      // 根据用户简历和评测信息生成个性化建议
-      const { jobTitle, targetCompany } = assessmentContext;
-      // 从简历中提取经历段落标题作为建议起点
-      const expMatch = resumeText.match(/(?:实习|项目|工作|经历|经验)[：:]\s*(.{2,20})/);
-      const expHint = expMatch ? expMatch[1].replace(/[,，。.、\s]+$/, '') : '';
-      let suggestion = '好的，正在为你打开简历画布模式';
-      if (expHint && jobTitle) {
-        suggestion += `，我建议先从「${expHint}」这段经历开始优化，重点突出和${jobTitle}相关的部分，你觉得呢？`;
-      } else if (jobTitle && targetCompany) {
-        suggestion += `，我建议先从和${targetCompany}${jobTitle}岗位最相关的经历开始优化，你觉得呢？`;
-      } else if (jobTitle) {
-        suggestion += `，我建议先从和${jobTitle}最相关的经历开始优化，你觉得呢？`;
-      } else {
-        suggestion += '，我们从第一段经历开始逐段优化吧～';
+
+      // 首次进入：显示画布功能介绍；非首次：直接跳转
+      if (canvasIntroShownRef.current) {
+        onEnterCanvas();
+        return;
       }
+      canvasIntroShownRef.current = true;
+
+      const suggestion = '好的，正在为你打开简历画布。在画布里你可以：选中简历文字点「润色」一键优化，或点「引用」写上你的想法让我定向改写，也可以直接在对话框里告诉我你想改哪里。如果有目标岗位的 JD，还能上传 JD 一键定制简历。';
+
       // 先显示思考气泡（三个点）
       setIsLoading(true);
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
@@ -1208,7 +1205,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           <div className="flex items-center justify-between px-2 pb-2">
             {onEnterCanvas ? (
               <button
-                onClick={onEnterCanvas}
+                onClick={() => sendMessage('简历画布')}
                 disabled={isLoading || isInitializing || isTyping}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-[#CA7C5E] hover:bg-[#CA7C5E]/10 disabled:opacity-40 transition-colors"
               >
