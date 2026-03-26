@@ -867,7 +867,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 ))}
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-4 leading-relaxed">说明：简历表达力评分衡量的是简历写作质量，不代表个人能力水平，想要了解每个维度的具体含义和提升方向，在右侧对话框里问问Sparky吧～</p>
+            <p className="text-xs text-gray-400 mt-4 leading-relaxed">说明：简历表达力评分衡量的是简历写作质量，不代表个人能力水平，想要了解每个维度的具体含义和提升方向，可在右侧对话框里咨询Sparky。</p>
           </div>
         )}
 
