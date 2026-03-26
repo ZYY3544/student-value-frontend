@@ -711,7 +711,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <span className="text-xs font-bold text-[#0A66C2] tracking-widest uppercase mb-1 block">COMPETITIVENESS REPORT</span>
+            <span className="text-[11px] font-bold text-[#0A66C2] tracking-[0.15em] uppercase mb-1 block">COMPETITIVENESS ANALYSIS REPORT</span>
             <h1 className="text-4xl font-bold text-gray-900">人才竞争力分析报告</h1>
           </div>
           <button
