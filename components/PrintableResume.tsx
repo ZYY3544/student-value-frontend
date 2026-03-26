@@ -1,7 +1,10 @@
 /**
  * PrintableResume - 打印专用简历组件
- * 基于 Google AI Studio 生成的 A4 模板排版
+ * 排版参照 App.tsx 模板：姓名居中 + 段落标题加粗黑色下划线
  * 平时 hidden，window.print() 时 print:block 显示
+ *
+ * 因 sec.content 是纯文本，暂用 whitespace-pre-wrap 渲染，
+ * 未来 content 结构化后可实现公司名+时间的 flex justify-between 布局
  */
 
 import React from 'react';
@@ -43,44 +46,6 @@ function parsePersonalInfo(content: string) {
   return { name, phone, email };
 }
 
-/** 渲染 section content：识别 bullet 行和普通行，保留模板排版风格 */
-function renderSectionContent(content: string) {
-  const lines = content.split('\n');
-  const bullets: string[] = [];
-  const plain: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (/^[•·\-*●○]\s*/.test(trimmed)) {
-      bullets.push(trimmed.replace(/^[•·\-*●○]\s*/, ''));
-    } else {
-      plain.push(trimmed);
-    }
-  }
-
-  if (bullets.length > 0 && plain.length === 0) {
-    return (
-      <ul className="list-disc ml-5 text-sm space-y-1">
-        {bullets.map((b, i) => <li key={i}>{b}</li>)}
-      </ul>
-    );
-  }
-
-  return (
-    <div>
-      {plain.length > 0 && (
-        <div className="text-sm whitespace-pre-wrap mb-1">{plain.join('\n')}</div>
-      )}
-      {bullets.length > 0 && (
-        <ul className="list-disc ml-5 text-sm space-y-1">
-          {bullets.map((b, i) => <li key={i}>{b}</li>)}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 export const PrintableResume: React.FC<PrintableResumeProps> = ({ resumeSections }) => {
   if (resumeSections.length === 0) return null;
 
@@ -102,7 +67,7 @@ export const PrintableResume: React.FC<PrintableResumeProps> = ({ resumeSections
           lineHeight: '1.5',
         }}
       >
-        {/* Header — 模板风格：姓名居中大字 + 联系方式 */}
+        {/* Header — 姓名居中大字 + 联系方式 */}
         {personalInfo && (
           <header className="mb-8 text-center">
             <h1 className="text-3xl font-bold tracking-tight mb-2">{personalInfo.name}</h1>
@@ -114,13 +79,15 @@ export const PrintableResume: React.FC<PrintableResumeProps> = ({ resumeSections
           </header>
         )}
 
-        {/* Body Sections — 模板风格：标题加粗+黑色下划线，内容用 bullet list */}
+        {/* Body Sections — 标题加粗+黑色下划线，内容 pre-wrap 保留原文格式 */}
         {bodySections.map((section) => (
           <section key={section.id} className="mb-6" style={{ breakInside: 'avoid' }}>
             <h2 className="text-base font-bold border-b border-black mb-2 pb-0.5">
               {section.title}
             </h2>
-            {renderSectionContent(section.content)}
+            <div className="text-sm whitespace-pre-wrap leading-relaxed">
+              {section.content}
+            </div>
           </section>
         ))}
       </div>
