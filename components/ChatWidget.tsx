@@ -791,7 +791,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       }
       canvasIntroShownRef.current = true;
 
-      const suggestion = '好的，正在为你打开简历画布。在画布里你可以：选中简历文字点「润色」一键优化，或点「引用」写上你的想法让我定向改写，也可以直接在对话框里告诉我你想改哪里。如果有目标岗位的 JD，还能上传 JD 一键定制简历。';
+      const suggestion = '正在为你打开简历画布，选中文字就能开始优化。';
 
       // 先显示思考气泡（三个点）
       setIsLoading(true);

@@ -315,29 +315,31 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
               <div className="flex gap-3">
                 <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">1</span>
                 <div>
-                  <span className="font-semibold text-gray-800">对话改写</span>
-                  <span className="text-gray-500"> — 直接跟 Sparky 说你想改哪里，它会给出修改建议并在右侧显示 diff 对比</span>
+                  <span className="font-semibold text-gray-800">选中润色</span>
+                  <span className="text-gray-500"> — 选中简历中的文字，点"润色"一键优化</span>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">2</span>
                 <div>
-                  <span className="font-semibold text-gray-800">选中操作</span>
-                  <span className="text-gray-500"> — 选中右侧简历文本，点"润色"一键优化，或点"引用"带上你的想法让 Sparky 改</span>
+                  <span className="font-semibold text-gray-800">引用改写</span>
+                  <span className="text-gray-500"> — 选中文字点"引用"，写上你的想法让 Sparky 定向改写</span>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">3</span>
                 <div>
-                  <span className="font-semibold text-gray-800">自由编辑</span>
-                  <span className="text-gray-500"> — 你也可以直接在右侧简历中点击铅笔图标手动编辑</span>
+                  <span className="font-semibold text-gray-800">上传 JD</span>
+                  <span className="text-gray-500"> — 点左下角"上传 JD"，一键定制简历匹配目标岗位</span>
                 </div>
               </div>
-            </div>
-            <div className="mt-5 p-3 bg-amber-50 rounded-xl">
-              <p className="text-xs text-amber-700">
-                <span className="font-semibold">小 tips：</span>Sparky 支持联网搜索岗位 JD，你可以说"帮我搜一下字节的产品经理 JD"，然后让它结合 JD 来定制改写你的简历
-              </p>
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-5 h-5 bg-[#0A66C2] text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">4</span>
+                <div>
+                  <span className="font-semibold text-gray-800">自由编辑</span>
+                  <span className="text-gray-500"> — 点铅笔图标直接手动修改</span>
+                </div>
+              </div>
             </div>
             <button
               onClick={dismissGuide}
