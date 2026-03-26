@@ -682,10 +682,11 @@ const App: React.FC = () => {
             </div>
             <div className="h-7 overflow-hidden relative mb-2">
               <div className="animate-loading-scroll">
-                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在匹配校招薪酬数据...</h2>
-                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在分析院校竞争力...</h2>
-                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在解码能力画像...</h2>
-                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">报告已就绪，即将揭晓你的校招竞争力...</h2>
+                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在解析你的简历结构...</h2>
+                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在分析你的核心能力画像...</h2>
+                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在诊断你的简历健康度...</h2>
+                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">正在匹配校招市场薪酬数据...</h2>
+                <h2 className="h-7 flex items-center justify-center text-lg font-black text-[#110e0c] whitespace-nowrap">报告生成完毕，正在加载...</h2>
               </div>
             </div>
           </div>
