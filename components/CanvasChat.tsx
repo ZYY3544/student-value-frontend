@@ -72,13 +72,19 @@ const EditSuggestionCard: React.FC<{
   <div className="mt-2 rounded-xl border border-[#CA7C5E]/20 bg-[#FDF5F0] overflow-hidden">
     <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#CA7C5E]/10">
       <FileEdit className="w-3.5 h-3.5 text-[#CA7C5E]" />
-      <span className="text-xs font-semibold text-[#CA7C5E]">改写建议</span>
+      <span className="text-xs font-semibold text-[#CA7C5E]">{suggested ? '改写建议' : '删除该段'}</span>
     </div>
-    <div className="px-3 py-2.5">
-      <div className="text-sm text-gray-700 bg-white rounded-lg px-3 py-2 border border-gray-100 leading-relaxed whitespace-pre-wrap">
-        {suggested}
+    {suggested ? (
+      <div className="px-3 py-2.5">
+        <div className="text-sm text-gray-700 bg-white rounded-lg px-3 py-2 border border-gray-100 leading-relaxed whitespace-pre-wrap">
+          {suggested}
+        </div>
       </div>
-    </div>
+    ) : (
+      <div className="px-3 py-2.5">
+        <div className="text-sm text-gray-400 italic px-3 py-2">点击"接受"将删除选中的文字</div>
+      </div>
+    )}
   </div>
 );
 
@@ -432,7 +438,8 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     if (!text || !quotedSelection) return;
     const sec = quotedSelection.sectionTitle ? `[SECTION:${quotedSelection.sectionTitle}] ` : '';
     const prompt = `[ACTION:定向改写] ${sec}[QUOTE:${quotedSelection.text}] ${text}`;
-    const display = `[QUICK:💬 ${text.slice(0, 30)}${text.length > 30 ? '...' : ''}]${prompt}`;
+    const quotedPreview = quotedSelection.text.slice(0, 50) + (quotedSelection.text.length > 50 ? '...' : '');
+    const display = `[QUICK:[QUOTE_MSG:${quotedPreview}|||${text}]]${prompt}`;
     // 设置 pendingSelection 以便后续 EDIT 精确定位
     if (quotedSelection.sectionId && onSetPendingSelection) {
       onSetPendingSelection({
@@ -528,9 +535,20 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '300ms' }} />
                       </span>
                     )
-                  ) : (
-                    msg.content
-                  )}
+                  ) : (() => {
+                    const quoteMatch = msg.content.match(/^\[QUOTE_MSG:([\s\S]+?)\|\|\|([\s\S]+)\]$/);
+                    if (quoteMatch) {
+                      return (
+                        <>
+                          <div className="bg-[#b5705a] rounded-lg px-2.5 py-1.5 mb-2 border-l-2 border-white/50">
+                            <p className="text-xs text-white/70 leading-relaxed">{quoteMatch[1]}</p>
+                          </div>
+                          <span>{quoteMatch[2]}</span>
+                        </>
+                      );
+                    }
+                    return msg.content;
+                  })()}
                 </div>
               )}
               {/* 修改原因（作为 Sparky 的文字回复） + 改写建议卡片 */}
