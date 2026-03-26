@@ -94,6 +94,8 @@ interface ChatWidgetProps {
   onSectionsReady?: (sections: { id: string; type: string; title: string; content: string }[]) => void;
   userId?: string;
   preloadedGreeting?: string;
+  forceExpanded?: boolean;
+  onForceExpandedConsumed?: () => void;
 }
 
 // 跳动省略号动画组件
@@ -433,6 +435,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   onSectionsReady,
   userId,
   preloadedGreeting,
+  forceExpanded,
+  onForceExpandedConsumed,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [isInitializing, setIsInitializing] = useState(false);
@@ -457,6 +461,14 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   // 用于等待 sessionId 就绪的 promise
   const sessionReadyRef = useRef<{ resolve: (id: string) => void } | null>(null);
   const sessionPromiseRef = useRef<Promise<string> | null>(null);
+
+  // 外部触发展开（退出画布时）
+  useEffect(() => {
+    if (forceExpanded) {
+      setIsExpanded(true);
+      onForceExpandedConsumed?.();
+    }
+  }, [forceExpanded, onForceExpandedConsumed]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

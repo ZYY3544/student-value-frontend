@@ -191,6 +191,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
   // ===== Canvas 状态 =====
   const [viewMode, setViewMode] = useState<'report' | 'canvas'>('report');
+  const [chatForceExpanded, setChatForceExpanded] = useState(false);
   const [resumeSections, setResumeSections] = useState<ResumeSection[]>(() => {
     // 从评测结果预加载简历段落
     if (result.resumeSections?.length) {
@@ -663,7 +664,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onEditSuggestion={handleEditSuggestion}
         onAcceptEdit={handleAcceptEdit}
         onSectionContentChange={handleSectionContentChange}
-        onExitCanvas={() => setViewMode('report')}
+        onExitCanvas={() => { setViewMode('report'); setChatForceExpanded(true); }}
         versions={versions}
         activeVersionId={activeVersionId}
         onSwitchVersion={handleSwitchVersion}
@@ -879,6 +880,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       <ChatWidget
         {...chatProps}
         onEnterCanvas={handleEnterCanvas}
+        forceExpanded={chatForceExpanded}
+        onForceExpandedConsumed={() => setChatForceExpanded(false)}
       />
       </div>
       </div>
