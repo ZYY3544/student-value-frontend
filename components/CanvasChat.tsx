@@ -322,7 +322,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       const res = await fetch(`${apiBase}/api/chat/jd-optimize`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ sessionId, jdText }),
+        body: JSON.stringify({ sessionId, jdText, resumeSections }),
       });
 
       if (!res.ok) {
