@@ -302,7 +302,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const jdCount = curVersions.filter(v => v.versionType === 'jd').length;
     if (jdCount >= 5) return null;
 
-    const jdName = extractJdName(jdContent);
+    const now = new Date();
+    const ts = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const jdName = `${extractJdName(jdContent)} (${ts})`;
 
     // 始终基于通用版 fork（不是当前屏幕内容）
     const general = curVersions.find(v => v.versionType === 'general');
