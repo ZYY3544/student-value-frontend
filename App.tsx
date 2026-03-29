@@ -3,30 +3,17 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Diamond, FileText, Loader2, Sparkles, X, ChevronDown, AlertCircle, Lock, GraduationCap, Briefcase, CloudUpload, Zap, BarChart3, TrendingUp, LogOut, Clock } from 'lucide-react';
 import { ResultView } from './components/ResultView';
 import { AuthPage } from './components/AuthPage';
+import { WechatLoginPage } from './components/WechatLoginPage';
+import { WechatCallback } from './components/WechatCallback';
+import { PaymentPage } from './components/PaymentPage';
 import { HistoryPage } from './components/HistoryPage';
 import { generateAssessment } from './services/geminiService';
 import { AssessmentInput, AssessmentResult, AppState } from './types';
 import { Toast } from './components/Toast';
-
-const INVITE_CODE_TTL = 24 * 3600 * 1000; // 24h in ms
-
-function getStoredAuth(): { code: string; userId: string } | null {
-  const code = localStorage.getItem('invite_code');
-  const time = localStorage.getItem('invite_code_time');
-  if (!code || !time) return null;
-  if (Date.now() - parseInt(time) > INVITE_CODE_TTL) {
-    localStorage.removeItem('invite_code');
-    localStorage.removeItem('invite_code_time');
-    localStorage.removeItem('anon_user_id');
-    return null;
-  }
-  let userId = localStorage.getItem('anon_user_id');
-  if (!userId) {
-    userId = crypto.randomUUID();
-    localStorage.setItem('anon_user_id', userId);
-  }
-  return { code, userId };
-}
+import {
+  getToken, getStoredUser, clearAuth, fetchMe,
+  type WjUser, type SubscriptionStatus
+} from './services/authService';
 
 const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
 const INDUSTRIES = ["互联网", "高科技", "金融", "大健康", "汽车", "消费品", "新零售", "地产", "泛娱乐", "教育", "农业", "通用行业"];
@@ -60,37 +47,74 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
 };
 
 const App: React.FC = () => {
-  const [auth, setAuth] = useState<{ code: string; userId: string } | null>(null);
+  const [user, setUser] = useState<WjUser | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [appState, setAppState] = useState<AppState>(AppState.AUTH);
 
-  // 根据 localStorage 验证码状态设置初始页面
+  // 兼容旧代码：auth 对象映射
+  const auth = user ? { code: '', userId: user.id } : null;
+
+  // 检查 URL 是否是微信回调
+  const isWechatCallback = window.location.pathname === '/auth/wechat/callback';
+
+  // 初始化：检查本地 token，恢复登录态
   useEffect(() => {
-    const stored = getStoredAuth();
-    setAuth(stored);
-    setAuthLoading(false);
+    if (isWechatCallback) {
+      setAppState(AppState.WECHAT_CALLBACK);
+      setAuthLoading(false);
+      return;
+    }
+
+    const initAuth = async () => {
+      const token = getToken();
+      if (!token) {
+        setAuthLoading(false);
+        return;
+      }
+
+      // 用已有 token 获取用户信息和订阅状态
+      const me = await fetchMe();
+      if (me) {
+        setUser(me.user);
+        setSubscription(me.subscription);
+        if (me.subscription.active) {
+          setAppState(AppState.FORM);
+        } else {
+          setAppState(AppState.PAYMENT);
+        }
+      }
+      setAuthLoading(false);
+    };
+
+    initAuth();
   }, []);
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (auth) {
-      if (appState === AppState.AUTH) setAppState(AppState.FORM);
-    } else {
-      setAppState(AppState.AUTH);
+  const handleLoginSuccess = async () => {
+    // 微信登录成功后，刷新用户状态
+    const me = await fetchMe();
+    if (me) {
+      setUser(me.user);
+      setSubscription(me.subscription);
+      if (me.subscription.active) {
+        setAppState(AppState.FORM);
+      } else {
+        setAppState(AppState.PAYMENT);
+      }
     }
-  }, [auth, authLoading]);
+    // 清除 URL 中的回调参数
+    window.history.replaceState({}, '', '/');
+  };
 
-  const handleAuthSuccess = () => {
-    const stored = getStoredAuth();
-    setAuth(stored);
+  const handlePaymentSuccess = (sub: SubscriptionStatus) => {
+    setSubscription(sub);
     setAppState(AppState.FORM);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('invite_code');
-    localStorage.removeItem('invite_code_time');
-    localStorage.removeItem('anon_user_id');
-    setAuth(null);
+    clearAuth();
+    setUser(null);
+    setSubscription(null);
     setAppState(AppState.AUTH);
   };
 
@@ -657,8 +681,20 @@ const App: React.FC = () => {
     switch (appState) {
       case AppState.AUTH:
         return (
-          <AuthPage
-            onAuthSuccess={handleAuthSuccess}
+          <WechatLoginPage
+            onLoginSuccess={handleLoginSuccess}
+          />
+        );
+      case AppState.WECHAT_CALLBACK:
+        return (
+          <WechatCallback onSuccess={handleLoginSuccess} />
+        );
+      case AppState.PAYMENT:
+        return (
+          <PaymentPage
+            onPaymentSuccess={handlePaymentSuccess}
+            onLogout={handleLogout}
+            nickname={user?.nickname || undefined}
           />
         );
       case AppState.HISTORY:

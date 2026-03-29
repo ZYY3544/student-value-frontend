@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare, SquarePen, Pin, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { authHeaders } from '../services/authService';
 import { CareerForm } from './CareerForm';
 
 // 像素小猫 Logo
@@ -639,7 +640,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       // /chat/start 在后台静默完成，不阻塞 UI
       fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
           assessmentContext, resumeText, userId,
           resumeSections: preloadedSections,
@@ -672,7 +673,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     try {
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
           assessmentContext, resumeText, userId,
           resumeSections: preloadedSections,
@@ -714,7 +715,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     try {
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ assessmentContext, resumeText, userId, resumeSections: preloadedSections }),
       });
       const data = await res.json();
@@ -860,7 +861,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     try {
       const res = await fetch(`${apiBase}/api/chat/message`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ sessionId: activeSessionId, message: text, stream: true }),
         signal: controller.signal,
       });

@@ -173,8 +173,10 @@ export interface ResumeVersion {
 
 export enum AppState {
   AUTH = 'AUTH',
+  PAYMENT = 'PAYMENT',
   FORM = 'FORM',
   LOADING = 'LOADING',
   RESULT = 'RESULT',
   HISTORY = 'HISTORY',
+  WECHAT_CALLBACK = 'WECHAT_CALLBACK',
 }

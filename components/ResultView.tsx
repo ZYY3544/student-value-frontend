@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { ChatWidget, ChatMessage } from './ChatWidget';
 import { CanvasView } from './CanvasView';
+import { authHeaders } from '../services/authService';
 
 
 interface ResultViewProps {
@@ -110,7 +111,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     setSalaryLoading(true);
     fetch(`${API_BASE}/api/mini/salary-query`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({
         grade: result.level,
         functions,
@@ -485,7 +486,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       if (sessionId) {
         fetch(`${API_BASE}/api/chat/edit-action`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({
             sessionId,
             sectionId: edit.sectionId,
@@ -582,7 +583,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       try {
         await fetch(`${API_BASE}/api/chat/section-update`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ sessionId, sectionId, content: newContent }),
         });
       } catch (err) {

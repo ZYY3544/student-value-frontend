@@ -8,6 +8,7 @@ import { Send, Loader2, Check, RefreshCw, FileEdit, X } from 'lucide-react';
 import { ChatMessage, formatContent, parseSseStream, PixelCat } from './ChatWidget';
 import { FileSearch } from 'lucide-react';
 import { PendingEdit, ResumeSection } from '../types';
+import { authHeaders } from '../services/authService';
 
 // ---- 前端兜底：解析泄露到 text 里的 <<<EDIT...EDIT>>> 块 ----
 interface ParsedEditBlock {
@@ -235,7 +236,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       const timeout = setTimeout(() => controller.abort(), 90000);
       const res = await fetch(`${apiBase}/api/chat/message`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
           sessionId,
           message: messageToSend,
@@ -320,7 +321,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     try {
       const res = await fetch(`${apiBase}/api/chat/jd-optimize`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ sessionId, jdText }),
       });
 

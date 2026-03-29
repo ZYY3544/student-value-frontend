@@ -1,4 +1,5 @@
 import { AssessmentInput, AssessmentResult, Abilities, AbilityItem } from "../types";
+import { authHeaders } from "./authService";
 
 /**
  * 学生版校招竞争力评估服务
@@ -29,9 +30,7 @@ export const generateAssessment = async (input: AssessmentInput, pageDurations?:
 
   const response = await fetch(`${API_BASE_URL}/api/mini/assess`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: authHeaders(),
     body: JSON.stringify({
       assessmentType: input.assessmentType,
       city: input.city,
