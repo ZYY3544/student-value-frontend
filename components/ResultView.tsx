@@ -357,6 +357,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return targetId;
   }, []);
 
+  // JD 编辑完成后：手动把最终 resumeSections 写入 JD 版本
+  const handleJdEditComplete = useCallback((jdVersionId: string) => {
+    setVersions(prev => prev.map(v =>
+      v.id === jdVersionId
+        ? { ...v, sections: resumeSectionsRef.current.map(s => ({ ...s })), updatedAt: Date.now() }
+        : v
+    ));
+  }, []);
+
   // 首次进入画布时，自动创建"原始简历"和"通用版"
   const versionInitRef = useRef(false);
   useEffect(() => {
@@ -767,6 +776,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onDeleteVersion={handleDeleteVersion}
         onJdVersionCreate={handleJdVersionCreate}
         skipAutoSaveRef={skipAutoSaveRef}
+        onJdEditComplete={handleJdEditComplete}
         onSetPendingSelection={setPendingSelection}
         onDirectReplace={handleDirectReplace}
         clearHighlights={clearHighlights}

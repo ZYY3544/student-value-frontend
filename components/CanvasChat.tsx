@@ -112,6 +112,7 @@ interface CanvasChatProps {
   // JD 版本创建（返回版本 id）
   onJdVersionCreate?: (jdContent: string) => string | null;
   skipAutoSaveRef?: React.MutableRefObject<boolean>;
+  onJdEditComplete?: (jdVersionId: string) => void;
   // 引用模式
   quotedSelection?: { text: string; sectionId?: string; sectionTitle?: string } | null;
   onClearQuote?: () => void;
@@ -151,11 +152,15 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   clearHighlights,
   onJdVersionCreate,
   skipAutoSaveRef,
+  onJdEditComplete,
   quotedSelection,
   onClearQuote,
   onSetPendingSelection,
 }) => {
   const [inputValue, setInputValue] = useState('');
+  // ref 追踪最新 resumeSections（handleJdSubmit 闭包里用）
+  const resumeSectionsLocalRef = useRef(resumeSections);
+  resumeSectionsLocalRef.current = resumeSections;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // JD 上传弹窗
@@ -401,8 +406,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         });
       }
 
-      // 恢复自动保存
+      // 恢复自动保存 + 手动把最终内容同步到 JD 版本
       if (skipAutoSaveRef) skipAutoSaveRef.current = false;
+      if (jdVersionId) onJdEditComplete?.(jdVersionId);
 
       // 全部完成
       setMessages(prev => {
@@ -427,7 +433,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [jdInput, isLoading, sessionId, apiBase, onDirectReplace, clearHighlights, onJdVersionCreate, skipAutoSaveRef, resumeSections]);
+  }, [jdInput, isLoading, sessionId, apiBase, onDirectReplace, clearHighlights, onJdVersionCreate, skipAutoSaveRef, onJdEditComplete, resumeSections]);
 
   useEffect(() => {
     if (externalMessage) {
