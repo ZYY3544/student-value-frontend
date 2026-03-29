@@ -46,75 +46,59 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
   targetCompany: '',
 };
 
+// 邀请码认证（当前使用，微信登录就绪后切换）
+const INVITE_CODE_TTL = 24 * 3600 * 1000;
+
+function getStoredAuth(): { code: string; userId: string } | null {
+  const code = localStorage.getItem('invite_code');
+  const time = localStorage.getItem('invite_code_time');
+  if (!code || !time) return null;
+  if (Date.now() - parseInt(time) > INVITE_CODE_TTL) {
+    localStorage.removeItem('invite_code');
+    localStorage.removeItem('invite_code_time');
+    localStorage.removeItem('anon_user_id');
+    return null;
+  }
+  let userId = localStorage.getItem('anon_user_id');
+  if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem('anon_user_id', userId);
+  }
+  return { code, userId };
+}
+
 const App: React.FC = () => {
-  const [user, setUser] = useState<WjUser | null>(null);
-  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
+  const [auth, setAuth] = useState<{ code: string; userId: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [appState, setAppState] = useState<AppState>(AppState.AUTH);
 
-  // 兼容旧代码：auth 对象映射
-  const auth = user ? { code: '', userId: user.id } : null;
-
-  // 检查 URL 是否是微信回调
-  const isWechatCallback = window.location.pathname === '/auth/wechat/callback';
-
-  // 初始化：检查本地 token，恢复登录态
+  // 根据 localStorage 验证码状态设置初始页面
   useEffect(() => {
-    if (isWechatCallback) {
-      setAppState(AppState.WECHAT_CALLBACK);
-      setAuthLoading(false);
-      return;
-    }
-
-    const initAuth = async () => {
-      const token = getToken();
-      if (!token) {
-        setAuthLoading(false);
-        return;
-      }
-
-      // 用已有 token 获取用户信息和订阅状态
-      const me = await fetchMe();
-      if (me) {
-        setUser(me.user);
-        setSubscription(me.subscription);
-        if (me.subscription.active) {
-          setAppState(AppState.FORM);
-        } else {
-          setAppState(AppState.PAYMENT);
-        }
-      }
-      setAuthLoading(false);
-    };
-
-    initAuth();
+    const stored = getStoredAuth();
+    setAuth(stored);
+    setAuthLoading(false);
   }, []);
 
-  const handleLoginSuccess = async () => {
-    // 微信登录成功后，刷新用户状态
-    const me = await fetchMe();
-    if (me) {
-      setUser(me.user);
-      setSubscription(me.subscription);
-      if (me.subscription.active) {
-        setAppState(AppState.FORM);
-      } else {
-        setAppState(AppState.PAYMENT);
-      }
+  useEffect(() => {
+    if (authLoading) return;
+    if (auth) {
+      if (appState === AppState.AUTH) setAppState(AppState.FORM);
+    } else {
+      setAppState(AppState.AUTH);
     }
-    // 清除 URL 中的回调参数
-    window.history.replaceState({}, '', '/');
-  };
+  }, [auth, authLoading]);
 
-  const handlePaymentSuccess = (sub: SubscriptionStatus) => {
-    setSubscription(sub);
+  const handleAuthSuccess = () => {
+    const stored = getStoredAuth();
+    setAuth(stored);
     setAppState(AppState.FORM);
   };
 
   const handleLogout = () => {
-    clearAuth();
-    setUser(null);
-    setSubscription(null);
+    localStorage.removeItem('invite_code');
+    localStorage.removeItem('invite_code_time');
+    localStorage.removeItem('anon_user_id');
+    setAuth(null);
     setAppState(AppState.AUTH);
   };
 
@@ -681,20 +665,8 @@ const App: React.FC = () => {
     switch (appState) {
       case AppState.AUTH:
         return (
-          <WechatLoginPage
-            onLoginSuccess={handleLoginSuccess}
-          />
-        );
-      case AppState.WECHAT_CALLBACK:
-        return (
-          <WechatCallback onSuccess={handleLoginSuccess} />
-        );
-      case AppState.PAYMENT:
-        return (
-          <PaymentPage
-            onPaymentSuccess={handlePaymentSuccess}
-            onLogout={handleLogout}
-            nickname={user?.nickname || undefined}
+          <AuthPage
+            onAuthSuccess={handleAuthSuccess}
           />
         );
       case AppState.HISTORY:
