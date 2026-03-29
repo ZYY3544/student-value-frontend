@@ -519,7 +519,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
             )}
             <div className="max-w-[85%]">
               {/* 文字气泡：有文本时显示，或无卡片时显示加载动画 */}
-              {(msg.role === 'user' || msg.content || !(isLastAssistant && cards.length > 0)) && (
+              {(msg.role === 'user' || msg.content || cards.length === 0) && (
                 <div
                   className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
                     msg.role === 'user'
