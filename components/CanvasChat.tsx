@@ -365,57 +365,35 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         }, STREAM_SPEED);
       });
 
-      // 先 fork JD 版本并切换过去，暂停自动保存
+      // fork JD 版本，暂停自动保存
       const jdVersionId = onJdVersionCreate?.(jdText);
       if (skipAutoSaveRef) skipAutoSaveRef.current = true;
 
-      // 逐条替换：spinner → 2.5s → 替换 → ✓ 完成，每条一行
+      // 显示"正在优化中..."
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: 'assistant', content: `${summaryBase}\n\n正在优化简历中...` };
+        return updated;
+      });
+      await new Promise(r => setTimeout(r, 1500));
+
+      // 静默执行所有替换
       let successCount = 0;
-      const doneLines: string[] = [];
-
-      for (let i = 0; i < edits.length; i++) {
-        const edit = edits[i];
-
-        // 显示 spinner + "正在优化第 X 处..."
-        const spinnerLine = `⏳ 正在优化第 ${i + 1} 处...`;
-        setMessages(prev => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            role: 'assistant',
-            content: `${summaryBase}\n\n${doneLines.join('\n')}${doneLines.length ? '\n' : ''}${spinnerLine}`,
-          };
-          return updated;
-        });
-
-        // 等待 2.5 秒让用户感受到"正在分析"
-        await new Promise(r => setTimeout(r, 2500));
-
-        // 执行替换（右侧流式高亮由 StreamHighlight 组件处理）
+      for (const edit of edits) {
         const ok = onDirectReplace?.(edit.sectionId, edit.original, edit.suggested);
         if (ok) successCount++;
-
-        // 替换完成，标记结果
-        doneLines.push(ok ? `✓ 第 ${successCount} 处已优化` : `⚠ 第 ${i + 1} 处未匹配到原文，已跳过`);
-        setMessages(prev => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            role: 'assistant',
-            content: `${summaryBase}\n\n${doneLines.join('\n')}`,
-          };
-          return updated;
-        });
       }
 
-      // 恢复自动保存 + 手动把最终内容同步到 JD 版本
+      // 恢复自动保存 + 同步到 JD 版本
       if (skipAutoSaveRef) skipAutoSaveRef.current = false;
       if (jdVersionId) onJdEditComplete?.(jdVersionId);
 
-      // 全部完成
+      // 显示最终结果
       setMessages(prev => {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: 'assistant',
-          content: `${summaryBase}\n\n${doneLines.join('\n')}\n\n全部优化完成！共修改 ${successCount} 处，已在右侧高亮标出。\n不满意的地方可以选中文本让我重新改。`,
+          content: `${summaryBase}\n\n全部优化完成！共修改 ${successCount} 处，已在右侧高亮标出。\n不满意的地方可以选中文本让我重新改。`,
         };
         return updated;
       });
