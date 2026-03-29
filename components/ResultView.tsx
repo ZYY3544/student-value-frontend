@@ -222,7 +222,25 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [versions, setVersions] = useState<ResumeVersion[]>(() => {
     try {
       const saved = localStorage.getItem(versionStorageKey);
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed: ResumeVersion[] = JSON.parse(saved);
+      // 启动时自动去重：同类型+同名只保留最新的一个
+      const seen = new Map<string, number>();
+      return parsed.filter((v, i) => {
+        const key = `${v.versionType}::${v.name}`;
+        const prev = seen.get(key);
+        if (prev !== undefined) {
+          // 保留更新时间更晚的那个
+          const prevVersion = parsed[prev];
+          if ((v.updatedAt || 0) > (prevVersion.updatedAt || 0)) {
+            seen.set(key, i);
+            return true;
+          }
+          return false;
+        }
+        seen.set(key, i);
+        return true;
+      });
     } catch { return []; }
   });
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
