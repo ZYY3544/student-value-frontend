@@ -109,6 +109,8 @@ interface CanvasChatProps {
   // JD 优化：直接替换 + 高亮
   onDirectReplace?: (sectionId: string, original: string, suggested: string) => boolean;
   clearHighlights?: () => void;
+  // JD 版本创建
+  onJdVersionCreate?: (jdContent: string) => void;
   // 引用模式
   quotedSelection?: { text: string; sectionId?: string; sectionTitle?: string } | null;
   onClearQuote?: () => void;
@@ -146,6 +148,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   resumeSections = [],
   onDirectReplace,
   clearHighlights,
+  onJdVersionCreate,
   quotedSelection,
   onClearQuote,
   onSetPendingSelection,
@@ -401,6 +404,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         };
         return updated;
       });
+
+      // JD 优化完成后创建 JD 版本
+      onJdVersionCreate?.(jdText);
 
       // 30 秒后清除高亮
       setTimeout(() => { clearHighlights?.(); }, 30000);

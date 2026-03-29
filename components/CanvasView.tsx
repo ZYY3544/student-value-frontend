@@ -229,6 +229,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             resumeSections={resumeSections}
             onDirectReplace={onDirectReplace}
             clearHighlights={clearHighlights}
+            onJdVersionCreate={onJdVersionCreate}
             quotedSelection={quotedSelection}
             onClearQuote={() => setQuotedSelection(null)}
             onSetPendingSelection={onSetPendingSelection}
