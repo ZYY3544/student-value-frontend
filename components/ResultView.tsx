@@ -583,8 +583,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
     setResumeSections(prev => {
       const idx = prev.findIndex(s => s.id === sectionId);
-      if (idx === -1) return prev;
+      console.log(`[DirectReplace UPDATER] sectionId=${sectionId}, idx=${idx}, prev ids=[${prev.map(s=>s.id).join(',')}]`);
+      if (idx === -1) {
+        console.log('[DirectReplace UPDATER] section NOT FOUND in prev!');
+        return prev;
+      }
       const sec = prev[idx];
+      console.log(`[DirectReplace UPDATER] sec.content (${sec.content.length} chars), indexOf=${sec.content.indexOf(original)}`);
       const updated = [...prev];
 
       const applyReplace = (start: number, len: number) => {
@@ -662,6 +667,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       return prev;
     });
 
+    console.log(`[DirectReplace] returning success=${success}`);
     return success;
   }, []);
 
