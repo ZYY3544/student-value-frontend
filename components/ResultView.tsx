@@ -232,8 +232,19 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     localStorage.setItem(versionStorageKey, JSON.stringify(versions));
   }, [versions, versionStorageKey]);
 
+  // Refs 追踪最新值（避免闭包陈旧问题）
+  const versionsRef = useRef(versions);
+  versionsRef.current = versions;
+  const resumeSectionsRef = useRef(resumeSections);
+  resumeSectionsRef.current = resumeSections;
+  // pendingEditsRef 已在上方定义
+  const activeVersionIdRef = useRef(activeVersionId);
+  activeVersionIdRef.current = activeVersionId;
+  const skipAutoSaveRef = useRef(false);
+
   // 自动保存：当前编辑内容同步到活跃版本（原始简历除外）
   useEffect(() => {
+    if (skipAutoSaveRef.current) return;
     if (!activeVersionId) return;
     const active = versions.find(v => v.id === activeVersionId);
     if (active?.versionType === 'original') return; // 原始简历只读
@@ -285,55 +296,66 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return 'JD 版本';
   }
 
-  // JD 优化开始前：先冻结通用版快照，再 fork JD 版本
-  const handleJdVersionCreate = useCallback((jdContent: string) => {
-    const jdCount = versions.filter(v => v.versionType === 'jd').length;
-    if (jdCount >= 5) return; // JD 版本上限
+  // JD 优化开始前：基于通用版 fork JD 版本，返回版本 id
+  const handleJdVersionCreate = useCallback((jdContent: string): string | null => {
+    const curVersions = versionsRef.current;
+    const jdCount = curVersions.filter(v => v.versionType === 'jd').length;
+    if (jdCount >= 5) return null;
 
     const jdName = extractJdName(jdContent);
 
-    // 先冻结通用版当前状态（防止后续编辑污染通用版）
-    const currentSections = resumeSections.map(s => ({ ...s }));
-    const currentEdits = pendingEdits.map(e => ({ ...e }));
+    // 始终基于通用版 fork（不是当前屏幕内容）
+    const general = curVersions.find(v => v.versionType === 'general');
+    if (!general) return null;
 
-    // 同名 JD 版本已存在：切换过去并用当前内容覆盖
-    const existing = versions.find(v => v.versionType === 'jd' && v.name === jdName);
+    // 如果当前在通用版上编辑，先把最新 resumeSections 同步到通用版
+    let baseSections: ResumeSection[];
+    let baseEdits: PendingEdit[];
+    if (activeVersionIdRef.current === general.id) {
+      baseSections = resumeSectionsRef.current.map(s => ({ ...s }));
+      baseEdits = pendingEditsRef.current.map(e => ({ ...e }));
+    } else {
+      baseSections = general.sections.map(s => ({ ...s }));
+      baseEdits = general.pendingEdits.map(e => ({ ...e }));
+    }
+
+    // 同名 JD 版本已存在：复用它
+    const existing = curVersions.find(v => v.versionType === 'jd' && v.name === jdName);
+    const targetId = existing ? existing.id : crypto.randomUUID();
+
     if (existing) {
       setVersions(prev => prev.map(v => {
         if (v.id === existing.id) {
-          return { ...v, sections: currentSections, pendingEdits: currentEdits, updatedAt: Date.now() };
+          return { ...v, sections: baseSections.map(s => ({ ...s })), pendingEdits: baseEdits.map(e => ({ ...e })), updatedAt: Date.now() };
         }
         if (v.versionType === 'general') {
-          return { ...v, sections: currentSections, pendingEdits: currentEdits, updatedAt: Date.now() };
+          return { ...v, sections: baseSections, pendingEdits: baseEdits, updatedAt: Date.now() };
         }
         return v;
       }));
-      setResumeSections(currentSections);
-      setActiveVersionId(existing.id);
-      return;
+    } else {
+      const newVersion: ResumeVersion = {
+        id: targetId,
+        name: jdName,
+        sections: baseSections.map(s => ({ ...s })),
+        pendingEdits: baseEdits.map(e => ({ ...e })),
+        jdContent,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        versionType: 'jd',
+      };
+      setVersions(prev => prev.map(v =>
+        v.versionType === 'general'
+          ? { ...v, sections: baseSections, pendingEdits: baseEdits, updatedAt: Date.now() }
+          : v
+      ).concat(newVersion));
     }
 
-    const newVersion: ResumeVersion = {
-      id: crypto.randomUUID(),
-      name: jdName,
-      sections: currentSections.map(s => ({ ...s })),
-      pendingEdits: currentEdits.map(e => ({ ...e })),
-      jdContent,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      versionType: 'jd',
-    };
-
-    setVersions(prev => {
-      return prev.map(v =>
-        v.versionType === 'general'
-          ? { ...v, sections: currentSections, pendingEdits: currentEdits, updatedAt: Date.now() }
-          : v
-      ).concat(newVersion);
-    });
-    setResumeSections(currentSections);
-    setActiveVersionId(newVersion.id);
-  }, [versions, resumeSections, pendingEdits]);
+    setResumeSections(baseSections.map(s => ({ ...s })));
+    setPendingEdits(baseEdits.map(e => ({ ...e })));
+    setActiveVersionId(targetId);
+    return targetId;
+  }, []);
 
   // 首次进入画布时，自动创建"原始简历"和"通用版"
   const versionInitRef = useRef(false);
@@ -744,6 +766,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onSwitchVersion={handleSwitchVersion}
         onDeleteVersion={handleDeleteVersion}
         onJdVersionCreate={handleJdVersionCreate}
+        skipAutoSaveRef={skipAutoSaveRef}
         onSetPendingSelection={setPendingSelection}
         onDirectReplace={handleDirectReplace}
         clearHighlights={clearHighlights}

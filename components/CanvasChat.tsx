@@ -109,8 +109,9 @@ interface CanvasChatProps {
   // JD 优化：直接替换 + 高亮
   onDirectReplace?: (sectionId: string, original: string, suggested: string) => boolean;
   clearHighlights?: () => void;
-  // JD 版本创建
-  onJdVersionCreate?: (jdContent: string) => void;
+  // JD 版本创建（返回版本 id）
+  onJdVersionCreate?: (jdContent: string) => string | null;
+  skipAutoSaveRef?: React.MutableRefObject<boolean>;
   // 引用模式
   quotedSelection?: { text: string; sectionId?: string; sectionTitle?: string } | null;
   onClearQuote?: () => void;
@@ -149,6 +150,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   onDirectReplace,
   clearHighlights,
   onJdVersionCreate,
+  skipAutoSaveRef,
   quotedSelection,
   onClearQuote,
   onSetPendingSelection,
@@ -358,8 +360,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         }, STREAM_SPEED);
       });
 
-      // 先 fork JD 版本并切换过去，确保后续编辑不影响通用版
-      onJdVersionCreate?.(jdText);
+      // 先 fork JD 版本并切换过去，暂停自动保存
+      const jdVersionId = onJdVersionCreate?.(jdText);
+      if (skipAutoSaveRef) skipAutoSaveRef.current = true;
 
       // 逐条替换：spinner → 2.5s → 替换 → ✓ 完成，每条一行
       let successCount = 0;
@@ -398,6 +401,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         });
       }
 
+      // 恢复自动保存
+      if (skipAutoSaveRef) skipAutoSaveRef.current = false;
+
       // 全部完成
       setMessages(prev => {
         const updated = [...prev];
@@ -421,7 +427,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [jdInput, isLoading, sessionId, apiBase, onDirectReplace, clearHighlights]);
+  }, [jdInput, isLoading, sessionId, apiBase, onDirectReplace, clearHighlights, onJdVersionCreate, skipAutoSaveRef, resumeSections]);
 
   useEffect(() => {
     if (externalMessage) {

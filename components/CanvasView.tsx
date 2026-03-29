@@ -43,7 +43,8 @@ interface CanvasViewProps {
   activeVersionId: string | null;
   onSwitchVersion: (versionId: string) => void;
   onDeleteVersion: (versionId: string) => void;
-  onJdVersionCreate: (jdContent: string) => void;
+  onJdVersionCreate: (jdContent: string) => string | null;
+  skipAutoSaveRef: React.MutableRefObject<boolean>;
   // 润色选中文本：前端知道替换什么，GPT 只负责给改写结果
   onSetPendingSelection: (sel: { text: string; sectionId: string } | null) => void;
   // JD 优化：直接替换 + 高亮
@@ -72,6 +73,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onSwitchVersion,
   onDeleteVersion,
   onJdVersionCreate,
+  skipAutoSaveRef,
   onSetPendingSelection,
   onDirectReplace,
   clearHighlights,
@@ -230,6 +232,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onDirectReplace={onDirectReplace}
             clearHighlights={clearHighlights}
             onJdVersionCreate={onJdVersionCreate}
+            skipAutoSaveRef={skipAutoSaveRef}
             quotedSelection={quotedSelection}
             onClearQuote={() => setQuotedSelection(null)}
             onSetPendingSelection={onSetPendingSelection}
