@@ -506,7 +506,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
   // JD 优化：直接替换 content + 添加高亮区间（不走 pendingEdits）
   const handleDirectReplace = useCallback((sectionId: string, original: string, suggested: string): boolean => {
+    // 多级容错：精确 → 空白规范化 → 去标点/符号模糊匹配
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
+    const fuzzy = (s: string) => s.replace(/[\s·•\-–—,，;；。.、：:""''「」【】（）()]/g, '').trim();
     let success = false;
 
     setResumeSections(prev => {
@@ -515,24 +517,29 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       const sec = prev[idx];
       const updated = [...prev];
 
-      // 精确匹配
-      const pos = sec.content.indexOf(original);
-      if (pos !== -1) {
-        const newContent = sec.content.slice(0, pos) + suggested + sec.content.slice(pos + original.length);
+      const applyReplace = (start: number, len: number) => {
+        const newContent = sec.content.slice(0, start) + suggested + sec.content.slice(start + len);
         updated[idx] = {
           ...sec,
           content: newContent,
-          highlightRanges: [...(sec.highlightRanges || []), { start: pos, end: pos + suggested.length }],
+          highlightRanges: [...(sec.highlightRanges || []), { start, end: start + suggested.length }],
         };
         success = true;
+      };
+
+      // 1. 精确匹配
+      const pos = sec.content.indexOf(original);
+      if (pos !== -1) {
+        applyReplace(pos, original.length);
         return updated;
       }
 
-      // normalize fallback
+      // 2. 空白规范化匹配
       const normContent = normalize(sec.content);
       const normOriginal = normalize(original);
       const normIdx = normContent.indexOf(normOriginal);
       if (normIdx !== -1) {
+        // 从规范化位置映射回原始位置
         let ci = 0, normPos = 0;
         while (normPos < normIdx && ci < sec.content.length) {
           if (/\s/.test(sec.content[ci]) && ci > 0 && /\s/.test(sec.content[ci - 1])) { ci++; continue; }
@@ -545,13 +552,36 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           ci++; matchLen++; normMatchLen++;
         }
         if (matchLen > 0) {
-          const newContent = sec.content.slice(0, matchStart) + suggested + sec.content.slice(matchStart + matchLen);
-          updated[idx] = {
-            ...sec,
-            content: newContent,
-            highlightRanges: [...(sec.highlightRanges || []), { start: matchStart, end: matchStart + suggested.length }],
-          };
-          success = true;
+          applyReplace(matchStart, matchLen);
+          return updated;
+        }
+      }
+
+      // 3. 去标点模糊匹配（LLM 可能丢失或改变标点/bullet 符号）
+      const fuzzyOriginal = fuzzy(original);
+      if (fuzzyOriginal.length >= 10) {
+        // 用滑动窗口在内容中找最佳匹配
+        const contentChars = sec.content;
+        let bestStart = -1, bestEnd = -1, bestScore = 0;
+
+        for (let start = 0; start < contentChars.length; start++) {
+          // 从 start 开始，尝试匹配 fuzzyOriginal
+          let fi = 0, ci2 = start;
+          while (fi < fuzzyOriginal.length && ci2 < contentChars.length) {
+            const fc = fuzzyOriginal[fi];
+            const cc = contentChars[ci2];
+            if (fuzzy(cc) === '') { ci2++; continue; } // 跳过标点
+            if (fc === fuzzy(cc)) { fi++; ci2++; } else { break; }
+          }
+          if (fi === fuzzyOriginal.length && fi > bestScore) {
+            bestScore = fi;
+            bestStart = start;
+            bestEnd = ci2;
+          }
+        }
+
+        if (bestStart !== -1 && bestScore >= fuzzyOriginal.length) {
+          applyReplace(bestStart, bestEnd - bestStart);
           return updated;
         }
       }
