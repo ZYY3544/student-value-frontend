@@ -529,6 +529,17 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const fuzzy = (s: string) => s.replace(/[\s·•\-–—,，;；。.、：:""''「」【】（）()]/g, '').trim();
     let success = false;
 
+    console.log(`[DirectReplace] sectionId=${sectionId}`);
+    console.log(`[DirectReplace] original (${original.length} chars): "${original.slice(0, 80)}..."`);
+    console.log(`[DirectReplace] suggested (${suggested.length} chars): "${suggested.slice(0, 80)}..."`);
+    const sec = resumeSections.find(s => s.id === sectionId);
+    if (sec) {
+      console.log(`[DirectReplace] section content (${sec.content.length} chars): "${sec.content.slice(0, 80)}..."`);
+      console.log(`[DirectReplace] indexOf result: ${sec.content.indexOf(original)}`);
+    } else {
+      console.log(`[DirectReplace] section NOT FOUND! available ids: ${resumeSections.map(s => s.id).join(', ')}`);
+    }
+
     setResumeSections(prev => {
       const idx = prev.findIndex(s => s.id === sectionId);
       if (idx === -1) return prev;
