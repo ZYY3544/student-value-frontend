@@ -290,18 +290,32 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const jdCount = versions.filter(v => v.versionType === 'jd').length;
     if (jdCount >= 5) return; // JD 版本上限
 
-    // 防重复：同一份 JD 内容不重复创建
     const jdName = extractJdName(jdContent);
-    const exists = versions.some(v => v.versionType === 'jd' && v.name === jdName);
-    if (exists) return;
 
     // 先冻结通用版当前状态（防止后续编辑污染通用版）
     const currentSections = resumeSections.map(s => ({ ...s }));
     const currentEdits = pendingEdits.map(e => ({ ...e }));
 
+    // 同名 JD 版本已存在：切换过去并用当前内容覆盖
+    const existing = versions.find(v => v.versionType === 'jd' && v.name === jdName);
+    if (existing) {
+      setVersions(prev => prev.map(v => {
+        if (v.id === existing.id) {
+          return { ...v, sections: currentSections, pendingEdits: currentEdits, updatedAt: Date.now() };
+        }
+        if (v.versionType === 'general') {
+          return { ...v, sections: currentSections, pendingEdits: currentEdits, updatedAt: Date.now() };
+        }
+        return v;
+      }));
+      setResumeSections(currentSections);
+      setActiveVersionId(existing.id);
+      return;
+    }
+
     const newVersion: ResumeVersion = {
       id: crypto.randomUUID(),
-      name: extractJdName(jdContent),
+      name: jdName,
       sections: currentSections.map(s => ({ ...s })),
       pendingEdits: currentEdits.map(e => ({ ...e })),
       jdContent,
@@ -311,13 +325,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     };
 
     setVersions(prev => {
-      // 同时冻结通用版 + 添加 JD 版本
       return prev.map(v =>
         v.versionType === 'general'
           ? { ...v, sections: currentSections, pendingEdits: currentEdits, updatedAt: Date.now() }
           : v
       ).concat(newVersion);
     });
+    setResumeSections(currentSections);
     setActiveVersionId(newVersion.id);
   }, [versions, resumeSections, pendingEdits]);
 
