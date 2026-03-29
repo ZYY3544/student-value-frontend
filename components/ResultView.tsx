@@ -290,6 +290,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const jdCount = versions.filter(v => v.versionType === 'jd').length;
     if (jdCount >= 5) return; // JD 版本上限
 
+    // 防重复：同一份 JD 内容不重复创建
+    const jdName = extractJdName(jdContent);
+    const exists = versions.some(v => v.versionType === 'jd' && v.name === jdName);
+    if (exists) return;
+
     // 先冻结通用版当前状态（防止后续编辑污染通用版）
     const currentSections = resumeSections.map(s => ({ ...s }));
     const currentEdits = pendingEdits.map(e => ({ ...e }));
