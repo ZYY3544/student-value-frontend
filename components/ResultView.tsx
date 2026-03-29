@@ -222,25 +222,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [versions, setVersions] = useState<ResumeVersion[]>(() => {
     try {
       const saved = localStorage.getItem(versionStorageKey);
-      if (!saved) return [];
-      const parsed: ResumeVersion[] = JSON.parse(saved);
-      // 启动时自动去重：同类型+同名只保留最新的一个
-      const seen = new Map<string, number>();
-      return parsed.filter((v, i) => {
-        const key = `${v.versionType}::${v.name}`;
-        const prev = seen.get(key);
-        if (prev !== undefined) {
-          // 保留更新时间更晚的那个
-          const prevVersion = parsed[prev];
-          if ((v.updatedAt || 0) > (prevVersion.updatedAt || 0)) {
-            seen.set(key, i);
-            return true;
-          }
-          return false;
-        }
-        seen.set(key, i);
-        return true;
-      });
+      return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
@@ -337,37 +319,23 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       baseEdits = general.pendingEdits.map(e => ({ ...e }));
     }
 
-    // 同名 JD 版本已存在：复用它
-    const existing = curVersions.find(v => v.versionType === 'jd' && v.name === jdName);
-    const targetId = existing ? existing.id : crypto.randomUUID();
-
-    if (existing) {
-      setVersions(prev => prev.map(v => {
-        if (v.id === existing.id) {
-          return { ...v, sections: baseSections.map(s => ({ ...s })), pendingEdits: baseEdits.map(e => ({ ...e })), updatedAt: Date.now() };
-        }
-        if (v.versionType === 'general') {
-          return { ...v, sections: baseSections, pendingEdits: baseEdits, updatedAt: Date.now() };
-        }
-        return v;
-      }));
-    } else {
-      const newVersion: ResumeVersion = {
-        id: targetId,
-        name: jdName,
-        sections: baseSections.map(s => ({ ...s })),
-        pendingEdits: baseEdits.map(e => ({ ...e })),
-        jdContent,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        versionType: 'jd',
-      };
-      setVersions(prev => prev.map(v =>
-        v.versionType === 'general'
-          ? { ...v, sections: baseSections, pendingEdits: baseEdits, updatedAt: Date.now() }
-          : v
-      ).concat(newVersion));
-    }
+    // 每次上传 JD 都创建新版本（同名也允许，用户可能多次优化同一个 JD）
+    const targetId = crypto.randomUUID();
+    const newVersion: ResumeVersion = {
+      id: targetId,
+      name: jdName,
+      sections: baseSections.map(s => ({ ...s })),
+      pendingEdits: baseEdits.map(e => ({ ...e })),
+      jdContent,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      versionType: 'jd',
+    };
+    setVersions(prev => prev.map(v =>
+      v.versionType === 'general'
+        ? { ...v, sections: baseSections, pendingEdits: baseEdits, updatedAt: Date.now() }
+        : v
+    ).concat(newVersion));
 
     setResumeSections(baseSections.map(s => ({ ...s })));
     setPendingEdits(baseEdits.map(e => ({ ...e })));
