@@ -557,7 +557,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [sessionId]);
 
   // JD 优化：直接替换 content + 添加高亮区间（不走 pendingEdits）
-  const handleDirectReplace = useCallback((sectionId: string, original: string, suggested: string): boolean => {
+  const handleDirectReplace = useCallback((sectionId: string, original: string, _suggested: string): boolean => {
+    let suggested = _suggested;
     // 多级容错：精确 → 空白规范化 → 去标点/符号模糊匹配
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
     const fuzzy = (s: string) => s.replace(/[\s·•\-–—,，;；。.、：:""''「」【】（）()]/g, '').trim();
@@ -572,6 +573,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       console.log(`[DirectReplace] indexOf result: ${sec.content.indexOf(original)}`);
     } else {
       console.log(`[DirectReplace] section NOT FOUND! available ids: ${resumeSections.map(s => s.id).join(', ')}`);
+    }
+
+    // 自动保留 bullet 前缀：如果 original 以 bullet 开头但 suggested 没有，补上
+    const bulletMatch = original.match(/^([·•\-–—]\s*)/);
+    if (bulletMatch && !/^[·•\-–—]/.test(suggested)) {
+      suggested = bulletMatch[1] + suggested;
     }
 
     setResumeSections(prev => {
@@ -650,6 +657,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       }
 
       console.warn('[DirectReplace] original not found', sectionId);
+      console.log('[DirectReplace FAIL] original chars:', JSON.stringify(original.slice(0, 100)));
+      console.log('[DirectReplace FAIL] content chars:', JSON.stringify(sec.content.slice(0, 200)));
       return prev;
     });
 
