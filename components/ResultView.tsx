@@ -339,19 +339,20 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         : v
     ).concat(newVersion));
 
-    setResumeSections(baseSections.map(s => ({ ...s })));
-    setPendingEdits(baseEdits.map(e => ({ ...e })));
-    setActiveVersionId(targetId);
+    // 不改 resumeSections — edit 循环需要在当前内容上匹配
+    // 切换和保存由 onJdEditComplete 完成
     return targetId;
   }, []);
 
-  // JD 编辑完成后：手动把最终 resumeSections 写入 JD 版本
+  // JD 编辑完成后：把最终 resumeSections 写入 JD 版本，并切换过去
   const handleJdEditComplete = useCallback((jdVersionId: string) => {
+    const finalSections = resumeSectionsRef.current.map(s => ({ ...s, highlightRanges: undefined }));
     setVersions(prev => prev.map(v =>
       v.id === jdVersionId
         ? { ...v, sections: resumeSectionsRef.current.map(s => ({ ...s })), updatedAt: Date.now() }
         : v
     ));
+    setActiveVersionId(jdVersionId);
   }, []);
 
   // 首次进入画布时，自动创建"原始简历"和"通用版"
