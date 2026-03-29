@@ -358,6 +358,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         }, STREAM_SPEED);
       });
 
+      // 先 fork JD 版本并切换过去，确保后续编辑不影响通用版
+      onJdVersionCreate?.(jdText);
+
       // 逐条替换：spinner → 2.5s → 替换 → ✓ 完成，每条一行
       let successCount = 0;
       const doneLines: string[] = [];
@@ -404,9 +407,6 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         };
         return updated;
       });
-
-      // JD 优化完成后创建 JD 版本
-      onJdVersionCreate?.(jdText);
 
       // 30 秒后清除高亮
       setTimeout(() => { clearHighlights?.(); }, 30000);

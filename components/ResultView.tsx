@@ -285,21 +285,34 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return 'JD 版本';
   }
 
-  // JD 优化完成后：基于通用版 fork 一个 JD 版本
+  // JD 优化开始前：先冻结通用版快照，再 fork JD 版本
   const handleJdVersionCreate = useCallback((jdContent: string) => {
     const jdCount = versions.filter(v => v.versionType === 'jd').length;
     if (jdCount >= 5) return; // JD 版本上限
+
+    // 先冻结通用版当前状态（防止后续编辑污染通用版）
+    const currentSections = resumeSections.map(s => ({ ...s }));
+    const currentEdits = pendingEdits.map(e => ({ ...e }));
+
     const newVersion: ResumeVersion = {
       id: crypto.randomUUID(),
       name: extractJdName(jdContent),
-      sections: resumeSections.map(s => ({ ...s })),
-      pendingEdits: pendingEdits.map(e => ({ ...e })),
+      sections: currentSections.map(s => ({ ...s })),
+      pendingEdits: currentEdits.map(e => ({ ...e })),
       jdContent,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       versionType: 'jd',
     };
-    setVersions(prev => [...prev, newVersion]);
+
+    setVersions(prev => {
+      // 同时冻结通用版 + 添加 JD 版本
+      return prev.map(v =>
+        v.versionType === 'general'
+          ? { ...v, sections: currentSections, pendingEdits: currentEdits, updatedAt: Date.now() }
+          : v
+      ).concat(newVersion);
+    });
     setActiveVersionId(newVersion.id);
   }, [versions, resumeSections, pendingEdits]);
 
