@@ -5,11 +5,12 @@
  */
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Download, Sparkles, Quote } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Sparkles, Quote } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, VersionSelector } from './ResumePanel';
-import { PrintableResume } from './PrintableResume';
+import { PrintableResume, StructuredResume } from './PrintableResume';
+import { authHeaders } from '../services/authService';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 // 选中文本快捷操作
@@ -170,7 +171,37 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, []);
 
-  const handleExportPdf = useCallback(() => { window.print(); }, []);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [structuredData, setStructuredData] = useState<StructuredResume | null>(null);
+  const apiBase = (import.meta as any).env?.VITE_API_URL || 'https://student-value-backend.onrender.com';
+
+  const handleExportPdf = useCallback(async () => {
+    if (exportLoading || resumeSections.length === 0) return;
+    setExportLoading(true);
+
+    try {
+      // 调 LLM 解析简历结构
+      const res = await fetch(`${apiBase}/api/resume/parse-for-export`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ sections: resumeSections.map(s => ({ id: s.id, type: s.type, title: s.title, content: s.content })) }),
+      });
+      const json = await res.json();
+
+      if (json.success && json.data) {
+        setStructuredData(json.data);
+        // 等 React 渲染完成后打印
+        setTimeout(() => { window.print(); setExportLoading(false); }, 300);
+        return;
+      }
+    } catch (e) {
+      console.error('[ExportPDF] LLM 解析失败，fallback 到纯文本:', e);
+    }
+
+    // fallback: 直接用纯文本模式打印
+    setStructuredData(null);
+    setTimeout(() => { window.print(); setExportLoading(false); }, 100);
+  }, [exportLoading, resumeSections, apiBase]);
 
   const [showGuide, setShowGuide] = useState(() => !localStorage.getItem('canvas_guide_shown'));
   const dismissGuide = useCallback(() => {
@@ -204,11 +235,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           />
           <button
             onClick={handleExportPdf}
-            disabled={resumeSections.length === 0}
+            disabled={resumeSections.length === 0 || exportLoading}
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#004F90] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            <Download className="w-3.5 h-3.5" />
-            导出 PDF
+            {exportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {exportLoading ? '正在准备导出...' : '导出 PDF'}
           </button>
         </div>
       </header>
@@ -358,7 +389,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
       )}
       {/* 打印专用：隐藏在页面中，window.print() 时显示 */}
-      <PrintableResume resumeSections={resumeSections} />
+      <PrintableResume resumeSections={resumeSections} structuredData={structuredData} />
     </div>
   );
 };
