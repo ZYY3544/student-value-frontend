@@ -1332,7 +1332,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
         {/* 下拉面板（上下布局） */}
         {sidebarOpen && (
-          <div className="border-b border-gray-200 bg-gray-50 max-h-60 overflow-y-auto flex flex-col">
+          <div className="border-b border-gray-200 bg-gray-50 max-h-[50vh] flex flex-col overflow-hidden">
             {historyList}
           </div>
         )}
