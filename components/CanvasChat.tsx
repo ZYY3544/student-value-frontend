@@ -398,8 +398,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
         return updated;
       });
 
-      // 30 秒后清除高亮
-      setTimeout(() => { clearHighlights?.(); }, 30000);
+      // 高亮常驻，不自动清除（用户切换版本或手动编辑时自然消失）
     } catch (err: any) {
       console.error('JD optimize failed:', err);
       const errorMsg = err.message?.includes('已用完') ? err.message : '抱歉，JD 优化过程中遇到问题，请重试。';
