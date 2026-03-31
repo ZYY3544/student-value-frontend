@@ -952,18 +952,14 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     [sendMessage]
   );
 
-  // 侧边栏展开/收起
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // 侧边栏/下拉面板开关
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ===== 侧边栏 =====
-  const sidebar = (
-    <div
-      className={`bg-gray-50 border-r border-gray-200 flex flex-col shrink-0 transition-all duration-200 overflow-hidden ${
-        sidebarOpen ? 'w-[220px]' : 'w-0'
-      }`}
-    >
+  // ===== 历史对话列表（共享内容，两种布局复用） =====
+  const historyList = (
+    <>
       {/* 新对话按钮 */}
-      <div className="p-3 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-100">
         <button
           onClick={handleNewChat}
           disabled={isInitializing || isLoading}
@@ -973,8 +969,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           新对话
         </button>
       </div>
-
-      {/* 历史对话列表 */}
+      {/* 列表 */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
         {chatHistory.length === 0 ? (
           <p className="text-xs text-gray-400 py-6 text-center">暂无历史对话</p>
@@ -1004,7 +999,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                     <p className="text-xs text-gray-600 truncate">{item.title || item.firstMessage}</p>
                   )}
                 </div>
-                {/* 三点按钮 */}
                 <button
                   onClick={e => {
                     e.stopPropagation();
@@ -1025,11 +1019,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 
   // ===== 主聊天区 =====
-  const mainChat = (
+  const mainChat = (mode: 'narrow' | 'wide') => (
     <div className="flex-1 flex flex-col min-w-0">
       {/* Header */}
       <div className="p-4 px-6 border-b border-gray-50">
@@ -1038,7 +1032,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-xl transition-colors"
-              title={sidebarOpen ? '收起侧边栏' : '展开侧边栏'}
+              title={sidebarOpen ? '收起' : '展开'}
             >
               <Menu className="w-5 h-5 text-[#CA7C5E]" />
             </button>
@@ -1229,50 +1223,44 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     </div>
   );
 
-  // ===== 组合布局 =====
-  const chatContent = (
-    <div className={`bg-white border border-gray-200 rounded-3xl flex overflow-hidden shadow-sm h-full`}>
-      {sidebar}
-      {mainChat}
-      {/* 历史对话操作浮窗 */}
-      {actionMenuId && (
-        <>
-          <div className="fixed inset-0 z-[199]" onClick={() => setActionMenuId(null)} />
-          <div
-            className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px]"
-            style={{ top: actionMenuPos.top, right: actionMenuPos.right }}
-          >
-            {chatHistory.filter(h => h.id === actionMenuId).map(item => (
-              <div key={item.id}>
-                <button
-                  onClick={() => handlePin(item.id, item.pinned)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
-                >
-                  <Pin className="w-3.5 h-3.5" />
-                  {item.pinned ? '取消置顶' : '置顶'}
-                </button>
-                <button
-                  onClick={() => { setRenamingId(item.id); setRenameValue(item.title || item.firstMessage); setActionMenuId(null); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  重命名
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  删除
-                </button>
-              </div>
-            ))}
+  // ===== 操作浮窗（共享） =====
+  const actionMenu = actionMenuId && (
+    <>
+      <div className="fixed inset-0 z-[199]" onClick={() => setActionMenuId(null)} />
+      <div
+        className="fixed z-[200] bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px]"
+        style={{ top: actionMenuPos.top, right: actionMenuPos.right }}
+      >
+        {chatHistory.filter(h => h.id === actionMenuId).map(item => (
+          <div key={item.id}>
+            <button
+              onClick={() => handlePin(item.id, item.pinned)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+            >
+              <Pin className="w-3.5 h-3.5" />
+              {item.pinned ? '取消置顶' : '置顶'}
+            </button>
+            <button
+              onClick={() => { setRenamingId(item.id); setRenameValue(item.title || item.firstMessage); setActionMenuId(null); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              重命名
+            </button>
+            <button
+              onClick={() => handleDelete(item.id)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              删除
+            </button>
           </div>
-        </>
-      )}
-    </div>
+        ))}
+      </div>
+    </>
   );
 
+  // ===== 展开模式：左右布局 =====
   if (isExpanded) {
     return (
       <>
@@ -1282,16 +1270,232 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         />
         <div className="fixed inset-0 z-[101] flex items-center justify-center p-8 pointer-events-none">
           <div className="w-full max-w-7xl h-[95vh] pointer-events-auto">
-            {chatContent}
+            <div className="bg-white border border-gray-200 rounded-3xl flex overflow-hidden shadow-sm h-full">
+              {/* 左侧侧边栏 */}
+              <div
+                className={`bg-gray-50 border-r border-gray-200 flex flex-col shrink-0 transition-all duration-200 overflow-hidden ${
+                  sidebarOpen ? 'w-[240px]' : 'w-0'
+                }`}
+              >
+                {historyList}
+              </div>
+              {/* 右侧聊天区 */}
+              {mainChat('wide')}
+              {actionMenu}
+            </div>
           </div>
         </div>
       </>
     );
   }
 
+  // ===== 窄模式：上下布局（汉堡菜单下拉面板） =====
   return (
     <aside className="w-[420px] h-full shrink-0 p-4 pl-0">
-      {chatContent}
+      <div className="bg-white border border-gray-200 rounded-3xl flex flex-col overflow-hidden shadow-sm h-full relative">
+        {/* Header */}
+        <div className="p-4 px-6 border-b border-gray-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-xl transition-colors"
+                title="历史对话"
+              >
+                <Menu className="w-5 h-5 text-[#CA7C5E]" />
+              </button>
+              <div>
+                <h3 className="font-bold text-base">求职小帮手</h3>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  <span className="text-xs font-medium text-green-600">
+                    {isInitializing ? '正在准备...' : 'Sparky 正在工作'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => { setIsExpanded(true); setSidebarOpen(true); }}
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              title="展开"
+            >
+              <Maximize2 className="w-[18px] h-[18px]" />
+            </button>
+          </div>
+        </div>
+
+        {/* 下拉面板（上下布局） */}
+        {sidebarOpen && (
+          <div className="border-b border-gray-200 bg-gray-50 max-h-60 overflow-y-auto flex flex-col">
+            {historyList}
+          </div>
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {isInitializing && (
+            <div className="flex items-center gap-2 text-gray-400 text-sm justify-center py-8">
+              <Loader2 size={16} className="animate-spin" />
+              <span>正在分析你的简历...</span>
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-8">
+              <p className="text-red-500 text-sm mb-2">{error}</p>
+              <button
+                onClick={() => { setError(null); setSessionId(null); initSession(); }}
+                className="text-[#CA7C5E] text-sm font-medium underline"
+              >
+                重试
+              </button>
+            </div>
+          )}
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+              {msg.role === 'assistant' && (
+                <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center">
+                  <PixelCat size={24} />
+                </div>
+              )}
+              <div
+                className={`max-w-[85%] text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                  msg.role === 'user'
+                    ? 'bg-[#CA7C5E] rounded-2xl p-4 text-white shadow-md'
+                    : 'bg-gray-50 rounded-2xl p-4 text-gray-700 border border-gray-100'
+                }`}
+              >
+                {msg.role === 'assistant' ? (
+                  msg.content ? (
+                    msg.content.startsWith('Sparky 正在') ? (
+                      <span className="flex items-center gap-2 text-gray-400 text-sm">
+                        <Loader2 size={14} className="animate-spin text-[#CA7C5E]" />
+                        {msg.content}
+                      </span>
+                    ) : (
+                      <>
+                        {formatContent(msg.content.replace('[CAREER_FORM]', ''))}
+                        {msg.content.includes('[CAREER_FORM]') && (
+                          <CareerForm onSubmit={(answers) => sendMessage(answers)} />
+                        )}
+                        {(() => {
+                          const isStreamingThis = isLoading && idx === messages.length - 1;
+                          if (isStreamingThis) return null;
+                          const actions = extractActions(msg.content);
+                          if (!actions.length) return null;
+                          return (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {actions.map((kw) => {
+                                const cfg = ACTION_BUTTON_CONFIG[kw];
+                                return (
+                                  <button
+                                    key={kw}
+                                    onClick={() => sendMessage(cfg.action.replace('send:', ''))}
+                                    className="px-4 py-2 bg-[#CA7C5E] text-white text-xs font-medium rounded-full hover:bg-[#b5694e] transition-colors"
+                                  >
+                                    {cfg.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </>
+                    )
+                  ) : (
+                    <span className="flex items-center gap-2 text-gray-400 text-sm">
+                      <Loader2 size={14} className="animate-spin text-[#CA7C5E]" />
+                      Sparky 正在思考...
+                    </span>
+                  )
+                ) : (
+                  msg.content
+                )}
+                {msg.sources && msg.sources.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
+                    <p className="text-[10px] text-gray-400 font-medium">来源</p>
+                    {msg.sources.map((src, i) => (
+                      <a
+                        key={i}
+                        href={src.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-lg border border-gray-100 hover:border-[#0A66C2]/30 hover:bg-blue-50/30 transition-colors group"
+                      >
+                        {src.favicon && <img src={src.favicon} alt="" className="w-3.5 h-3.5 rounded-sm flex-shrink-0" />}
+                        <span className="text-xs text-gray-600 group-hover:text-[#0A66C2] truncate">{src.title}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Area */}
+        <div className="p-6 bg-white border-t border-gray-50">
+          <div className="bg-gray-50 rounded-2xl mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={e => {
+                setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH));
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="询问 Sparky 如何提升简历竞争力..."
+              disabled={isLoading || isInitializing || isTyping}
+              rows={1}
+              className="w-full bg-transparent border-none pl-5 pr-5 pt-3.5 pb-1 text-sm outline-none disabled:text-gray-400 resize-none overflow-hidden"
+            />
+            <div className="flex items-center justify-between px-2 pb-2">
+              {onEnterCanvas ? (
+                <button
+                  onClick={() => sendMessage('简历画布')}
+                  disabled={isLoading || isInitializing || isTyping}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-[#CA7C5E] hover:bg-[#CA7C5E]/10 disabled:opacity-40 transition-colors"
+                >
+                  <PenLine className="w-3 h-3" />
+                  简历画布
+                </button>
+              ) : <span />}
+              {isLoading ? (
+                <button
+                  onClick={handleStop}
+                  className="w-9 h-9 bg-gray-500 rounded-xl flex items-center justify-center text-white hover:bg-gray-600 transition-colors"
+                  title="停止生成"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => sendMessage()}
+                  disabled={!inputValue.trim() || isInitializing}
+                  className="w-9 h-9 bg-[#CA7C5E] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#CA7C5E]/30 disabled:bg-gray-300 disabled:shadow-none transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {QUICK_CHIPS.map((chip) => (
+              <button
+                key={chip}
+                onClick={() => handleChipClick(chip)}
+                disabled={isLoading || isInitializing || isTyping}
+                className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600 disabled:opacity-50 transition-colors"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {actionMenu}
+      </div>
     </aside>
   );
 };
