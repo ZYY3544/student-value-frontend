@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit, ResumeExpression, JobComparison, ParsedJd, JdMatchItem, ResumeVersion } from '../types';
-import { supabase } from '../lib/supabase';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell,
   Lightbulb, Brain, Handshake, PenTool, Shield, Award
@@ -138,58 +137,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const savedMsgCount = useRef(0);
-  const dbSessionId = useRef<string | null>(null);
-  const dbCreateFailed = useRef(false); // 403/RLS 失败后停止重试
-
-  // 新对话时重置持久化状态
-  useEffect(() => {
-    if (!sessionId) {
-      savedMsgCount.current = 0;
-      dbSessionId.current = null;
-      dbCreateFailed.current = false;
-    }
-  }, [sessionId]);
-
-  // 将新消息持久化到 Supabase（失败后退避，不无限重试）
-  useEffect(() => {
-    if (!userId || !sessionId || dbCreateFailed.current) return;
-    if (messages.length <= savedMsgCount.current) return;
-
-    const newMessages = messages.slice(savedMsgCount.current);
-    const createSessionAndSave = async () => {
-      // 首次保存时创建 chat_sessions 记录
-      if (!dbSessionId.current) {
-        const { data, error } = await supabase
-          .from('chat_sessions')
-          .insert({ user_id: userId, phase: 'opening' })
-          .select('id')
-          .single();
-        if (error) {
-          console.warn('[Supabase] chat_sessions insert failed, stopping retries:', error.message);
-          dbCreateFailed.current = true;
-          return;
-        }
-        if (data) dbSessionId.current = data.id;
-      }
-
-      if (!dbSessionId.current) return;
-
-      const rows = newMessages.map(m => ({
-        session_id: dbSessionId.current!,
-        role: m.role,
-        content: m.content,
-      }));
-      const { error } = await supabase.from('chat_messages').insert(rows);
-      if (error) {
-        console.warn('[Supabase] chat_messages insert failed:', error.message);
-        return;
-      }
-      savedMsgCount.current = messages.length;
-    };
-    createSessionAndSave().catch(console.error);
-  }, [messages, userId, sessionId]);
-
   // ===== Canvas 状态 =====
   const [viewMode, setViewMode] = useState<'report' | 'canvas'>('report');
   const [chatForceExpanded, setChatForceExpanded] = useState(false);
