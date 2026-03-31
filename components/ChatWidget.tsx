@@ -5,7 +5,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare, SquarePen, Pin, Pencil, Trash2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { authHeaders } from '../services/authService';
 import { CareerForm } from './CareerForm';
 
@@ -493,60 +492,42 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
-  // 打开菜单时加载历史记录
+  // 打开菜单时加载历史记录（通过后端 API）
   const loadHistory = useCallback(async () => {
     if (!userId) return;
     setHistoryLoading(true);
     try {
-      // 单次查询：内联 join chat_messages，只取 role=user 的消息用于判断和展示
-      const { data, error } = await supabase
-        .from('chat_sessions')
-        .select('id, created_at, pinned, title, chat_messages(content, role)')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(20);
+      const res = await fetch(`${apiBase}/api/user/chat-history`, {
+        headers: authHeaders(),
+      });
+      const json = await res.json();
 
-      if (error) {
-        console.error('[loadHistory] Supabase query error:', error);
+      if (!json.success || !json.data?.length) {
         setChatHistory([]);
         return;
       }
 
-      if (data && data.length > 0) {
-        // 只保留有用户消息的 session，排除当前正在进行的空 session
-        const mapped = data
-          .filter((s: any) => {
-            const msgs = s.chat_messages || [];
-            return msgs.some((m: any) => m.role === 'user');
-          })
-          .slice(0, 10)
-          .map((s: any) => {
-            const msgs = s.chat_messages || [];
-            const userMsg = msgs.find((m: any) => m.role === 'user');
-            return {
-              id: s.id,
-              created_at: s.created_at,
-              firstMessage: userMsg?.content?.slice(0, 30) || '新对话',
-              pinned: !!s.pinned,
-              title: s.title || null,
-            };
-          });
+      const mapped = json.data.map((s: any) => ({
+        id: s.id,
+        created_at: s.created_at,
+        firstMessage: s.firstMessage || '新对话',
+        pinned: !!s.pinned,
+        title: s.title || null,
+      }));
 
-        // pinned 优先，再按 created_at 降序
-        mapped.sort((a: any, b: any) => {
-          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-        setChatHistory(mapped);
-      } else {
-        setChatHistory([]);
-      }
+      // pinned 优先，再按 created_at 降序
+      mapped.sort((a: any, b: any) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      setChatHistory(mapped);
     } catch (err) {
       console.error('Failed to load chat history:', err);
+      setChatHistory([]);
     } finally {
       setHistoryLoading(false);
     }
-  }, [userId]);
+  }, [userId, apiBase]);
 
   const toggleMenu = useCallback(() => {
     setMenuOpen(prev => {
@@ -557,27 +538,39 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [loadHistory]);
 
   const handlePin = useCallback(async (id: string, currentPinned: boolean) => {
-    const { error } = await supabase.from('chat_sessions').update({ pinned: !currentPinned }).eq('id', id);
-    if (error) console.error('[handlePin] Supabase error:', error);
+    try {
+      await fetch(`${apiBase}/api/user/chat-history/${id}`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ pinned: !currentPinned }),
+      });
+    } catch (e) { console.error('[handlePin] error:', e); }
     setActionMenuId(null);
     loadHistory();
-  }, [loadHistory]);
+  }, [loadHistory, apiBase]);
 
   const handleRename = useCallback(async (id: string) => {
     if (!renameValue.trim()) { setRenamingId(null); return; }
-    const { error } = await supabase.from('chat_sessions').update({ title: renameValue.trim() }).eq('id', id);
-    if (error) console.error('[handleRename] Supabase error:', error);
+    try {
+      await fetch(`${apiBase}/api/user/chat-history/${id}`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ title: renameValue.trim() }),
+      });
+    } catch (e) { console.error('[handleRename] error:', e); }
     setRenamingId(null);
     setRenameValue('');
     setActionMenuId(null);
     loadHistory();
-  }, [renameValue, loadHistory]);
+  }, [renameValue, loadHistory, apiBase]);
 
   const handleDelete = useCallback(async (id: string) => {
-    // 先删关联的消息，再删 session
-    await supabase.from('chat_messages').delete().eq('session_id', id);
-    const { error } = await supabase.from('chat_sessions').delete().eq('id', id);
-    if (error) console.error('[handleDelete] Supabase error:', error);
+    try {
+      await fetch(`${apiBase}/api/user/chat-history/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+    } catch (e) { console.error('[handleDelete] error:', e); }
     setActionMenuId(null);
     if (sessionId === id) {
       setSessionId(null);
@@ -586,9 +579,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       setError(null);
     }
     loadHistory();
-  }, [loadHistory, sessionId]);
+  }, [loadHistory, sessionId, apiBase]);
 
-  // 点击历史对话恢复消息
+  // 点击历史对话恢复消息（通过后端 API）
   const handleRestoreSession = useCallback(async (id: string) => {
     if (isInitializing || isLoading) return;
     setMenuOpen(false);
@@ -596,25 +589,18 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select('role, content')
-        .eq('session_id', id)
-        .order('created_at', { ascending: true });
+      const res = await fetch(`${apiBase}/api/user/chat-history/${id}/messages`, {
+        headers: authHeaders(),
+      });
+      const json = await res.json();
 
-      if (error) {
-        console.error('[handleRestoreSession] Supabase error:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
+      if (json.success && json.data?.length > 0) {
         // 中断正在进行的请求
         if (abortRef.current) abortRef.current.abort();
         setIsLoading(false);
-        setSessionId(null); // 先重置，触发 savedMsgCount 清零
-        // 使用 setTimeout 确保 sessionId=null 的 effect 先执行
+        setSessionId(null);
         setTimeout(() => {
-          setMessages(data.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })));
+          setMessages(json.data.map((m: any) => ({ role: m.role as 'user' | 'assistant', content: m.content })));
           setSessionId(id);
           setInputValue('');
         }, 0);
@@ -622,7 +608,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     } catch (err) {
       console.error('Failed to restore session:', err);
     }
-  }, [isInitializing, isLoading]);
+  }, [isInitializing, isLoading, apiBase]);
 
   // Auto-initialize on mount
   const initSession = useCallback(async () => {
