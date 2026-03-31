@@ -816,13 +816,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             <span className="text-[11px] font-bold text-[#0A66C2] tracking-[0.15em] uppercase mb-1 block">COMPETITIVENESS ANALYSIS REPORT</span>
             <h1 className="text-4xl font-bold text-gray-900">人才竞争力分析报告</h1>
           </div>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors no-print"
-          >
-            <FileText className="w-4 h-4" />
-            导出 PDF
-          </button>
         </div>
 
         {/* 1. 你的能力底子 */}
