@@ -518,17 +518,24 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [loadHistory]);
 
 
-  const handlePin = useCallback(async (id: string, currentPinned: boolean) => {
-    try {
-      await fetch(`${apiBase}/api/user/chat-history/${id}`, {
-        method: 'PATCH',
-        headers: authHeaders(),
-        body: JSON.stringify({ pinned: !currentPinned }),
+  const handlePin = useCallback((id: string, currentPinned: boolean) => {
+    // 乐观更新：立即切换置顶状态并重排
+    setChatHistory(prev => {
+      const updated = prev.map(h => h.id === id ? { ...h, pinned: !currentPinned } : h);
+      updated.sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
-    } catch (e) { console.error('[handlePin] error:', e); }
+      return updated;
+    });
     setActionMenuId(null);
-    loadHistory();
-  }, [loadHistory, apiBase]);
+    // 后端异步更新
+    fetch(`${apiBase}/api/user/chat-history/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ pinned: !currentPinned }),
+    }).catch(e => console.error('[handlePin] error:', e));
+  }, [apiBase]);
 
   const handleRename = useCallback(async (id: string) => {
     if (!renameValue.trim()) { setRenamingId(null); return; }
@@ -545,13 +552,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     loadHistory();
   }, [renameValue, loadHistory, apiBase]);
 
-  const handleDelete = useCallback(async (id: string) => {
-    try {
-      await fetch(`${apiBase}/api/user/chat-history/${id}`, {
-        method: 'DELETE',
-        headers: authHeaders(),
-      });
-    } catch (e) { console.error('[handleDelete] error:', e); }
+  const handleDelete = useCallback((id: string) => {
+    // 乐观更新：立即从列表移除
+    setChatHistory(prev => prev.filter(h => h.id !== id));
     setActionMenuId(null);
     if (sessionId === id) {
       setSessionId(null);
@@ -559,8 +562,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       setInputValue('');
       setError(null);
     }
-    loadHistory();
-  }, [loadHistory, sessionId, apiBase]);
+    // 后端异步删除
+    fetch(`${apiBase}/api/user/chat-history/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }).catch(e => console.error('[handleDelete] error:', e));
+  }, [sessionId, apiBase]);
 
   // 点击历史对话恢复消息（通过后端 API）
   const restoringRef = useRef(false);
