@@ -131,23 +131,21 @@ const cleanSystemTags = (text: string) => text.replace(/\[RESUME_INSIGHT:.*?\]/g
 const ACTION_BUTTON_CONFIG: Record<string, { label: string; action: string }> = {
   '解读报告': { label: '解读报告 →', action: 'send:解读报告' },
   '报告解读': { label: '解读报告 →', action: 'send:报告解读' },
-  '简历画布': { label: '进入简历画布 →', action: 'send:简历画布' },
+  '进入简历画布': { label: '进入简历画布 →', action: 'canvas' },
 };
 const ACTION_KEYWORDS = new Set(Object.keys(ACTION_BUTTON_CONFIG));
 
 /** 从消息文本中提取出现的 action 关键词（去重，保持出现顺序） */
 export const extractActions = (text: string): string[] => {
-  // 系统自动跳转提示不需要按钮
-  if (text.includes('正在为你打开简历画布')) return [];
   const found: string[] = [];
   for (const kw of ACTION_KEYWORDS) {
     if (text.includes(kw) && !found.some(f => ACTION_BUTTON_CONFIG[f]?.label === ACTION_BUTTON_CONFIG[kw]?.label)) {
       found.push(kw);
     }
   }
-  // 兜底：报告解读消息（含"能力""简历""定价"三个维度）如果没提到简历画布，也加按钮
-  if (text.length > 200 && text.includes('简历') && text.includes('改') && !found.some(f => ACTION_BUTTON_CONFIG[f]?.label === '进入简历画布 →')) {
-    found.push('简历画布');
+  // 解读报告的回复：加"进入简历画布"按钮（含优化策略 / 竞争力分析等特征词）
+  if (text.length > 200 && (text.includes('优化策略') || text.includes('竞争力分析')) && !found.includes('进入简历画布')) {
+    found.push('进入简历画布');
   }
   return found;
 };
@@ -1168,7 +1166,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                               return (
                                 <button
                                   key={kw}
-                                  onClick={() => sendMessage(cfg.action.replace('send:', ''))}
+                                  onClick={() => cfg.action === 'canvas' ? onEnterCanvas?.() : sendMessage(cfg.action.replace('send:', ''))}
                                   className="px-4 py-2 bg-[#CA7C5E] text-white text-xs font-medium rounded-full hover:bg-[#b5694e] transition-colors"
                                 >
                                   {cfg.label}
@@ -1429,7 +1427,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                                 return (
                                   <button
                                     key={kw}
-                                    onClick={() => sendMessage(cfg.action.replace('send:', ''))}
+                                    onClick={() => cfg.action === 'canvas' ? onEnterCanvas?.() : sendMessage(cfg.action.replace('send:', ''))}
                                     className="px-4 py-2 bg-[#CA7C5E] text-white text-xs font-medium rounded-full hover:bg-[#b5694e] transition-colors"
                                   >
                                     {cfg.label}
