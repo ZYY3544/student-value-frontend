@@ -1221,7 +1221,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           <div className="flex items-center justify-between px-2 pb-2">
             {onEnterCanvas ? (
               <button
-                onClick={() => sendMessage('简历画布')}
+                onClick={() => onEnterCanvas?.()}
                 disabled={isLoading || isInitializing || isTyping}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-[#CA7C5E] hover:bg-[#CA7C5E]/10 disabled:opacity-40 transition-colors"
               >
@@ -1482,7 +1482,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             <div className="flex items-center justify-between px-2 pb-2">
               {onEnterCanvas ? (
                 <button
-                  onClick={() => sendMessage('简历画布')}
+                  onClick={() => onEnterCanvas?.()}
                   disabled={isLoading || isInitializing || isTyping}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-[#CA7C5E] hover:bg-[#CA7C5E]/10 disabled:opacity-40 transition-colors"
                 >
