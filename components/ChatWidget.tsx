@@ -615,8 +615,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (sessionId) return;
     setError(null);
 
-    // 有预生成开场白 → 立即显示，不显示 loading spinner
-    if (preloadedGreeting && !skipGreetingRef.current) {
+    const isBlankChat = skipGreetingRef.current;
+
+    // 有预生成开场白且非空白对话 → 立即显示，不显示 loading spinner
+    if (preloadedGreeting && !isBlankChat) {
       setMessages([]);
       typewriterEffect(preloadedGreeting);
       // 创建 promise，让 sendMessage 可以等待 sessionId
@@ -637,7 +639,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         .then(data => {
           if (data.success) {
             setSessionId(data.data.sessionId);
-            // 通知等待中的 sendMessage
             sessionReadyRef.current?.resolve(data.data.sessionId);
             sessionReadyRef.current = null;
             if (data.data.sections?.length && onSectionsReady) {
@@ -654,16 +655,21 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       return;
     }
 
-    // 没有预生成开场白 → 走原来的同步流程，显示 loading
+    // 空白对话或无预生成开场白 → 创建 session
     setIsInitializing(true);
     try {
+      const body: any = { userId, skipGreeting: isBlankChat };
+      // 有 assessmentContext 就传，没有就让后端自动加载
+      if (assessmentContext && Object.keys(assessmentContext).length > 0) {
+        body.assessmentContext = assessmentContext;
+      }
+      if (resumeText) body.resumeText = resumeText;
+      if (preloadedSections) body.resumeSections = preloadedSections;
+
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({
-          assessmentContext, resumeText, userId,
-          resumeSections: preloadedSections,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start chat');
@@ -671,7 +677,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       if (data.data.sections?.length && onSectionsReady) {
         onSectionsReady(data.data.sections);
       }
-      if (skipGreetingRef.current) {
+      if (isBlankChat) {
+        // 空白对话：不显示开场白，直接等用户输入
         skipGreetingRef.current = false;
         setMessages([]);
       } else {
@@ -679,7 +686,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         setMessages([]);
         typewriterEffect(greeting);
       }
-      skipGreetingRef.current = false;
     } catch (err: any) {
       console.error('Chat init failed:', err);
       setError(err.message || 'Failed to connect');
@@ -699,16 +705,23 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setIsInitializing(true);
 
     try {
+      const body: any = { userId, skipGreeting: true };
+      if (assessmentContext && Object.keys(assessmentContext).length > 0) {
+        body.assessmentContext = assessmentContext;
+      }
+      if (resumeText) body.resumeText = resumeText;
+      if (preloadedSections) body.resumeSections = preloadedSections;
+
       const res = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ assessmentContext, resumeText, userId, resumeSections: preloadedSections }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Recovery failed');
       setSessionId(data.data.sessionId);
       setMessages([
-        { role: 'assistant', content: '之前的会话已过期，已为你重新开启对话。\n\n' + data.data.greeting },
+        { role: 'assistant', content: '之前的会话已过期，已为你重新开启对话。有什么需要我帮你的？' },
       ]);
     } catch (err: any) {
       setError(err.message || 'Failed to recover');
