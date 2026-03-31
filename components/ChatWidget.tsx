@@ -969,7 +969,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         <button
           onClick={handleNewChat}
           disabled={isInitializing || isLoading}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/10 transition-colors disabled:opacity-40"
         >
           <SquarePen className="w-4 h-4" />
           新对话
@@ -977,7 +977,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         <button
           onClick={() => handleChipClick('模拟面试')}
           disabled={isLoading || isInitializing || isTyping}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/10 transition-colors disabled:opacity-40"
         >
           <Mic className="w-4 h-4" />
           模拟面试
@@ -985,7 +985,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         <button
           onClick={() => handleChipClick('职业规划')}
           disabled={isLoading || isInitializing || isTyping}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/10 transition-colors disabled:opacity-40"
         >
           <Compass className="w-4 h-4" />
           职业规划
@@ -1002,7 +1002,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                 key={item.id}
                 onClick={() => handleRestoreSession(item.id)}
                 className={`group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
-                  sessionId === item.id ? 'bg-white shadow-sm border border-gray-100' : 'hover:bg-white/60'
+                  sessionId === item.id ? 'bg-white shadow-sm border border-gray-100' : 'hover:bg-[#CA7C5E]/10'
                 }`}
               >
                 {item.pinned && <span className="absolute left-0.5 top-0.5 text-[8px]">📌</span>}
