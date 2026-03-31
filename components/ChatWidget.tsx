@@ -752,7 +752,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     typeNext();
   }, []);
 
-  const sendMessage = useCallback(async (overrideText?: string, displayText?: string) => {
+  const sendMessage = useCallback(async (overrideText?: string, displayText?: string, hideUserMsg?: boolean) => {
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || isTyping) return;
 
@@ -832,7 +832,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       return;
     }
 
-    setMessages(prev => [...prev, { role: 'user', content: userDisplay }]);
+    if (!hideUserMsg) {
+      setMessages(prev => [...prev, { role: 'user', content: userDisplay }]);
+    }
     setInputValue('');
     setIsLoading(true);
 
@@ -926,7 +928,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const chip = pendingChipRef.current;
       pendingChipRef.current = null;
       const action = CHIP_ACTIONS[chip];
-      if (action) sendMessage(action, chip);
+      if (action) sendMessage(action, chip, true);
     }
   }, [sessionId, isInitializing, sendMessage]);
 
