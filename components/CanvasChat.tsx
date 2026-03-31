@@ -323,7 +323,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     setMessages(prev => [
       ...prev,
       { role: 'user', content: `上传 JD：${jdText.slice(0, 80)}...` },
-      { role: 'assistant', content: '正在分析 JD...' },
+      { role: 'assistant', content: '' },
     ]);
     setIsLoading(true);
     const analyzeStart = Date.now();
