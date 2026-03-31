@@ -512,10 +512,19 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
   }, [userId, apiBase]);
 
-  // 组件挂载时预加载历史，打开菜单时直接显示
+  // 组件挂载时预加载历史
   useEffect(() => {
     loadHistory(true);
   }, [loadHistory]);
+
+  // session 变化时刷新历史列表（新建对话、恢复对话后自动出现在列表中）
+  useEffect(() => {
+    if (sessionId) {
+      // 延迟一下等后端写入完成
+      const timer = setTimeout(() => loadHistory(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [sessionId]);
 
 
   const handlePin = useCallback((id: string, currentPinned: boolean) => {
