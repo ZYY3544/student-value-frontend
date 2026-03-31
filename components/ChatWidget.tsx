@@ -315,7 +315,7 @@ export const formatContent = (text: string) => {
 };
 
 const MAX_INPUT_LENGTH = 2000;
-const QUICK_CHIPS = ['解读报告', '模拟面试', '职业规划'];
+const QUICK_CHIPS = ['模拟面试', '职业规划'];
 
 // 每个快捷按钮的固定引导语（本地展示，不走后端）
 // chip 对应后端的 ACTION 前缀
@@ -964,8 +964,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   // ===== 历史对话列表（共享内容，两种布局复用） =====
   const historyList = (
     <>
-      {/* 新对话按钮 */}
-      <div className="p-3 border-b border-gray-100">
+      {/* 新对话 + 快捷入口（固定区域） */}
+      <div className="p-3 border-b border-gray-100 space-y-2">
         <button
           onClick={handleNewChat}
           disabled={isInitializing || isLoading}
@@ -974,6 +974,18 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           <SquarePen className="w-4 h-4" />
           新对话
         </button>
+        <div className="flex gap-1.5">
+          {QUICK_CHIPS.map((chip) => (
+            <button
+              key={chip}
+              onClick={() => handleChipClick(chip)}
+              disabled={isLoading || isInitializing || isTyping}
+              className="flex-1 px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
       </div>
       {/* 列表 */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
@@ -1212,18 +1224,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               </button>
             )}
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {QUICK_CHIPS.map((chip) => (
-            <button
-              key={chip}
-              onClick={() => handleChipClick(chip)}
-              disabled={isLoading || isInitializing || isTyping}
-              className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600 disabled:opacity-50 transition-colors"
-            >
-              {chip}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -1485,18 +1485,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                 </button>
               )}
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {QUICK_CHIPS.map((chip) => (
-              <button
-                key={chip}
-                onClick={() => handleChipClick(chip)}
-                disabled={isLoading || isInitializing || isTyping}
-                className="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600 disabled:opacity-50 transition-colors"
-              >
-                {chip}
-              </button>
-            ))}
           </div>
         </div>
 
