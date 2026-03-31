@@ -924,30 +924,18 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [sessionId, isInitializing, sendMessage]);
 
   const handleChipClick = useCallback((chip: string) => {
-    if (isLoading || isTyping) return;
+    if (isLoading || isTyping || isInitializing) return;
 
-    // 没有 session → 先新建空白对话，等 session 就绪后自动发送
-    if (!sessionId) {
-      pendingChipRef.current = chip;
-      skipGreetingRef.current = true;
-      setSessionId(null);
-      setMessages([]);
-      setInputValue('');
-      setError(null);
-      // initSession 会被触发创建新 session
-      return;
-    }
-
-    // "润色简历" 直接跳转画布模式
-    if (chip === '润色简历' && onEnterCanvas) {
-      sendMessage(chip);
-      return;
-    }
-
-    const action = CHIP_ACTIONS[chip];
-    if (!action) return;
-    sendMessage(action, chip);
-  }, [isLoading, isTyping, sessionId, sendMessage, onEnterCanvas]);
+    // 始终创建新对话，在新对话中执行指令
+    pendingChipRef.current = chip;
+    if (abortRef.current) abortRef.current.abort();
+    setIsLoading(false);
+    skipGreetingRef.current = true;
+    setSessionId(null);
+    setMessages([]);
+    setInputValue('');
+    setError(null);
+  }, [isLoading, isTyping, isInitializing]);
 
   const handleStop = useCallback(() => {
     if (abortRef.current) {
