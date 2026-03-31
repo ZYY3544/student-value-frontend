@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, Diamond, Loader2, KeyRound } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com';
+import { verifyInviteCode, setInviteCode } from '../services/authService';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -16,25 +15,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     e.preventDefault();
     setError('');
 
-    if (!code.trim()) { setError('请输入验证码'); return; }
+    if (!code.trim()) { setError('请输入邀请码'); return; }
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/mini/verify-invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: code.trim() }),
-      });
-      const data = await res.json();
-
-      if (!data.success) {
-        setError(data.error || '验证码无效');
+      const result = await verifyInviteCode(code);
+      if (!result.success) {
+        setError(result.error || '邀请码无效');
         return;
       }
 
       // 验证通过，存到 localStorage
-      localStorage.setItem('invite_code', code.trim().toUpperCase());
-      localStorage.setItem('invite_code_time', Date.now().toString());
+      setInviteCode(code.trim().toUpperCase());
       onAuthSuccess();
     } catch {
       setError('网络错误，请稍后重试');
@@ -65,11 +57,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
           <div className="space-y-4 md:space-y-6 mt-auto hidden md:block">
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm">输入验证码即可使用</span>
+              <span className="text-sm">输入邀请码即可使用</span>
             </div>
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm">验证码有效期 24 小时</span>
+              <span className="text-sm">邀请码有效期 14 天</span>
             </div>
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
@@ -93,15 +85,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
       {/* Main Content */}
       <main className="flex-1 bg-[#F8FAFC] flex items-center justify-center p-6 md:p-12">
         <div className="w-full max-w-md">
-          <h2 className="text-3xl font-bold text-slate-900 mb-2">输入验证码</h2>
-          <p className="text-slate-500 mb-8">请输入您收到的验证码以开始使用</p>
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">输入邀请码</h2>
+          <p className="text-slate-500 mb-8">请输入您收到的邀请码以开始使用</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="relative">
               <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
               <input
                 type="text"
-                placeholder="请输入验证码"
+                placeholder="请输入邀请码"
                 value={code}
                 onChange={(e) => { setCode(e.target.value); setError(''); }}
                 className="w-full bg-white border border-slate-200 text-sm text-slate-900 rounded-2xl py-4 pl-12 pr-5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300 uppercase tracking-widest text-center text-lg font-mono"

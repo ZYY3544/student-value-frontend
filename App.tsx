@@ -12,6 +12,7 @@ import { AssessmentInput, AssessmentResult, AppState } from './types';
 import { Toast } from './components/Toast';
 import {
   getToken, getStoredUser, clearAuth, fetchMe,
+  getInviteCode, setInviteCode, clearInviteCode, verifyInviteCode,
   type WjUser, type SubscriptionStatus
 } from './services/authService';
 
@@ -46,59 +47,54 @@ const DEFAULT_FORM_DATA: AssessmentInput = {
   targetCompany: '',
 };
 
-// 邀请码认证（当前使用，微信登录就绪后切换）
-const INVITE_CODE_TTL = 24 * 3600 * 1000;
-
-function getStoredAuth(): { code: string; userId: string } | null {
-  const code = localStorage.getItem('invite_code');
-  const time = localStorage.getItem('invite_code_time');
-  if (!code || !time) return null;
-  if (Date.now() - parseInt(time) > INVITE_CODE_TTL) {
-    localStorage.removeItem('invite_code');
-    localStorage.removeItem('invite_code_time');
-    localStorage.removeItem('anon_user_id');
-    return null;
-  }
-  let userId = localStorage.getItem('anon_user_id');
-  if (!userId) {
-    userId = crypto.randomUUID();
-    localStorage.setItem('anon_user_id', userId);
-  }
-  return { code, userId };
+// 邀请码认证：code 既是身份标识也是 userId
+function getStoredAuthCode(): string | null {
+  return getInviteCode();
 }
 
 const App: React.FC = () => {
-  const [auth, setAuth] = useState<{ code: string; userId: string } | null>(null);
+  // auth 现在只存邀请码，code 即 userId
+  const [authCode, setAuthCode] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [appState, setAppState] = useState<AppState>(AppState.AUTH);
 
-  // 根据 localStorage 验证码状态设置初始页面
+  // 启动时检查 localStorage 中的邀请码，静默验证有效性
   useEffect(() => {
-    const stored = getStoredAuth();
-    setAuth(stored);
-    setAuthLoading(false);
+    const code = getStoredAuthCode();
+    if (!code) {
+      setAuthLoading(false);
+      return;
+    }
+    // 静默验证邀请码是否还有效
+    verifyInviteCode(code).then(result => {
+      if (result.success) {
+        setAuthCode(code);
+      } else {
+        // 邀请码已失效，清除
+        clearInviteCode();
+      }
+      setAuthLoading(false);
+    });
   }, []);
 
   useEffect(() => {
     if (authLoading) return;
-    if (auth) {
+    if (authCode) {
       if (appState === AppState.AUTH) setAppState(AppState.FORM);
     } else {
       setAppState(AppState.AUTH);
     }
-  }, [auth, authLoading]);
+  }, [authCode, authLoading]);
 
   const handleAuthSuccess = () => {
-    const stored = getStoredAuth();
-    setAuth(stored);
+    const code = getStoredAuthCode();
+    setAuthCode(code);
     setAppState(AppState.FORM);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('invite_code');
-    localStorage.removeItem('invite_code_time');
-    localStorage.removeItem('anon_user_id');
-    setAuth(null);
+    clearInviteCode();
+    setAuthCode(null);
     setAppState(AppState.AUTH);
   };
 
@@ -219,7 +215,7 @@ const App: React.FC = () => {
       const data = await generateAssessment(formData, {
         welcomeS: pageDurations.current['welcome'],
         formS: pageDurations.current['form'],
-      }, auth?.userId);
+      }, authCode);
       if (data.logId) assessLogId.current = data.logId;
       setResult(data);
       setAppState(AppState.RESULT);
@@ -670,9 +666,9 @@ const App: React.FC = () => {
           />
         );
       case AppState.HISTORY:
-        return auth ? (
+        return authCode ? (
           <HistoryPage
-            userId={auth.userId}
+            userId={authCode}
             onBack={() => setAppState(AppState.FORM)}
             onSelectRecord={(histResult, histInput, resumeText) => {
               setResult(histResult);
@@ -700,7 +696,7 @@ const App: React.FC = () => {
           </div>
         );
       case AppState.RESULT:
-        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} userId={auth?.userId} />;
+        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} userId={authCode} />;
         return renderFormContent();
       default:
         return renderFormContent();

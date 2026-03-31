@@ -227,10 +227,53 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   });
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
 
-  // 持久化到 localStorage
+  // 防抖写入 Supabase 的 timer ref
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 持久化到 localStorage + 防抖写入 Supabase
   useEffect(() => {
     localStorage.setItem(versionStorageKey, JSON.stringify(versions));
-  }, [versions, versionStorageKey]);
+
+    // 防抖 3 秒写入 Supabase
+    if (userId) {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(() => {
+        fetch(`${API_BASE}/api/user/versions`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({ versions }),
+        }).catch(err => console.warn('[VersionSync] 写入失败:', err));
+      }, 3000);
+    }
+
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, [versions, versionStorageKey, userId]);
+
+  // 登录时异步拉 Supabase 版本数据，如果比本地新则覆盖
+  useEffect(() => {
+    if (!userId) return;
+    fetch(`${API_BASE}/api/user/versions`, {
+      headers: authHeaders(),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success || !data.data?.updatedAt) return;
+        const cloudVersions: ResumeVersion[] = data.data.versions || [];
+        if (cloudVersions.length === 0) return;
+
+        // 比较 Supabase 的 updatedAt 和本地版本的最大 updatedAt
+        const localMaxUpdated = versions.reduce((max, v) => Math.max(max, v.updatedAt || 0), 0);
+        const cloudUpdatedAt = new Date(data.data.updatedAt).getTime();
+        if (cloudUpdatedAt > localMaxUpdated) {
+          setVersions(cloudVersions);
+          localStorage.setItem(versionStorageKey, JSON.stringify(cloudVersions));
+        }
+      })
+      .catch(err => console.warn('[VersionSync] 拉取失败:', err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   // Refs 追踪最新值（避免闭包陈旧问题）
   const versionsRef = useRef(versions);

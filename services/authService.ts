@@ -5,7 +5,28 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com';
 
 // ============================================
-// Token 管理
+// 邀请码管理
+// ============================================
+
+const INVITE_CODE_KEY = 'invite_code';
+
+/** 获取已存储的邀请码 */
+export function getInviteCode(): string | null {
+  return localStorage.getItem(INVITE_CODE_KEY);
+}
+
+/** 存储邀请码 */
+export function setInviteCode(code: string): void {
+  localStorage.setItem(INVITE_CODE_KEY, code);
+}
+
+/** 清除邀请码 */
+export function clearInviteCode(): void {
+  localStorage.removeItem(INVITE_CODE_KEY);
+}
+
+// ============================================
+// Token 管理（微信登录预留）
 // ============================================
 
 const TOKEN_KEY = 'wj_token';
@@ -35,12 +56,17 @@ export function setStoredUser(user: WjUser): void {
 export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  clearInviteCode();
 }
 
-/** 给所有 API 请求加 Authorization 头 */
+/** 给所有 API 请求加 X-Invite-Code + Authorization 头 */
 export function authHeaders(): Record<string, string> {
-  const token = getToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const code = getInviteCode();
+  if (code) {
+    headers['X-Invite-Code'] = code;
+  }
+  const token = getToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -70,6 +96,26 @@ export interface OrderInfo {
   amount: string;
   plan_name: string;
 }
+
+// ============================================
+// 邀请码验证
+// ============================================
+
+/** 验证邀请码（Supabase 版） */
+export async function verifyInviteCode(code: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/verify-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code.trim().toUpperCase() }),
+    });
+    const data = await res.json();
+    return { success: !!data.success, error: data.error };
+  } catch {
+    return { success: false, error: '网络错误，请稍后重试' };
+  }
+}
+
 
 // ============================================
 // 微信登录
