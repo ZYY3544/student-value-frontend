@@ -350,7 +350,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       if (elapsed < 3000) await new Promise(r => setTimeout(r, 3000 - elapsed));
 
       // 流式展示诊断摘要（逐字输出）
-      const summaryBase = `**岗位任职要求分析**\n${job_essence}\n\n**简历竞争力分析**\n${overall_gap}\n\n**优化策略**\n${optimization_plan || ''}`;
+      const summaryBase = `**岗位任职要求分析**\n${(job_essence || '').trim()}\n\n**简历竞争力分析**\n${(overall_gap || '').trim()}\n\n**优化策略**\n${(optimization_plan || '').trim()}`;
       const STREAM_SPEED = 20; // ms per character
       await new Promise<void>(resolve => {
         let ci = 0;
