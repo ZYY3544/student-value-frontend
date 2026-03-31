@@ -1291,10 +1291,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               </div>
               {/* 右侧聊天区 */}
               {mainChat('wide')}
-              {actionMenu}
             </div>
           </div>
         </div>
+        {actionMenu}
       </>
     );
   }
@@ -1492,8 +1492,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           </div>
         </div>
 
-        {actionMenu}
       </div>
+      {actionMenu}
     </aside>
   );
 };
