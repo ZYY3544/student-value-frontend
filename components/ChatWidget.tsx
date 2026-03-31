@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare, SquarePen, Pin, Pencil, Trash2 } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, MoreHorizontal, Menu, Maximize2, Minimize2, PenLine, Square, Plus, MessageSquare, SquarePen, Pin, Pencil, Trash2, Mic, Compass } from 'lucide-react';
 import { authHeaders } from '../services/authService';
 import { CareerForm } from './CareerForm';
 
@@ -965,27 +965,31 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const historyList = (
     <>
       {/* 新对话 + 快捷入口（固定区域） */}
-      <div className="p-3 border-b border-gray-100 space-y-2">
+      <div className="p-3 border-b border-gray-100 space-y-0.5">
         <button
           onClick={handleNewChat}
           disabled={isInitializing || isLoading}
-          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] bg-white border border-gray-200 rounded-xl hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
         >
           <SquarePen className="w-4 h-4" />
           新对话
         </button>
-        <div className="flex gap-1.5">
-          {QUICK_CHIPS.map((chip) => (
-            <button
-              key={chip}
-              onClick={() => handleChipClick(chip)}
-              disabled={isLoading || isInitializing || isTyping}
-              className="flex-1 px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-            >
-              {chip}
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={() => handleChipClick('模拟面试')}
+          disabled={isLoading || isInitializing || isTyping}
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
+        >
+          <Mic className="w-4 h-4" />
+          模拟面试
+        </button>
+        <button
+          onClick={() => handleChipClick('职业规划')}
+          disabled={isLoading || isInitializing || isTyping}
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] rounded-xl hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
+        >
+          <Compass className="w-4 h-4" />
+          职业规划
+        </button>
       </div>
       {/* 列表 */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
