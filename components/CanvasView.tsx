@@ -173,7 +173,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
   const [exportLoading, setExportLoading] = useState(false);
   const [structuredData, setStructuredData] = useState<StructuredResume | null>(null);
-  const apiBase = import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com';
 
   const handleExportPdf = useCallback(async () => {
     if (exportLoading || resumeSections.length === 0) return;
