@@ -443,7 +443,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
@@ -452,7 +451,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [renameValue, setRenameValue] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef(false);
@@ -477,20 +475,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
-
-  // 点击面板外关闭菜单
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-        setActionMenuId(null);
-        setRenamingId(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
 
   // 加载历史记录（通过后端 API），静默刷新不显示 loading
   const loadHistory = useCallback(async (silent = false) => {
@@ -533,13 +517,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     loadHistory(true);
   }, [loadHistory]);
 
-  const toggleMenu = useCallback(() => {
-    setMenuOpen(prev => {
-      const next = !prev;
-      if (next) loadHistory(true);  // 静默刷新，不闪 loading
-      return next;
-    });
-  }, [loadHistory]);
 
   const handlePin = useCallback(async (id: string, currentPinned: boolean) => {
     try {
@@ -588,7 +565,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   // 点击历史对话恢复消息（通过后端 API）
   const handleRestoreSession = useCallback(async (id: string) => {
     if (isInitializing || isLoading) return;
-    setMenuOpen(false);
     setActionMenuId(null);
     setError(null);
 
@@ -976,122 +952,115 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     [sendMessage]
   );
 
-  const chatContent = (
-    <div className={`bg-white border border-gray-200 rounded-3xl flex flex-col overflow-hidden shadow-sm ${isExpanded ? 'h-full' : 'h-full'}`}>
+  // 侧边栏展开/收起
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // ===== 侧边栏 =====
+  const sidebar = (
+    <div
+      className={`bg-gray-50 border-r border-gray-200 flex flex-col shrink-0 transition-all duration-200 overflow-hidden ${
+        sidebarOpen ? 'w-[220px]' : 'w-0'
+      }`}
+    >
+      {/* 新对话按钮 */}
+      <div className="p-3 border-b border-gray-200">
+        <button
+          onClick={handleNewChat}
+          disabled={isInitializing || isLoading}
+          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-[#CA7C5E] bg-white border border-gray-200 rounded-xl hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
+        >
+          <SquarePen className="w-4 h-4" />
+          新对话
+        </button>
+      </div>
+
+      {/* 历史对话列表 */}
+      <div className="flex-1 overflow-y-auto px-2 py-2">
+        {chatHistory.length === 0 ? (
+          <p className="text-xs text-gray-400 py-6 text-center">暂无历史对话</p>
+        ) : (
+          <div className="space-y-0.5">
+            {chatHistory.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleRestoreSession(item.id)}
+                className={`group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                  sessionId === item.id ? 'bg-white shadow-sm border border-gray-100' : 'hover:bg-white/60'
+                }`}
+              >
+                {item.pinned && <span className="absolute left-0.5 top-0.5 text-[8px]">📌</span>}
+                <MessageSquare className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  {renamingId === item.id ? (
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleRename(item.id); }}
+                      onBlur={() => handleRename(item.id)}
+                      className="text-xs text-gray-600 w-full border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-[#CA7C5E]"
+                    />
+                  ) : (
+                    <p className="text-xs text-gray-600 truncate">{item.title || item.firstMessage}</p>
+                  )}
+                </div>
+                {/* 三点按钮 */}
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (actionMenuId === item.id) {
+                      setActionMenuId(null);
+                    } else {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setActionMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                      setActionMenuId(item.id);
+                    }
+                  }}
+                  className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 transition-all shrink-0"
+                >
+                  <MoreHorizontal className="w-3 h-3 text-gray-400" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ===== 主聊天区 =====
+  const mainChat = (
+    <div className="flex-1 flex flex-col min-w-0">
       {/* Header */}
-      <div className="p-6 border-b border-gray-50">
-        <div className="flex items-center justify-between mb-1">
+      <div className="p-4 px-6 border-b border-gray-50">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={toggleMenu}
-              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-xl transition-colors"
-              title="菜单"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-xl transition-colors"
+              title={sidebarOpen ? '收起侧边栏' : '展开侧边栏'}
             >
-              <Menu className="w-6 h-6 text-[#CA7C5E]" />
+              <Menu className="w-5 h-5 text-[#CA7C5E]" />
             </button>
             <div>
-              <h3 className="font-bold text-lg">求职小帮手</h3>
+              <h3 className="font-bold text-base">求职小帮手</h3>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                 <span className="text-xs font-medium text-green-600">
-                  {isInitializing ? '正在分析你的简历...' : 'Sparky 正在工作'}
+                  {isInitializing ? '正在准备...' : 'Sparky 正在工作'}
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              title={isExpanded ? '收起' : '展开'}
-            >
-              {isExpanded ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
-            </button>
-          </div>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            title={isExpanded ? '收起' : '展开'}
+          >
+            {isExpanded ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
+          </button>
         </div>
       </div>
-
-      {/* Menu Panel */}
-      {menuOpen && (
-        <div className="relative">
-          <div
-            ref={menuRef}
-            className="absolute inset-x-0 top-0 z-10 bg-white border-b border-gray-200 shadow-lg rounded-b-2xl mx-2 max-h-80 overflow-y-auto"
-          >
-            {/* 新对话按钮 */}
-            <button
-              onClick={() => { handleNewChat(); setMenuOpen(false); }}
-              disabled={isInitializing || isLoading}
-              className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-semibold text-[#CA7C5E] hover:bg-[#CA7C5E]/5 transition-colors disabled:opacity-40"
-            >
-              <SquarePen className="w-4 h-4" />
-              开启新对话
-            </button>
-            <div className="border-t border-gray-100" />
-            {/* 历史对话列表 */}
-            <div className="px-5 py-3">
-              <p className="text-xs font-semibold text-gray-400 mb-2">历史对话</p>
-              {historyLoading ? (
-                <div className="flex items-center justify-center py-4 text-gray-400 text-xs">
-                  <Loader2 size={14} className="animate-spin mr-1.5" />
-                  加载中...
-                </div>
-              ) : chatHistory.length === 0 ? (
-                <p className="text-xs text-gray-400 py-4 text-center">暂无历史对话</p>
-              ) : (
-                <div className="space-y-1">
-                  {chatHistory.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => handleRestoreSession(item.id)}
-                      className="group relative flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      {item.pinned && <span className="absolute left-1 top-1 text-[10px]">📌</span>}
-                      <MessageSquare className="w-4 h-4 text-gray-300 mt-0.5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-400">
-                          {new Date(item.created_at).toLocaleString('zh-CN', {
-                            month: '2-digit', day: '2-digit',
-                            hour: '2-digit', minute: '2-digit',
-                          })}
-                        </p>
-                        {renamingId === item.id ? (
-                          <input
-                            autoFocus
-                            value={renameValue}
-                            onChange={e => setRenameValue(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleRename(item.id); }}
-                            onBlur={() => handleRename(item.id)}
-                            className="text-sm text-gray-600 w-full border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-[#CA7C5E]"
-                          />
-                        ) : (
-                          <p className="text-sm text-gray-600 truncate">{item.title || item.firstMessage}</p>
-                        )}
-                      </div>
-                      {/* 三点按钮 */}
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (actionMenuId === item.id) {
-                            setActionMenuId(null);
-                          } else {
-                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                            setActionMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-                            setActionMenuId(item.id);
-                          }
-                        }}
-                        className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 transition-all shrink-0 mt-0.5"
-                      >
-                        <MoreHorizontal className="w-3.5 h-3.5 text-gray-400" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -1142,7 +1111,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                         <CareerForm onSubmit={(answers) => sendMessage(answers)} />
                       )}
                       {(() => {
-                        // 流式输出期间不渲染 action 按钮，等 SSE 结束后再显示
                         const isStreamingThis = isLoading && idx === messages.length - 1;
                         if (isStreamingThis) return null;
                         const actions = extractActions(msg.content);
@@ -1175,7 +1143,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
               ) : (
                 msg.content
               )}
-              {/* 搜索来源卡片 */}
               {msg.sources && msg.sources.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5">
                   <p className="text-[10px] text-gray-400 font-medium">来源</p>
@@ -1201,14 +1168,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
       {/* Input Area */}
       <div className="p-6 bg-white border-t border-gray-50">
-        {/* 输入框容器 */}
         <div className="bg-gray-50 rounded-2xl mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
           <textarea
             ref={inputRef}
             value={inputValue}
             onChange={e => {
               setInputValue(e.target.value.slice(0, MAX_INPUT_LENGTH));
-              // 自动调整高度
               e.target.style.height = 'auto';
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
@@ -1248,7 +1213,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             )}
           </div>
         </div>
-        {/* 快捷按钮 */}
         <div className="flex flex-wrap gap-2">
           {QUICK_CHIPS.map((chip) => (
             <button
@@ -1262,8 +1226,15 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           ))}
         </div>
       </div>
+    </div>
+  );
 
-      {/* 历史对话操作浮窗（fixed 定位，避免被 overflow 裁剪） */}
+  // ===== 组合布局 =====
+  const chatContent = (
+    <div className={`bg-white border border-gray-200 rounded-3xl flex overflow-hidden shadow-sm h-full`}>
+      {sidebar}
+      {mainChat}
+      {/* 历史对话操作浮窗 */}
       {actionMenuId && (
         <>
           <div className="fixed inset-0 z-[199]" onClick={() => setActionMenuId(null)} />
@@ -1305,12 +1276,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   if (isExpanded) {
     return (
       <>
-        {/* 遮罩层 */}
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100]"
           onClick={() => setIsExpanded(false)}
         />
-        {/* 居中悬浮对话框 */}
         <div className="fixed inset-0 z-[101] flex items-center justify-center p-8 pointer-events-none">
           <div className="w-full max-w-7xl h-[95vh] pointer-events-auto">
             {chatContent}
