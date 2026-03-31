@@ -547,12 +547,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [sessionId]);
 
   // JD 优化：直接替换 content + 添加高亮区间（不走 pendingEdits）
+  const directReplaceResultRef = useRef(false);
+
   const handleDirectReplace = useCallback((sectionId: string, original: string, _suggested: string): boolean => {
     let suggested = _suggested;
     // 多级容错：精确 → 空白规范化 → 去标点/符号模糊匹配
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
     const fuzzy = (s: string) => s.replace(/[\s·•\-–—,，;；。.、：:""''「」【】（）()]/g, '').trim();
     let success = false;
+    directReplaceResultRef.current = false;
 
     console.log(`[DirectReplace] sectionId=${sectionId}`);
     console.log(`[DirectReplace] original (${original.length} chars): "${original.slice(0, 80)}..."`);
@@ -590,6 +593,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
           highlightRanges: [...(sec.highlightRanges || []), { start, end: start + suggested.length }],
         };
         success = true;
+        directReplaceResultRef.current = true;
       };
 
       // 1. 精确匹配
@@ -657,8 +661,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       return prev;
     });
 
-    console.log(`[DirectReplace] returning success=${success}`);
-    return success;
+    console.log(`[DirectReplace] returning success=${directReplaceResultRef.current}`);
+    return directReplaceResultRef.current;
   }, []);
 
   // 清除所有高亮
