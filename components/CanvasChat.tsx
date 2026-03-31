@@ -349,8 +349,16 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       const elapsed = Date.now() - analyzeStart;
       if (elapsed < 3000) await new Promise(r => setTimeout(r, 3000 - elapsed));
 
+      // 将连续段落按句号拆成 bullet points
+      const toBullets = (text: string) => {
+        const sentences = text.split(/(?<=[。！？])\s*/).filter(s => s.trim());
+        return sentences.length > 1
+          ? sentences.map(s => `• ${s.trim()}`).join('\n')
+          : text;
+      };
+
       // 流式展示诊断摘要（逐字输出）
-      const summaryBase = `**岗位任职要求分析**\n${(job_essence || '').trim()}\n\n**简历竞争力分析**\n${(overall_gap || '').trim()}\n\n**优化策略**\n${(optimization_plan || '').trim()}`;
+      const summaryBase = `**岗位任职要求分析**\n${toBullets((job_essence || '').trim())}\n\n**简历竞争力分析**\n${toBullets((overall_gap || '').trim())}\n\n**优化策略**\n${(optimization_plan || '').trim()}`;
       const STREAM_SPEED = 20; // ms per character
       await new Promise<void>(resolve => {
         let ci = 0;
