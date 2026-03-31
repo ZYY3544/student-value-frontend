@@ -910,8 +910,33 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [apiBase, inputValue, isLoading, isTyping, sessionId, recoverSession, onEnterCanvas, typewriterEffect]);
 
   // 快捷按钮点击：直接发送到后端，让 Agent 回答
+  // 待 session 就绪后自动发送的 chip
+  const pendingChipRef = useRef<string | null>(null);
+
+  // session 就绪时检查是否有待发送的 chip
+  useEffect(() => {
+    if (sessionId && pendingChipRef.current && !isInitializing) {
+      const chip = pendingChipRef.current;
+      pendingChipRef.current = null;
+      const action = CHIP_ACTIONS[chip];
+      if (action) sendMessage(action, chip);
+    }
+  }, [sessionId, isInitializing, sendMessage]);
+
   const handleChipClick = useCallback((chip: string) => {
-    if (isLoading || isTyping || !sessionId) return;
+    if (isLoading || isTyping) return;
+
+    // 没有 session → 先新建空白对话，等 session 就绪后自动发送
+    if (!sessionId) {
+      pendingChipRef.current = chip;
+      skipGreetingRef.current = true;
+      setSessionId(null);
+      setMessages([]);
+      setInputValue('');
+      setError(null);
+      // initSession 会被触发创建新 session
+      return;
+    }
 
     // "润色简历" 直接跳转画布模式
     if (chip === '润色简历' && onEnterCanvas) {
@@ -921,7 +946,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
     const action = CHIP_ACTIONS[chip];
     if (!action) return;
-    // 发送 ACTION 前缀给后端，但用户界面只显示 chip 名称
     sendMessage(action, chip);
   }, [isLoading, isTyping, sessionId, sendMessage, onEnterCanvas]);
 
