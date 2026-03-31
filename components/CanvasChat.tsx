@@ -526,10 +526,9 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
                     msg.content ? (
                       formatContent(msg.content)
                     ) : (
-                      <span className="flex items-center gap-1 text-gray-400">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#CA7C5E] animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="flex items-center gap-2 text-gray-400 text-sm">
+                        <Loader2 size={14} className="animate-spin text-[#CA7C5E]" />
+                        Sparky 正在思考...
                       </span>
                     )
                   ) : (() => {
