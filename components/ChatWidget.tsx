@@ -492,10 +492,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
-  // 打开菜单时加载历史记录（通过后端 API）
-  const loadHistory = useCallback(async () => {
+  // 加载历史记录（通过后端 API），静默刷新不显示 loading
+  const loadHistory = useCallback(async (silent = false) => {
     if (!userId) return;
-    setHistoryLoading(true);
+    if (!silent) setHistoryLoading(true);
     try {
       const res = await fetch(`${apiBase}/api/user/chat-history`, {
         headers: authHeaders(),
@@ -523,16 +523,20 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       setChatHistory(mapped);
     } catch (err) {
       console.error('Failed to load chat history:', err);
-      setChatHistory([]);
     } finally {
-      setHistoryLoading(false);
+      if (!silent) setHistoryLoading(false);
     }
   }, [userId, apiBase]);
+
+  // 组件挂载时预加载历史，打开菜单时直接显示
+  useEffect(() => {
+    loadHistory(true);
+  }, [loadHistory]);
 
   const toggleMenu = useCallback(() => {
     setMenuOpen(prev => {
       const next = !prev;
-      if (next) loadHistory();
+      if (next) loadHistory(true);  // 静默刷新，不闪 loading
       return next;
     });
   }, [loadHistory]);
