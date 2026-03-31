@@ -563,10 +563,21 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [loadHistory, sessionId, apiBase]);
 
   // 点击历史对话恢复消息（通过后端 API）
+  const restoringRef = useRef(false);
+
   const handleRestoreSession = useCallback(async (id: string) => {
     if (isInitializing || isLoading) return;
+    if (sessionId === id) return; // 已经是当前对话
     setActionMenuId(null);
     setError(null);
+
+    // 立即切换：中断当前请求，标记恢复中（防止 initSession 抢跑）
+    if (abortRef.current) abortRef.current.abort();
+    setIsLoading(false);
+    restoringRef.current = true;
+    setSessionId(id);
+    setMessages([]);
+    setInputValue('');
 
     try {
       const res = await fetch(`${apiBase}/api/user/chat-history/${id}/messages`, {
@@ -575,24 +586,19 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const json = await res.json();
 
       if (json.success && json.data?.length > 0) {
-        // 中断正在进行的请求
-        if (abortRef.current) abortRef.current.abort();
-        setIsLoading(false);
-        setSessionId(null);
-        setTimeout(() => {
-          setMessages(json.data.map((m: any) => ({ role: m.role as 'user' | 'assistant', content: m.content })));
-          setSessionId(id);
-          setInputValue('');
-        }, 0);
+        setMessages(json.data.map((m: any) => ({ role: m.role as 'user' | 'assistant', content: m.content })));
       }
     } catch (err) {
       console.error('Failed to restore session:', err);
+    } finally {
+      restoringRef.current = false;
     }
-  }, [isInitializing, isLoading, apiBase]);
+  }, [isInitializing, isLoading, apiBase, sessionId]);
 
   // Auto-initialize on mount
   const initSession = useCallback(async () => {
     if (sessionId) return;
+    if (restoringRef.current) return; // 正在恢复历史对话，不要抢跑
     setError(null);
 
     const isBlankChat = skipGreetingRef.current;
