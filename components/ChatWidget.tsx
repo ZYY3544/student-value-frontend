@@ -560,8 +560,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [renameValue, loadHistory, apiBase]);
 
   const handleDelete = useCallback((id: string) => {
-    // 乐观更新：立即从列表移除
+    // 乐观更新：立即从列表移除 + 清缓存
     setChatHistory(prev => prev.filter(h => h.id !== id));
+    delete messagesCacheRef.current[id];
     setActionMenuId(null);
     if (sessionId === id) {
       setSessionId(null);
@@ -576,23 +577,39 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     }).catch(e => console.error('[handleDelete] error:', e));
   }, [sessionId, apiBase]);
 
-  // 点击历史对话恢复消息（通过后端 API）
+  // 点击历史对话恢复消息（带前端缓存）
   const restoringRef = useRef(false);
+  const messagesCacheRef = useRef<Record<string, ChatMessage[]>>({});
+
+  // 当前对话有新消息时更新缓存
+  useEffect(() => {
+    if (sessionId && messages.length > 0) {
+      messagesCacheRef.current[sessionId] = messages;
+    }
+  }, [sessionId, messages]);
 
   const handleRestoreSession = useCallback(async (id: string) => {
     if (isInitializing || isLoading) return;
-    if (sessionId === id) return; // 已经是当前对话
+    if (sessionId === id) return;
     setActionMenuId(null);
     setError(null);
 
-    // 立即切换：中断当前请求，标记恢复中（防止 initSession 抢跑）
     if (abortRef.current) abortRef.current.abort();
     setIsLoading(false);
     restoringRef.current = true;
     setSessionId(id);
-    setMessages([]);
     setInputValue('');
 
+    // 有缓存 → 直接用，不请求后端
+    const cached = messagesCacheRef.current[id];
+    if (cached?.length > 0) {
+      setMessages(cached);
+      restoringRef.current = false;
+      return;
+    }
+
+    // 无缓存 → 从后端拉
+    setMessages([]);
     try {
       const res = await fetch(`${apiBase}/api/user/chat-history/${id}/messages`, {
         headers: authHeaders(),
@@ -600,7 +617,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       const json = await res.json();
 
       if (json.success && json.data?.length > 0) {
-        setMessages(json.data.map((m: any) => ({ role: m.role as 'user' | 'assistant', content: m.content })));
+        const msgs = json.data.map((m: any) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+        setMessages(msgs);
+        messagesCacheRef.current[id] = msgs;
       }
     } catch (err) {
       console.error('Failed to restore session:', err);
