@@ -1010,27 +1010,31 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setInputValue('');
     setError(null);
 
+    const action = CHIP_ACTIONS[chip];
+    if (!action) return;
+
     try {
-      // 直接创建新 session
+      // 1. 创建新 session
       const body: any = { userId, skipGreeting: true };
       if (assessmentContext && Object.keys(assessmentContext).length > 0) body.assessmentContext = assessmentContext;
       if (resumeText) body.resumeText = resumeText;
 
-      const res = await fetch(`${apiBase}/api/chat/start`, {
+      const startRes = await fetch(`${apiBase}/api/chat/start`, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify(body),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed');
+      const startData = await startRes.json();
+      if (!startData.success) throw new Error(startData.error || 'Failed');
 
-      setSessionId(data.data.sessionId);
+      const newSessionId = startData.data.sessionId;
+      setSessionId(newSessionId);
 
-      // 乐观更新历史列表
+      // 2. 乐观更新历史列表
       setChatHistory(prev => {
-        if (prev.some(h => h.id === data.data.sessionId)) return prev;
+        if (prev.some(h => h.id === newSessionId)) return prev;
         return [{
-          id: data.data.sessionId,
+          id: newSessionId,
           created_at: new Date().toISOString(),
           firstMessage: chip,
           pinned: false,
@@ -1038,19 +1042,62 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         }, ...prev];
       });
 
-      // 发送 chip 指令
-      const action = CHIP_ACTIONS[chip];
-      if (action) {
-        // 延迟一个 tick 等 sessionId 设置生效
-        setTimeout(() => sendMessage(action, chip, true), 50);
+      // 3. 直接用 newSessionId 发送消息（不依赖 React state 更新）
+      restoringRef.current = false;
+      setIsLoading(true);
+      setMessages([{ role: 'assistant', content: '' }]);
+
+      const abortController = new AbortController();
+      abortRef.current = abortController;
+
+      const msgRes = await fetch(`${apiBase}/api/chat/message`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ sessionId: newSessionId, message: action, stream: true }),
+        signal: abortController.signal,
+      });
+
+      if (!msgRes.ok) throw new Error('消息发送失败');
+
+      // SSE 流式读取
+      const reader = msgRes.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split('\n')) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (parsed.type === 'token' && parsed.content) {
+                fullText += parsed.content;
+                setMessages([{ role: 'assistant', content: fullText }]);
+              } else if (parsed.type === 'done' && parsed.content) {
+                fullText = parsed.content;
+                setMessages([{ role: 'assistant', content: fullText }]);
+              }
+            } catch {}
+          }
+        }
       }
+
+      // 缓存消息
+      messagesCacheRef.current[newSessionId] = [{ role: 'assistant', content: fullText }];
+
     } catch (err: any) {
+      if (err.name === 'AbortError') return;
       console.error('[handleChipClick] error:', err);
       setError('创建对话失败，请重试');
     } finally {
+      abortRef.current = null;
+      setIsLoading(false);
       restoringRef.current = false;
     }
-  }, [isLoading, isTyping, isInitializing, apiBase, assessmentContext, resumeText, userId, sendMessage]);
+  }, [isLoading, isTyping, isInitializing, apiBase, assessmentContext, resumeText, userId]);
 
   const handleStop = useCallback(() => {
     if (abortRef.current) {
