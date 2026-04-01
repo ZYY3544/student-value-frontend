@@ -88,7 +88,10 @@ const App: React.FC = () => {
       });
       const json = await res.json();
       if (json.success && json.data?.result) {
-        setResult(json.data.result);
+        // 返回用户：清除 greeting 避免重复显示欢迎语
+        const resultData = { ...json.data.result };
+        delete resultData.greeting;
+        setResult(resultData);
         if (json.data.form_data) {
           setFormData(prev => ({ ...prev, ...json.data.form_data }));
         }
