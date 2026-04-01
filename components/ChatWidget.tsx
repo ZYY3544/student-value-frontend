@@ -997,19 +997,58 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
   }, [sessionId, isInitializing, sendMessage]);
 
-  const handleChipClick = useCallback((chip: string) => {
+  const handleChipClick = useCallback(async (chip: string) => {
     if (isLoading || isTyping || isInitializing) return;
 
-    // 始终创建新对话，在新对话中执行指令
-    pendingChipRef.current = chip;
+    // 中断当前请求
     if (abortRef.current) abortRef.current.abort();
     setIsLoading(false);
-    skipGreetingRef.current = true;
-    setSessionId(null);
+    restoringRef.current = true;
     setMessages([]);
     setInputValue('');
     setError(null);
-  }, [isLoading, isTyping, isInitializing]);
+
+    try {
+      // 直接创建新 session
+      const body: any = { userId, skipGreeting: true };
+      if (assessmentContext && Object.keys(assessmentContext).length > 0) body.assessmentContext = assessmentContext;
+      if (resumeText) body.resumeText = resumeText;
+
+      const res = await fetch(`${apiBase}/api/chat/start`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed');
+
+      setSessionId(data.data.sessionId);
+
+      // 乐观更新历史列表
+      setChatHistory(prev => {
+        if (prev.some(h => h.id === data.data.sessionId)) return prev;
+        return [{
+          id: data.data.sessionId,
+          created_at: new Date().toISOString(),
+          firstMessage: chip,
+          pinned: false,
+          title: null,
+        }, ...prev];
+      });
+
+      // 发送 chip 指令
+      const action = CHIP_ACTIONS[chip];
+      if (action) {
+        // 延迟一个 tick 等 sessionId 设置生效
+        setTimeout(() => sendMessage(action, chip, true), 50);
+      }
+    } catch (err: any) {
+      console.error('[handleChipClick] error:', err);
+      setError('创建对话失败，请重试');
+    } finally {
+      restoringRef.current = false;
+    }
+  }, [isLoading, isTyping, isInitializing, apiBase, assessmentContext, resumeText, userId, sendMessage]);
 
   const handleStop = useCallback(() => {
     if (abortRef.current) {
