@@ -13,6 +13,7 @@ import { Toast } from './components/Toast';
 import {
   getToken, getStoredUser, clearAuth, fetchMe,
   getInviteCode, setInviteCode, clearInviteCode, verifyInviteCode,
+  authHeaders,
   type WjUser, type SubscriptionStatus
 } from './services/authService';
 
@@ -77,10 +78,38 @@ const App: React.FC = () => {
     });
   }, []);
 
+  const apiBase = import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com';
+
+  // 查最近测评，有结果直接进报告页
+  const checkLatestAssessment = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiBase}/api/user/latest-assessment`, {
+        headers: authHeaders(),
+      });
+      const json = await res.json();
+      if (json.success && json.data?.result) {
+        setResult(json.data.result);
+        if (json.data.form_data) {
+          setFormData(prev => ({ ...prev, ...json.data.form_data }));
+        }
+        setAppState(AppState.RESULT);
+        return true;
+      }
+    } catch (e) {
+      console.error('[checkLatestAssessment] error:', e);
+    }
+    return false;
+  }, [apiBase]);
+
   useEffect(() => {
     if (authLoading) return;
     if (authCode) {
-      if (appState === AppState.AUTH) setAppState(AppState.FORM);
+      if (appState === AppState.AUTH) {
+        // 登录成功，检查是否有历史测评
+        checkLatestAssessment().then(hasResult => {
+          if (!hasResult) setAppState(AppState.FORM);
+        });
+      }
     } else {
       setAppState(AppState.AUTH);
     }
@@ -89,7 +118,7 @@ const App: React.FC = () => {
   const handleAuthSuccess = () => {
     const code = getStoredAuthCode();
     setAuthCode(code);
-    setAppState(AppState.FORM);
+    // checkLatestAssessment 会在 authCode 变化后的 useEffect 中触发
   };
 
   const handleLogout = () => {
