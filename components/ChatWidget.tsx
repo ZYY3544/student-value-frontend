@@ -484,12 +484,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       });
       const json = await res.json();
 
-      if (!json.success || !json.data?.length) {
-        setChatHistory([]);
-        return;
-      }
+      const serverData = (json.success && json.data?.length) ? json.data : [];
 
-      const mapped = json.data.map((s: any) => ({
+      const mapped = serverData.map((s: any) => ({
         id: s.id,
         created_at: s.created_at,
         firstMessage: s.firstMessage || '新对话',
@@ -497,12 +494,17 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         title: s.title || null,
       }));
 
-      // pinned 优先，再按 created_at 降序
-      mapped.sort((a: any, b: any) => {
-        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      // 合并：保留本地乐观添加的但后端还没有的条目
+      setChatHistory(prev => {
+        const serverIds = new Set(mapped.map((m: any) => m.id));
+        const localOnly = prev.filter(h => !serverIds.has(h.id));
+        const merged = [...localOnly, ...mapped];
+        merged.sort((a: any, b: any) => {
+          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        return merged;
       });
-      setChatHistory(mapped);
     } catch (err) {
       console.error('Failed to load chat history:', err);
     } finally {
