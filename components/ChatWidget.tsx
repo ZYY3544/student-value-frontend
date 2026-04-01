@@ -1073,12 +1073,11 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             if (!line.startsWith('data: ')) continue;
             try {
               const parsed = JSON.parse(line.slice(6));
-              if (parsed.type === 'token' && parsed.content) {
+              if (parsed.type === 'text' && parsed.content) {
                 fullText += parsed.content;
                 setMessages([{ role: 'assistant', content: fullText }]);
-              } else if (parsed.type === 'done' && parsed.content) {
-                fullText = parsed.content;
-                setMessages([{ role: 'assistant', content: fullText }]);
+              } else if (parsed.type === 'done') {
+                // 流结束
               }
             } catch {}
           }
