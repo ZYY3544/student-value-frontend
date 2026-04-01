@@ -142,6 +142,10 @@ const App: React.FC = () => {
   const handleLogout = () => {
     clearInviteCode();
     setAuthCode(null);
+    setFormData(DEFAULT_FORM_DATA);
+    setResult(null);
+    setErrors([]);
+    setUserProfile({});
     setAppState(AppState.AUTH);
   };
 
