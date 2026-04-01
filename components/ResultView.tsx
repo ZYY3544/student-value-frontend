@@ -753,7 +753,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     isLoading,
     setIsLoading,
     userId,
-    preloadedGreeting: localStorage.getItem('has_seen_greeting') ? undefined : result.greeting,
+    preloadedGreeting: result.greeting,
     onSectionsReady: handleSectionsReady,
   };
 

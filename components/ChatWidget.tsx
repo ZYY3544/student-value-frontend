@@ -621,7 +621,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (preloadedGreeting && !isBlankChat) {
       setMessages([]);
       typewriterEffect(preloadedGreeting);
-      localStorage.setItem('has_seen_greeting', '1');
       // 创建 promise，让 sendMessage 可以等待 sessionId
       sessionPromiseRef.current = new Promise<string>((resolve) => {
         sessionReadyRef.current = { resolve };
@@ -686,8 +685,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         const greeting = data.data.greeting;
         setMessages([]);
         typewriterEffect(greeting);
-        localStorage.setItem('has_seen_greeting', '1');
-      }
+        }
     } catch (err: any) {
       console.error('Chat init failed:', err);
       setError(err.message || 'Failed to connect');
