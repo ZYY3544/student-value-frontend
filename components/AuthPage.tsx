@@ -72,6 +72,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
         </div>
 
         <div className="mt-6 md:mt-12 text-white/40 text-sm z-10 hidden md:block">
+          联系我们：18038129437（微信同号）<br />
           &copy; {new Date().getFullYear()} 铭曦管理咨询. 版权所有。
         </div>
 
