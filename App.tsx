@@ -81,6 +81,20 @@ const App: React.FC = () => {
 
   const apiBase = import.meta.env.VITE_API_URL || 'https://student-value-backend.onrender.com';
 
+  // 用户资料（头像首字母等）
+  const [userProfile, setUserProfile] = useState<{ full_name?: string; avatar_initial?: string }>({});
+  const loadProfile = useCallback(() => {
+    fetch(`${apiBase}/api/user/profile`, { headers: authHeaders() })
+      .then(r => r.json())
+      .then(json => { if (json.success && json.data) setUserProfile(json.data); })
+      .catch(() => {});
+  }, [apiBase]);
+
+  // 登录成功后加载 profile
+  useEffect(() => {
+    if (authCode) loadProfile();
+  }, [authCode, loadProfile]);
+
   // 查最近测评，有结果直接进报告页
   const checkLatestAssessment = useCallback(async () => {
     try {
@@ -729,10 +743,10 @@ const App: React.FC = () => {
           </div>
         );
       case AppState.RESULT:
-        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} onLogout={handleLogout} onSettings={() => setAppState(AppState.SETTINGS)} userId={authCode} />;
+        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} onLogout={handleLogout} onSettings={() => setAppState(AppState.SETTINGS)} userId={authCode} avatarInitial={userProfile.avatar_initial} />;
         return renderFormContent();
       case AppState.SETTINGS:
-        return <AccountSettings userId={authCode || undefined} onBack={() => setAppState(result ? AppState.RESULT : AppState.FORM)} />;
+        return <AccountSettings userId={authCode || undefined} onBack={() => { loadProfile(); setAppState(result ? AppState.RESULT : AppState.FORM); }} />;
       default:
         return renderFormContent();
     }

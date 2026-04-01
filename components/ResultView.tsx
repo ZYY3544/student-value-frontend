@@ -23,6 +23,7 @@ interface ResultViewProps {
   onLogout?: () => void;
   onSettings?: () => void;
   userId?: string;
+  avatarInitial?: string;
 }
 
 const ABILITY_TAGS: Record<string, Record<string, string>> = {
@@ -94,7 +95,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'https://student-value-backend.
 const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
 const INDUSTRIES = ["互联网", "高科技", "金融", "大健康", "汽车", "消费品", "新零售", "地产", "泛娱乐", "教育", "农业", "通用行业"];
 
-export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset, onLogout, onSettings, userId }) => {
+export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset, onLogout, onSettings, userId, avatarInitial }) => {
   // ===== 岗位对比筛选状态 =====
   const [filterCity, setFilterCity] = useState(inputData.city);
   const [filterIndustry, setFilterIndustry] = useState(inputData.industry);
@@ -811,7 +812,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                 onClick={() => setUserMenuOpen(prev => !prev)}
                 className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border border-orange-200 hover:ring-2 hover:ring-orange-300 transition-all"
               >
-                <span className="text-xs font-bold text-orange-600">U</span>
+                <span className="text-xs font-bold text-orange-600">{avatarInitial || 'U'}</span>
               </button>
               {userMenuOpen && (
                 <>
