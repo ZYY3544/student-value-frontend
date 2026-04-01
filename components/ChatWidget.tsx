@@ -1117,10 +1117,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (isInitializing) return;
     // 中断正在进行的请求
     if (abortRef.current) abortRef.current.abort();
-    setIsLoading(false);
     skipGreetingRef.current = true;  // 标记跳过欢迎语
+    setIsLoading(true);
+    setMessages([{ role: 'assistant', content: '' }]);
     setSessionId(null);
-    setMessages([]);
     setInputValue('');
     setError(null);
     // initSession 会在 sessionId 变为 null 后被 useEffect 触发
