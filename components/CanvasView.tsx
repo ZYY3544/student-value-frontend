@@ -9,8 +9,9 @@ import { ArrowLeft, Download, Loader2, Sparkles, Quote } from 'lucide-react';
 import { ChatMessage, PixelCat } from './ChatWidget';
 import { CanvasChat } from './CanvasChat';
 import { ResumePanel, VersionSelector } from './ResumePanel';
-import { PrintableResume, StructuredResume } from './PrintableResume';
+import { StructuredResume } from './PrintableResume';
 import { authHeaders } from '../services/authService';
+import { exportToWord } from '../services/wordExport';
 import { ResumeSection, PendingEdit, ResumeVersion } from '../types';
 
 // 选中文本快捷操作
@@ -172,9 +173,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   }, []);
 
   const [exportLoading, setExportLoading] = useState(false);
-  const [structuredData, setStructuredData] = useState<StructuredResume | null>(null);
 
-  const handleExportPdf = useCallback(async () => {
+  const handleExportWord = useCallback(async () => {
     if (exportLoading || resumeSections.length === 0) return;
     setExportLoading(true);
 
@@ -188,18 +188,17 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       const json = await res.json();
 
       if (json.success && json.data) {
-        setStructuredData(json.data);
-        // 等 React 渲染完成后打印
-        setTimeout(() => { window.print(); setExportLoading(false); }, 300);
+        await exportToWord(json.data);
+        setExportLoading(false);
         return;
       }
     } catch (e) {
-      console.error('[ExportPDF] LLM 解析失败，fallback 到纯文本:', e);
+      console.error('[ExportWord] LLM 解析失败:', e);
     }
 
     // fallback: 直接用纯文本模式打印
-    setStructuredData(null);
-    setTimeout(() => { window.print(); setExportLoading(false); }, 100);
+    window.print();
+    setExportLoading(false);
   }, [exportLoading, resumeSections, apiBase]);
 
   const [showGuide, setShowGuide] = useState(() => !localStorage.getItem('canvas_guide_shown'));
@@ -233,12 +232,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onDelete={onDeleteVersion}
           />
           <button
-            onClick={handleExportPdf}
+            onClick={handleExportWord}
             disabled={resumeSections.length === 0 || exportLoading}
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#004F90] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {exportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            {exportLoading ? '正在准备导出...' : '导出 PDF'}
+            {exportLoading ? '正在准备导出...' : '导出 Word'}
           </button>
         </div>
       </header>
@@ -388,7 +387,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
       )}
       {/* 打印专用：隐藏在页面中，window.print() 时显示 */}
-      <PrintableResume resumeSections={resumeSections} structuredData={structuredData} />
     </div>
   );
 };
