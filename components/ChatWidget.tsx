@@ -318,9 +318,9 @@ const QUICK_CHIPS = ['模拟面试', '职业规划'];
 // 每个快捷按钮的固定引导语（本地展示，不走后端）
 // chip 对应后端的 ACTION 前缀
 const CHIP_ACTIONS: Record<string, string> = {
-  '解读报告': '[ACTION:解读报告] 请开始',
-  '模拟面试': '[ACTION:模拟面试] 请开始',
-  '职业规划': '[ACTION:职业规划] 请开始',
+  '解读报告': '[ACTION:解读报告] 解读报告',
+  '模拟面试': '[ACTION:模拟面试] 模拟面试',
+  '职业规划': '[ACTION:职业规划] 职业规划',
 };
 
 // SSE 流解析工具函数（供 ChatWidget 和 CanvasChat 复用）
