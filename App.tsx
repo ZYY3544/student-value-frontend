@@ -399,6 +399,17 @@ const App: React.FC = () => {
         <main className="flex-1 bg-[#F8FAFC] p-4 md:p-12 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
 
+            {/* Top Bar */}
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                退出登录
+              </button>
+            </div>
+
             {/* Title Section */}
             <section className="mb-12">
               <h2 className="text-3xl font-bold text-slate-900 mb-2">个人信息</h2>
