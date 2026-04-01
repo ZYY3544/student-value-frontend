@@ -140,6 +140,11 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // 欢迎语只消费一次：取出后从 result 上删掉，防止重新挂载时重复触发
+  const greeting = result.greeting;
+  if (greeting) delete (result as any).greeting;
+  const greetingRef = useRef<string | undefined>(greeting);
+
   // ===== Canvas 状态 =====
   const [viewMode, setViewMode] = useState<'report' | 'canvas'>('report');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -757,7 +762,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     isLoading,
     setIsLoading,
     userId,
-    preloadedGreeting: result.greeting,
+    preloadedGreeting: greetingRef.current,
     onSectionsReady: handleSectionsReady,
   };
 

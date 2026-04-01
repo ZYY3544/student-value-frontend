@@ -615,7 +615,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (restoringRef.current) return; // 正在恢复历史对话，不要抢跑
     setError(null);
 
-    const isBlankChat = skipGreetingRef.current;
+    const isBlankChat = skipGreetingRef.current || !preloadedGreeting;
 
     // 有预生成开场白且非空白对话 → 立即显示，不显示 loading spinner
     if (preloadedGreeting && !isBlankChat) {
