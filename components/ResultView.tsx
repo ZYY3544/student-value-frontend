@@ -141,6 +141,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState<Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>>([]);
   // 欢迎语只消费一次：取出后从 result 上删掉，防止重新挂载时重复触发
   const greeting = result.greeting;
   if (greeting) delete (result as any).greeting;
@@ -765,6 +766,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     userId,
     preloadedGreeting: greetingRef.current,
     onSectionsReady: handleSectionsReady,
+    chatHistory,
+    setChatHistory,
   };
 
   // ===== Canvas 模式 =====

@@ -96,6 +96,8 @@ interface ChatWidgetProps {
   preloadedGreeting?: string;
   forceExpanded?: boolean;
   onForceExpandedConsumed?: () => void;
+  chatHistory?: Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>;
+  setChatHistory?: React.Dispatch<React.SetStateAction<Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>>>;
 }
 
 // 跳动省略号动画组件
@@ -435,13 +437,18 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   preloadedGreeting,
   forceExpanded,
   onForceExpandedConsumed,
+  chatHistory: chatHistoryProp,
+  setChatHistory: setChatHistoryProp,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [chatHistory, setChatHistory] = useState<Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>>([]);
+  // chatHistory: 优先用外部传入的（ResultView 管理），否则用内部 state
+  const [chatHistoryInternal, setChatHistoryInternal] = useState<Array<{ id: string; created_at: string; firstMessage: string; pinned: boolean; title: string | null }>>([]);
+  const chatHistory = chatHistoryProp ?? chatHistoryInternal;
+  const setChatHistory = setChatHistoryProp ?? setChatHistoryInternal;
   const [historyLoading, setHistoryLoading] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [actionMenuPos, setActionMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
