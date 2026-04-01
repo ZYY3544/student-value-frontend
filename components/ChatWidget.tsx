@@ -1023,8 +1023,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setMessages([{ role: 'assistant', content: '' }]);
 
     try {
-      // 1. 创建新 session
-      const body: any = { userId, skipGreeting: true };
+      // 一次请求完成：创建 session + 获取 Agent 回复
+      const body: any = { userId, skipGreeting: true, initialAction: chip };
       if (assessmentContext && Object.keys(assessmentContext).length > 0) body.assessmentContext = assessmentContext;
       if (resumeText) body.resumeText = resumeText;
 
@@ -1037,9 +1037,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       if (!startData.success) throw new Error(startData.error || 'Failed');
 
       const newSessionId = startData.data.sessionId;
+      const replyText = startData.data.greeting || '';
       setSessionId(newSessionId);
 
-      // 2. 乐观更新历史列表
+      // 乐观更新历史列表
       setChatHistory(prev => {
         if (prev.some(h => h.id === newSessionId)) return prev;
         return [{
@@ -1051,48 +1052,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         }, ...prev];
       });
 
-      // 3. 直接用 newSessionId 发送消息
+      // 直接显示回复
       restoringRef.current = false;
-
-      const abortController = new AbortController();
-      abortRef.current = abortController;
-
-      const msgRes = await fetch(`${apiBase}/api/chat/message`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ sessionId: newSessionId, message: action, stream: true }),
-        signal: abortController.signal,
-      });
-
-      if (!msgRes.ok) throw new Error('消息发送失败');
-
-      // SSE 流式读取
-      const reader = msgRes.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          for (const line of chunk.split('\n')) {
-            if (!line.startsWith('data: ')) continue;
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              if (parsed.type === 'text' && parsed.content) {
-                fullText += parsed.content;
-                setMessages([{ role: 'assistant', content: fullText }]);
-              } else if (parsed.type === 'done') {
-                // 流结束
-              }
-            } catch {}
-          }
-        }
-      }
+      setMessages([{ role: 'assistant', content: replyText }]);
 
       // 缓存消息
-      messagesCacheRef.current[newSessionId] = [{ role: 'assistant', content: fullText }];
+      messagesCacheRef.current[newSessionId] = [{ role: 'assistant', content: replyText }];
 
     } catch (err: any) {
       if (err.name === 'AbortError') return;
