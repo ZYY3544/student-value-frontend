@@ -1023,7 +1023,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     setMessages([{ role: 'assistant', content: '' }]);
 
     try {
-      // 一次请求完成：创建 session + 获取 Agent 回复
+      // 一次请求：创建 session + SSE 流式获取 Agent 回复
       const body: any = { userId, skipGreeting: true, initialAction: chip };
       if (assessmentContext && Object.keys(assessmentContext).length > 0) body.assessmentContext = assessmentContext;
       if (resumeText) body.resumeText = resumeText;
@@ -1033,31 +1033,54 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         headers: authHeaders(),
         body: JSON.stringify(body),
       });
-      const startData = await startRes.json();
-      if (!startData.success) throw new Error(startData.error || 'Failed');
 
-      const newSessionId = startData.data.sessionId;
-      const replyText = startData.data.greeting || '';
-      setSessionId(newSessionId);
+      if (!startRes.ok) throw new Error('请求失败');
 
-      // 乐观更新历史列表
-      setChatHistory(prev => {
-        if (prev.some(h => h.id === newSessionId)) return prev;
-        return [{
-          id: newSessionId,
-          created_at: new Date().toISOString(),
-          firstMessage: chip,
-          pinned: false,
-          title: null,
-        }, ...prev];
-      });
-
-      // 直接显示回复
+      // SSE 流式读取
+      const reader = startRes.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let newSessionId = '';
       restoringRef.current = false;
-      setMessages([{ role: 'assistant', content: replyText }]);
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split('\n')) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (parsed.type === 'session') {
+                // 第一个事件：session 信息
+                newSessionId = parsed.sessionId;
+                setSessionId(newSessionId);
+                setChatHistory(prev => {
+                  if (prev.some(h => h.id === newSessionId)) return prev;
+                  return [{
+                    id: newSessionId,
+                    created_at: new Date().toISOString(),
+                    firstMessage: chip,
+                    pinned: false,
+                    title: null,
+                  }, ...prev];
+                });
+              } else if (parsed.type === 'text' && parsed.content) {
+                fullText += parsed.content;
+                setMessages([{ role: 'assistant', content: fullText }]);
+              } else if (parsed.type === 'done') {
+                // 流结束
+              }
+            } catch {}
+          }
+        }
+      }
 
       // 缓存消息
-      messagesCacheRef.current[newSessionId] = [{ role: 'assistant', content: replyText }];
+      if (newSessionId) {
+        messagesCacheRef.current[newSessionId] = [{ role: 'assistant', content: fullText }];
+      }
 
     } catch (err: any) {
       if (err.name === 'AbortError') return;
