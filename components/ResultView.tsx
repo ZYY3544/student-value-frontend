@@ -2,7 +2,8 @@ import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { AssessmentResult, AssessmentInput, AbilityItem, ResumeSection, PendingEdit, ResumeExpression, JobComparison, ParsedJd, JdMatchItem, ResumeVersion } from '../types';
 import {
   TrendingUp, Target, Users, FileText, BarChart3, Bell,
-  Lightbulb, Brain, Handshake, PenTool, Shield, Award
+  Lightbulb, Brain, Handshake, PenTool, Shield, Award,
+  LogOut, RefreshCw
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -19,6 +20,7 @@ interface ResultViewProps {
   inputData: AssessmentInput;
   assessmentType: 'CV';
   onReset: () => void;
+  onLogout?: () => void;
   userId?: string;
 }
 
@@ -91,7 +93,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'https://student-value-backend.
 const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
 const INDUSTRIES = ["互联网", "高科技", "金融", "大健康", "汽车", "消费品", "新零售", "地产", "泛娱乐", "教育", "农业", "通用行业"];
 
-export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset, userId }) => {
+export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset, onLogout, userId }) => {
   // ===== 岗位对比筛选状态 =====
   const [filterCity, setFilterCity] = useState(inputData.city);
   const [filterIndustry, setFilterIndustry] = useState(inputData.industry);
@@ -139,6 +141,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [isLoading, setIsLoading] = useState(false);
   // ===== Canvas 状态 =====
   const [viewMode, setViewMode] = useState<'report' | 'canvas'>('report');
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [chatForceExpanded, setChatForceExpanded] = useState(false);
   const [resumeSections, setResumeSections] = useState<ResumeSection[]>(() => {
     // 从评测结果预加载简历段落
@@ -796,15 +799,41 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               <span className="text-xl font-bold tracking-tight text-gray-800">Job Accelerator</span>
             </div>
           </div>
-          <div className="flex items-center gap-6">
-<button className="relative p-2 text-gray-500 rounded-full">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            <div className="flex items-center gap-2 pl-2 border-l border-gray-100">
-              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border border-orange-200">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(prev => !prev)}
+                className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border border-orange-200 hover:ring-2 hover:ring-orange-300 transition-all"
+              >
                 <span className="text-xs font-bold text-orange-600">U</span>
-              </div>
+              </button>
+              {userMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-[99]" onClick={() => setUserMenuOpen(false)} />
+                  <div className="absolute right-0 top-11 z-[100] bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 min-w-[160px]">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-xs text-gray-400">当前邀请码</p>
+                      <p className="text-sm font-medium text-gray-700">{userId || '-'}</p>
+                    </div>
+                    <button
+                      onClick={() => { setUserMenuOpen(false); onReset(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      重新测评
+                    </button>
+                    {onLogout && (
+                      <button
+                        onClick={() => { setUserMenuOpen(false); onLogout(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        退出登录
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

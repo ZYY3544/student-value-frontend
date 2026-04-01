@@ -728,7 +728,7 @@ const App: React.FC = () => {
           </div>
         );
       case AppState.RESULT:
-        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} userId={authCode} />;
+        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} onLogout={handleLogout} userId={authCode} />;
         return renderFormContent();
       default:
         return renderFormContent();
