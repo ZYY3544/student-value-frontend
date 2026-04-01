@@ -815,13 +815,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                       <p className="text-xs text-gray-400">当前邀请码</p>
                       <p className="text-sm font-medium text-gray-700">{userId || '-'}</p>
                     </div>
-                    <button
-                      onClick={() => { setUserMenuOpen(false); onReset(); }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      重新测评
-                    </button>
                     {onLogout && (
                       <button
                         onClick={() => { setUserMenuOpen(false); onLogout(); }}
