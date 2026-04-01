@@ -10,8 +10,9 @@ import {
 import { saveAs } from 'file-saver';
 import type { StructuredResume } from '../components/PrintableResume';
 
-// A4 页面右边距对应的 tab stop 位置（用于右对齐时间）
-const RIGHT_TAB = TabStopPosition.MAX;
+// A4 内容区宽度的 tab stop 位置（用于右对齐时间）
+// A4 = 8.27in, 左右边距各 0.8in, 内容区 = 6.67in ≈ 9600 twips
+const RIGHT_TAB = convertInchesToTwip(6.67);
 
 /** 创建 section 标题（加粗 + 底部黑线） */
 function sectionTitle(title: string): Paragraph {
