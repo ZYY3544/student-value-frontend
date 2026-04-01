@@ -21,6 +21,7 @@ interface ResultViewProps {
   assessmentType: 'CV';
   onReset: () => void;
   onLogout?: () => void;
+  onSettings?: () => void;
   userId?: string;
 }
 
@@ -93,7 +94,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'https://student-value-backend.
 const CITIES = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "苏州", "西安", "其他"];
 const INDUSTRIES = ["互联网", "高科技", "金融", "大健康", "汽车", "消费品", "新零售", "地产", "泛娱乐", "教育", "农业", "通用行业"];
 
-export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset, onLogout, userId }) => {
+export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onReset, onLogout, onSettings, userId }) => {
   // ===== 岗位对比筛选状态 =====
   const [filterCity, setFilterCity] = useState(inputData.city);
   const [filterIndustry, setFilterIndustry] = useState(inputData.industry);
@@ -815,6 +816,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
                       <p className="text-xs text-gray-400">当前邀请码</p>
                       <p className="text-sm font-medium text-gray-700">{userId || '-'}</p>
                     </div>
+                    {onSettings && (
+                      <button
+                        onClick={() => { setUserMenuOpen(false); onSettings(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        <Shield className="w-4 h-4" />
+                        账户设置
+                      </button>
+                    )}
                     {onLogout && (
                       <button
                         onClick={() => { setUserMenuOpen(false); onLogout(); }}

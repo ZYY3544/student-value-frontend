@@ -7,6 +7,7 @@ import { WechatLoginPage } from './components/WechatLoginPage';
 import { WechatCallback } from './components/WechatCallback';
 import { PaymentPage } from './components/PaymentPage';
 import { HistoryPage } from './components/HistoryPage';
+import { AccountSettings } from './components/AccountSettings';
 import { generateAssessment } from './services/geminiService';
 import { AssessmentInput, AssessmentResult, AppState } from './types';
 import { Toast } from './components/Toast';
@@ -728,8 +729,10 @@ const App: React.FC = () => {
           </div>
         );
       case AppState.RESULT:
-        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} onLogout={handleLogout} userId={authCode} />;
+        if (result) return <ResultView result={result} inputData={formData} assessmentType={formData.assessmentType} onReset={() => { setFormData(DEFAULT_FORM_DATA); setResult(null); setErrors([]); setAppState(AppState.FORM); }} onLogout={handleLogout} onSettings={() => setAppState(AppState.SETTINGS)} userId={authCode} />;
         return renderFormContent();
+      case AppState.SETTINGS:
+        return <AccountSettings userId={authCode || undefined} onBack={() => setAppState(result ? AppState.RESULT : AppState.FORM)} />;
       default:
         return renderFormContent();
     }
