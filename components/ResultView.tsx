@@ -558,122 +558,97 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   }, [sessionId]);
 
   // JD 优化：直接替换 content + 添加高亮区间（不走 pendingEdits）
-  const directReplaceResultRef = useRef(false);
 
   const handleDirectReplace = useCallback((sectionId: string, original: string, _suggested: string): boolean => {
     let suggested = _suggested;
-    // 多级容错：精确 → 空白规范化 → 去标点/符号模糊匹配
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
     const fuzzy = (s: string) => s.replace(/[\s·•\-–—,，;；。.、：:""''「」【】（）()]/g, '').trim();
-    let success = false;
-    directReplaceResultRef.current = false;
 
-    console.log(`[DirectReplace] sectionId=${sectionId}`);
-    console.log(`[DirectReplace] original (${original.length} chars): "${original.slice(0, 80)}..."`);
-    console.log(`[DirectReplace] suggested (${suggested.length} chars): "${suggested.slice(0, 80)}..."`);
-    const sec = resumeSections.find(s => s.id === sectionId);
-    if (sec) {
-      console.log(`[DirectReplace] section content (${sec.content.length} chars): "${sec.content.slice(0, 80)}..."`);
-      console.log(`[DirectReplace] indexOf result: ${sec.content.indexOf(original)}`);
-    } else {
-      console.log(`[DirectReplace] section NOT FOUND! available ids: ${resumeSections.map(s => s.id).join(', ')}`);
-    }
-
-    // 自动保留 bullet 前缀：如果 original 以 bullet 开头但 suggested 没有，补上
+    // 自动保留 bullet 前缀
     const bulletMatch = original.match(/^([·•\-–—]\s*)/);
     if (bulletMatch && !/^[·•\-–—]/.test(suggested)) {
       suggested = bulletMatch[1] + suggested;
     }
 
-    setResumeSections(prev => {
-      const idx = prev.findIndex(s => s.id === sectionId);
-      console.log(`[DirectReplace UPDATER] sectionId=${sectionId}, idx=${idx}, prev ids=[${prev.map(s=>s.id).join(',')}]`);
-      if (idx === -1) {
-        console.log('[DirectReplace UPDATER] section NOT FOUND in prev!');
-        return prev;
-      }
-      const sec = prev[idx];
-      console.log(`[DirectReplace UPDATER] sec.content (${sec.content.length} chars), indexOf=${sec.content.indexOf(original)}`);
-      const updated = [...prev];
+    // 先用 ref 同步检查能否匹配（不依赖 React state updater）
+    const currentSections = resumeSectionsRef.current;
+    const sec = currentSections.find(s => s.id === sectionId);
+    if (!sec) return false;
 
-      const applyReplace = (start: number, len: number) => {
-        const newContent = sec.content.slice(0, start) + suggested + sec.content.slice(start + len);
-        updated[idx] = {
-          ...sec,
-          content: newContent,
-          highlightRanges: [...(sec.highlightRanges || []), { start, end: start + suggested.length }],
-        };
-        success = true;
-        directReplaceResultRef.current = true;
-      };
+    // 查找匹配位置
+    let matchStart = -1, matchLen = 0;
 
-      // 1. 精确匹配
-      const pos = sec.content.indexOf(original);
-      if (pos !== -1) {
-        applyReplace(pos, original.length);
-        return updated;
-      }
+    // 1. 精确匹配
+    const pos = sec.content.indexOf(original);
+    if (pos !== -1) {
+      matchStart = pos;
+      matchLen = original.length;
+    }
 
-      // 2. 空白规范化匹配
+    // 2. 空白规范化匹配
+    if (matchStart === -1) {
       const normContent = normalize(sec.content);
       const normOriginal = normalize(original);
       const normIdx = normContent.indexOf(normOriginal);
       if (normIdx !== -1) {
-        // 从规范化位置映射回原始位置
         let ci = 0, normPos = 0;
         while (normPos < normIdx && ci < sec.content.length) {
           if (/\s/.test(sec.content[ci]) && ci > 0 && /\s/.test(sec.content[ci - 1])) { ci++; continue; }
           ci++; normPos++;
         }
-        const matchStart = ci;
-        let matchLen = 0, normMatchLen = 0;
-        while (normMatchLen < normOriginal.length && ci < sec.content.length) {
-          if (/\s/.test(sec.content[ci]) && ci > matchStart && /\s/.test(sec.content[ci - 1])) { ci++; matchLen++; continue; }
-          ci++; matchLen++; normMatchLen++;
+        matchStart = ci;
+        let ml = 0, nml = 0;
+        while (nml < normOriginal.length && ci < sec.content.length) {
+          if (/\s/.test(sec.content[ci]) && ci > matchStart && /\s/.test(sec.content[ci - 1])) { ci++; ml++; continue; }
+          ci++; ml++; nml++;
         }
-        if (matchLen > 0) {
-          applyReplace(matchStart, matchLen);
-          return updated;
-        }
+        matchLen = ml;
       }
+    }
 
-      // 3. 去标点模糊匹配（LLM 可能丢失或改变标点/bullet 符号）
+    // 3. 去标点模糊匹配
+    if (matchStart === -1) {
       const fuzzyOriginal = fuzzy(original);
       if (fuzzyOriginal.length >= 10) {
-        // 用滑动窗口在内容中找最佳匹配
-        const contentChars = sec.content;
         let bestStart = -1, bestEnd = -1, bestScore = 0;
-
-        for (let start = 0; start < contentChars.length; start++) {
-          // 从 start 开始，尝试匹配 fuzzyOriginal
+        for (let start = 0; start < sec.content.length; start++) {
           let fi = 0, ci2 = start;
-          while (fi < fuzzyOriginal.length && ci2 < contentChars.length) {
-            const fc = fuzzyOriginal[fi];
-            const cc = contentChars[ci2];
-            if (fuzzy(cc) === '') { ci2++; continue; } // 跳过标点
-            if (fc === fuzzy(cc)) { fi++; ci2++; } else { break; }
+          while (fi < fuzzyOriginal.length && ci2 < sec.content.length) {
+            if (fuzzy(sec.content[ci2]) === '') { ci2++; continue; }
+            if (fuzzyOriginal[fi] === fuzzy(sec.content[ci2])) { fi++; ci2++; } else { break; }
           }
           if (fi === fuzzyOriginal.length && fi > bestScore) {
-            bestScore = fi;
-            bestStart = start;
-            bestEnd = ci2;
+            bestScore = fi; bestStart = start; bestEnd = ci2;
           }
         }
-
-        if (bestStart !== -1 && bestScore >= fuzzyOriginal.length) {
-          applyReplace(bestStart, bestEnd - bestStart);
-          return updated;
+        if (bestStart !== -1) {
+          matchStart = bestStart;
+          matchLen = bestEnd - bestStart;
         }
       }
+    }
 
-      console.warn('[DirectReplace] original not found', sectionId);
-      console.log('[DirectReplace FAIL] original chars:', JSON.stringify(original.slice(0, 100)));
-      console.log('[DirectReplace FAIL] content chars:', JSON.stringify(sec.content.slice(0, 200)));
-      return prev;
+    if (matchStart === -1) return false;
+
+    // 匹配成功，执行替换
+    const finalSuggested = suggested;
+    const finalStart = matchStart;
+    const finalLen = matchLen;
+    setResumeSections(prev => {
+      const idx = prev.findIndex(s => s.id === sectionId);
+      if (idx === -1) return prev;
+      const s = prev[idx];
+      const newContent = s.content.slice(0, finalStart) + finalSuggested + s.content.slice(finalStart + finalLen);
+      const updated = [...prev];
+      updated[idx] = {
+        ...s,
+        content: newContent,
+        highlightRanges: [...(s.highlightRanges || []), { start: finalStart, end: finalStart + finalSuggested.length }],
+      };
+      return updated;
     });
 
-    console.log(`[DirectReplace] returning success=${directReplaceResultRef.current}`);
-    return directReplaceResultRef.current;
+    return true;
   }, []);
 
   // 清除所有高亮
