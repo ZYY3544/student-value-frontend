@@ -655,11 +655,15 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       return;
     }
 
-    // 空白对话或无预生成开场白 → 创建 session
+    // 没有预生成开场白 → 不自动创建 session，等用户主动操作
+    if (!preloadedGreeting && !skipGreetingRef.current) {
+      return;
+    }
+
+    // skipGreetingRef 触发（新建对话/模拟面试/职业规划） → 创建空白 session
     setIsInitializing(true);
     try {
-      const body: any = { userId, skipGreeting: isBlankChat };
-      // 有 assessmentContext 就传，没有就让后端自动加载
+      const body: any = { userId, skipGreeting: true };
       if (assessmentContext && Object.keys(assessmentContext).length > 0) {
         body.assessmentContext = assessmentContext;
       }
@@ -677,15 +681,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       if (data.data.sections?.length && onSectionsReady) {
         onSectionsReady(data.data.sections);
       }
-      if (isBlankChat) {
-        // 空白对话：不显示开场白，直接等用户输入
-        skipGreetingRef.current = false;
-        setMessages([]);
-      } else {
-        const greeting = data.data.greeting;
-        setMessages([]);
-        typewriterEffect(greeting);
-        }
+      skipGreetingRef.current = false;
+      setMessages([]);
     } catch (err: any) {
       console.error('Chat init failed:', err);
       setError(err.message || 'Failed to connect');
@@ -763,7 +760,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     const text = (overrideText || inputValue).trim().slice(0, MAX_INPUT_LENGTH);
     if (!text || isLoading || isTyping) return;
 
-    // 如果 sessionId 还没到，等待后台 /chat/start 完成（最多15秒）
+    // 如果 sessionId 还没到，等待或按需创建
     let activeSessionId = sessionId;
     if (!activeSessionId && sessionPromiseRef.current) {
       try {
@@ -776,7 +773,26 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         return;
       }
     }
-    if (!activeSessionId) return;
+    // 没有 session → 按需创建一个空白 session
+    if (!activeSessionId) {
+      try {
+        const body: any = { userId, skipGreeting: true };
+        if (assessmentContext && Object.keys(assessmentContext).length > 0) body.assessmentContext = assessmentContext;
+        if (resumeText) body.resumeText = resumeText;
+        const res = await fetch(`${apiBase}/api/chat/start`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed');
+        activeSessionId = data.data.sessionId;
+        setSessionId(activeSessionId);
+      } catch (err: any) {
+        setError('会话创建失败，请重试');
+        return;
+      }
+    }
 
     // 画布切换意图拦截：匹配到关键词直接切换到简历画布
     const CANVAS_KEYWORDS = ['切换到画布', '打开画布', '简历画布', '进入画布', '切换画布', '看看画布'];
