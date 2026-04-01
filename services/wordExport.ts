@@ -54,7 +54,6 @@ function bulletPoint(text: string): Paragraph {
   const clean = text.replace(/^[·•\-–—]\s*/, '');
   return new Paragraph({
     spacing: { before: 20, after: 20 },
-    indent: { left: convertInchesToTwip(0.2) },
     children: [
       new TextRun({ text: '· ', size: 20, font: 'Microsoft YaHei' }),
       new TextRun({ text: clean, size: 20, font: 'Microsoft YaHei' }),
