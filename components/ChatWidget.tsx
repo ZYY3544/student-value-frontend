@@ -1105,9 +1105,9 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (isInitializing) return;
     // 中断正在进行的请求
     if (abortRef.current) abortRef.current.abort();
-    skipGreetingRef.current = true;  // 标记跳过欢迎语
-    setIsLoading(true);
-    setMessages([{ role: 'assistant', content: '' }]);
+    skipGreetingRef.current = true;
+    setIsLoading(false);
+    setMessages([]);
     setSessionId(null);
     setInputValue('');
     setError(null);
