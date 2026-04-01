@@ -43,29 +43,30 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
           <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
             <Sparkles className="w-6 h-6 text-[#f8ea1a]" />
           </div>
-          <span className="text-xl font-bold tracking-tight">Selarin</span>
+          <span className="text-xl font-bold tracking-tight">求职加速器（校园版）</span>
         </div>
 
         <div className="bg-white/10 rounded-3xl md:rounded-[40px] p-6 md:p-10 border border-white/20 backdrop-blur-md flex-1 flex flex-col z-10">
-          <h1 className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-6 leading-tight">
-            开始估值
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4 leading-tight">
+            你的能力<br />比简历写的更好
           </h1>
-          <p className="text-white/80 text-sm md:text-lg mb-6 md:mb-12 leading-relaxed">
-            融合500强企业标配的价值评估体系与行业头部最新的薪酬数据库，精准核算您的市场价值。
+          <p className="text-white/60 text-sm md:text-base mb-6 md:mb-10 leading-relaxed hidden md:block">
+            上传简历，1 分钟拿到你的校招竞争力报告！<br />
+            帮你找到简历里没写出来的优势，一直改到 HR 抢着约你面试！！
           </p>
 
-          <div className="space-y-4 md:space-y-6 mt-auto hidden md:block">
+          <div className="space-y-6 mt-auto hidden md:block">
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm">输入邀请码即可使用</span>
+              <span className="text-sm">1 分钟出报告</span>
             </div>
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm">邀请码有效期 14 天</span>
+              <span className="text-sm">看清你的竞争力</span>
             </div>
             <div className="flex items-center gap-3 text-white/70">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm">AI 简历诊断 + 薪酬估值</span>
+              <span className="text-sm">AI 帮你改到位</span>
             </div>
           </div>
         </div>
