@@ -1011,14 +1011,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
     // 中断当前请求
     if (abortRef.current) abortRef.current.abort();
-    setIsLoading(false);
     restoringRef.current = true;
-    setMessages([]);
     setInputValue('');
     setError(null);
 
     const action = CHIP_ACTIONS[chip];
     if (!action) return;
+
+    // 立即显示 loading 状态（不等 session 创建）
+    setIsLoading(true);
+    setMessages([{ role: 'assistant', content: '' }]);
 
     try {
       // 1. 创建新 session
@@ -1049,10 +1051,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         }, ...prev];
       });
 
-      // 3. 直接用 newSessionId 发送消息（不依赖 React state 更新）
+      // 3. 直接用 newSessionId 发送消息
       restoringRef.current = false;
-      setIsLoading(true);
-      setMessages([{ role: 'assistant', content: '' }]);
 
       const abortController = new AbortController();
       abortRef.current = abortController;
