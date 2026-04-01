@@ -349,11 +349,11 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       const elapsed = Date.now() - analyzeStart;
       if (elapsed < 3000) await new Promise(r => setTimeout(r, 3000 - elapsed));
 
-      // 将连续段落按句号拆成 bullet points
+      // 将连续段落按句号拆成 bullet points（每个独占一行）
       const toBullets = (text: string) => {
         const sentences = text.split(/(?<=[。！？])\s*/).filter(s => s.trim());
         return sentences.length > 1
-          ? sentences.map(s => `• ${s.trim()}`).join('\n')
+          ? sentences.map(s => `\n• ${s.trim()}`).join('')
           : text;
       };
 
