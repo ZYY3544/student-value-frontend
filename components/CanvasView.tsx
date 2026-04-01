@@ -56,6 +56,7 @@ interface CanvasViewProps {
   // Not needed but passed through
   assessmentContext?: any;
   resumeText?: string;
+  userId?: string;
 }
 
 export const CanvasView: React.FC<CanvasViewProps> = ({
@@ -82,6 +83,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onDirectReplace,
   clearHighlights,
   assessmentContext,
+  userId,
 }) => {
 
   const activeVersion = versions.find(v => v.id === activeVersionId);
@@ -201,11 +203,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     setExportLoading(false);
   }, [exportLoading, resumeSections, apiBase]);
 
-  const [showGuide, setShowGuide] = useState(() => !localStorage.getItem('canvas_guide_shown'));
+  // 引导弹窗：跟邀请码关联，每个用户第一次进画布时显示
+  const guideKey = `canvas_guide_shown_${userId || 'default'}`;
+  const [showGuide, setShowGuide] = useState(() => !localStorage.getItem(guideKey));
   const dismissGuide = useCallback(() => {
     setShowGuide(false);
-    localStorage.setItem('canvas_guide_shown', '1');
-  }, []);
+    localStorage.setItem(guideKey, '1');
+  }, [guideKey]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
