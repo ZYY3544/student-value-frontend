@@ -9,7 +9,7 @@
 import React from 'react';
 import { ResumeSection } from '../types';
 
-// LLM 返回的结构化类型
+// LLM 返回的结构化类型（支持子项目）
 export interface StructuredResume {
   personal_info: {
     name: string;
@@ -28,7 +28,11 @@ export interface StructuredResume {
     org: string;
     role: string;
     time: string;
-    bullets: string[];
+    bullets?: string[];
+    sub_projects?: Array<{
+      name: string;
+      bullets: string[];
+    }>;
   }>;
   projects: Array<{
     name: string;
@@ -40,7 +44,7 @@ export interface StructuredResume {
   skills: string[];
   other_sections: Array<{
     title: string;
-    items: string[];
+    items: any[];
   }>;
 }
 
@@ -71,36 +75,27 @@ function parsePersonalInfo(content: string) {
   return { name, phone, email };
 }
 
-// 共用样式常量
 const PAGE_STYLE = {
   fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif',
-  lineHeight: '1.5',
+  lineHeight: '1.45',
+  fontSize: '13px',
 };
 
-/** 经历/项目条目组件 */
-const EntryBlock: React.FC<{ title: string; subtitle?: string; time: string; bullets: string[] }> = ({ title, subtitle, time, bullets }) => (
-  <div className="mb-3" style={{ breakInside: 'avoid' }}>
-    <div className="flex justify-between items-baseline">
-      <span className="text-sm font-bold">{title}</span>
-      <span className="text-xs text-gray-500 shrink-0 ml-4">{time}</span>
-    </div>
-    {subtitle && <div className="text-xs text-gray-600">{subtitle}</div>}
-    {bullets.length > 0 && (
-      <ul className="mt-1 space-y-0.5">
-        {bullets.map((b, i) => (
-          <li key={i} className="text-xs leading-relaxed flex gap-1.5">
-            <span className="shrink-0 mt-[3px]">·</span>
-            <span>{b.replace(/^[·•\-–—]\s*/, '')}</span>
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
+/** Bullet 列表 */
+const BulletList: React.FC<{ items: string[] }> = ({ items }) => (
+  <ul className="mt-0.5">
+    {items.map((b, i) => (
+      <li key={i} className="text-xs leading-[1.5] flex gap-1" style={{ marginBottom: '1px' }}>
+        <span className="shrink-0">·</span>
+        <span>{b.replace(/^[·•\-–—]\s*/, '')}</span>
+      </li>
+    ))}
+  </ul>
 );
 
 /** Section 标题 + 分隔线 */
 const SectionTitle: React.FC<{ title: string }> = ({ title }) => (
-  <h2 className="text-base font-bold border-b border-black mb-2 pb-0.5">{title}</h2>
+  <h2 className="font-bold border-b border-black pb-0.5 mb-1" style={{ fontSize: '14px' }}>{title}</h2>
 );
 
 export const PrintableResume: React.FC<PrintableResumeProps> = ({ resumeSections, structuredData }) => {
@@ -113,101 +108,119 @@ export const PrintableResume: React.FC<PrintableResumeProps> = ({ resumeSections
       <div className="hidden print:block" id="printable-resume">
         <div
           id="resume-page"
-          className="w-[210mm] min-h-[297mm] bg-white mx-auto shadow-2xl p-[15mm_20mm] text-black print:shadow-none print:m-0"
+          className="w-[210mm] min-h-[297mm] bg-white mx-auto p-[12mm_18mm] text-black print:shadow-none print:m-0"
           style={PAGE_STYLE}
         >
           {/* 个人信息居中 */}
           {personal_info?.name && (
-            <header className="mb-6 text-center">
-              <h1 className="text-2xl font-bold tracking-tight mb-1">{personal_info.name}</h1>
-              <div className="text-xs space-x-2 text-gray-600">
-                {personal_info.phone && <span>{personal_info.phone}</span>}
-                {personal_info.phone && personal_info.email && <span>|</span>}
-                {personal_info.email && <span>{personal_info.email}</span>}
-                {personal_info.other && <>{(personal_info.phone || personal_info.email) && <span>|</span>}<span>{personal_info.other}</span></>}
+            <header className="mb-3 text-center">
+              <h1 className="text-xl font-bold tracking-tight mb-0.5">{personal_info.name}</h1>
+              <div className="text-xs text-gray-600">
+                {[personal_info.phone, personal_info.email, personal_info.other].filter(Boolean).join(' | ')}
               </div>
             </header>
           )}
 
           {/* 教育经历 */}
           {education?.length > 0 && (
-            <section className="mb-4">
-              <SectionTitle title="教育经历" />
+            <section className="mb-2">
+              <SectionTitle title="教育背景" />
               {education.map((edu, i) => (
-                <EntryBlock
-                  key={i}
-                  title={edu.school}
-                  subtitle={[edu.degree, edu.major].filter(Boolean).join(' · ')}
-                  time={edu.time}
-                  bullets={edu.details || []}
-                />
+                <div key={i} style={{ breakInside: 'avoid' }}>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm font-bold">{edu.school}{edu.degree ? ` | ${edu.degree}` : ''}</span>
+                    <span className="text-xs text-gray-500 shrink-0 ml-4">{edu.time}</span>
+                  </div>
+                  {edu.major && <div className="text-xs text-gray-600">专业：{edu.major}</div>}
+                  {edu.details?.length > 0 && <BulletList items={edu.details} />}
+                </div>
               ))}
             </section>
           )}
 
-          {/* 实习/工作经历 */}
+          {/* 实习/工作经历（支持子项目） */}
           {experience?.length > 0 && (
-            <section className="mb-4">
-              <SectionTitle title="实习与工作经历" />
+            <section className="mb-2">
+              <SectionTitle title="实习经历" />
               {experience.map((exp, i) => (
-                <EntryBlock
-                  key={i}
-                  title={exp.org}
-                  subtitle={exp.role}
-                  time={exp.time}
-                  bullets={exp.bullets || []}
-                />
+                <div key={i} className="mb-1.5" style={{ breakInside: 'avoid' }}>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm font-bold">{exp.org}</span>
+                    <span className="text-xs text-gray-500 shrink-0 ml-4">{exp.time}</span>
+                  </div>
+                  {exp.role && <div className="text-xs text-gray-600">{exp.role}</div>}
+
+                  {/* 有子项目 → 按项目分组渲染 */}
+                  {exp.sub_projects?.length ? (
+                    exp.sub_projects.map((sp, j) => (
+                      <div key={j} className="mt-1">
+                        {sp.name && <div className="text-xs font-bold">{sp.name}</div>}
+                        {sp.bullets?.length > 0 && <BulletList items={sp.bullets} />}
+                      </div>
+                    ))
+                  ) : (
+                    /* 无子项目 → 直接渲染 bullets */
+                    exp.bullets?.length ? <BulletList items={exp.bullets} /> : null
+                  )}
+                </div>
               ))}
             </section>
           )}
 
           {/* 项目经历 */}
           {projects?.length > 0 && (
-            <section className="mb-4">
+            <section className="mb-2">
               <SectionTitle title="项目与研究经历" />
               {projects.map((proj, i) => (
-                <EntryBlock
-                  key={i}
-                  title={proj.name}
-                  subtitle={[proj.role, proj.org].filter(Boolean).join(' · ')}
-                  time={proj.time}
-                  bullets={proj.bullets || []}
-                />
+                <div key={i} className="mb-1.5" style={{ breakInside: 'avoid' }}>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm font-bold">{proj.name}</span>
+                    <span className="text-xs text-gray-500 shrink-0 ml-4">{proj.time}</span>
+                  </div>
+                  {(proj.role || proj.org) && (
+                    <div className="text-xs text-gray-600">{[proj.role, proj.org].filter(Boolean).join(' · ')}</div>
+                  )}
+                  {proj.bullets?.length > 0 && <BulletList items={proj.bullets} />}
+                </div>
               ))}
             </section>
           )}
 
-          {/* 技能 */}
-          {skills?.length > 0 && (
-            <section className="mb-4">
-              <SectionTitle title="技能" />
-              <ul className="space-y-0.5">
-                {skills.map((s, i) => (
-                  <li key={i} className="text-xs leading-relaxed flex gap-1.5">
-                    <span className="shrink-0 mt-[3px]">·</span>
-                    <span>{s.replace(/^[·•\-–—]\s*/, '')}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {/* 其他 */}
+          {/* 其他段落（社团经历等） */}
           {other_sections?.map((sec, i) => (
-            <section key={i} className="mb-4">
+            <section key={i} className="mb-2">
               <SectionTitle title={sec.title} />
-              {sec.items?.length > 0 ? (
-                <ul className="space-y-0.5">
-                  {sec.items.map((item, j) => (
-                    <li key={j} className="text-xs leading-relaxed flex gap-1.5">
-                      <span className="shrink-0 mt-[3px]">·</span>
+              {sec.items?.map((item: any, j: number) => (
+                <div key={j} className="mb-1" style={{ breakInside: 'avoid' }}>
+                  {typeof item === 'string' ? (
+                    <div className="text-xs leading-[1.5] flex gap-1">
+                      <span className="shrink-0">·</span>
                       <span>{item.replace(/^[·•\-–—]\s*/, '')}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+                    </div>
+                  ) : (
+                    <>
+                      {(item.org || item.role) && (
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-bold">{item.org || ''}</span>
+                          {item.time && <span className="text-xs text-gray-500 shrink-0 ml-4">{item.time}</span>}
+                        </div>
+                      )}
+                      {item.role && item.org && <div className="text-xs text-gray-600">{item.role}</div>}
+                      {item.bullets?.length > 0 && <BulletList items={item.bullets} />}
+                    </>
+                  )}
+                </div>
+              ))}
             </section>
           ))}
+
+          {/* 技能（放最后） */}
+          {skills?.length > 0 && (
+            <section className="mb-2">
+              <SectionTitle title="技能及其他" />
+              <BulletList items={skills} />
+            </section>
+          )}
         </div>
       </div>
     );
@@ -223,23 +236,23 @@ export const PrintableResume: React.FC<PrintableResumeProps> = ({ resumeSections
     <div className="hidden print:block" id="printable-resume">
       <div
         id="resume-page"
-        className="w-[210mm] min-h-[297mm] bg-white mx-auto shadow-2xl p-[15mm_20mm] text-black print:shadow-none print:m-0"
+        className="w-[210mm] min-h-[297mm] bg-white mx-auto p-[12mm_18mm] text-black print:shadow-none print:m-0"
         style={PAGE_STYLE}
       >
         {personalInfo && (
-          <header className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">{personalInfo.name}</h1>
-            <div className="text-sm space-x-2">
+          <header className="mb-4 text-center">
+            <h1 className="text-xl font-bold tracking-tight mb-1">{personalInfo.name}</h1>
+            <div className="text-xs">
               {personalInfo.phone && <span>{personalInfo.phone}</span>}
-              {personalInfo.phone && personalInfo.email && <span>|</span>}
+              {personalInfo.phone && personalInfo.email && <span> | </span>}
               {personalInfo.email && <span>{personalInfo.email}</span>}
             </div>
           </header>
         )}
         {bodySections.map((section) => (
-          <section key={section.id} className="mb-6" style={{ breakInside: 'avoid' }}>
-            <h2 className="text-base font-bold border-b border-black mb-2 pb-0.5">{section.title}</h2>
-            <div className="text-sm whitespace-pre-wrap leading-relaxed">{section.content}</div>
+          <section key={section.id} className="mb-3" style={{ breakInside: 'avoid' }}>
+            <h2 className="font-bold border-b border-black pb-0.5 mb-1" style={{ fontSize: '14px' }}>{section.title}</h2>
+            <div className="text-xs whitespace-pre-wrap leading-[1.5]">{section.content}</div>
           </section>
         ))}
       </div>
