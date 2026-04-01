@@ -663,6 +663,17 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
             if (data.data.sections?.length && onSectionsReady) {
               onSectionsReady(data.data.sections);
             }
+            // 乐观更新：立即在历史列表里加一条
+            setChatHistory(prev => {
+              if (prev.some(h => h.id === data.data.sessionId)) return prev;
+              return [{
+                id: data.data.sessionId,
+                created_at: new Date().toISOString(),
+                firstMessage: (data.data.greeting || preloadedGreeting || '').slice(0, 30) || '新对话',
+                pinned: false,
+                title: null,
+              }, ...prev];
+            });
           } else {
             console.error('Chat init failed:', data.error);
           }
@@ -700,6 +711,18 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       if (data.data.sections?.length && onSectionsReady) {
         onSectionsReady(data.data.sections);
       }
+      // 乐观更新：立即在历史列表里加一条
+      const chipName = pendingChipRef.current;
+      setChatHistory(prev => {
+        if (prev.some(h => h.id === data.data.sessionId)) return prev;
+        return [{
+          id: data.data.sessionId,
+          created_at: new Date().toISOString(),
+          firstMessage: chipName || '新对话',
+          pinned: false,
+          title: null,
+        }, ...prev];
+      });
       skipGreetingRef.current = false;
       setMessages([]);
     } catch (err: any) {
