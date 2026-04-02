@@ -776,7 +776,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     <div className="h-screen flex flex-col overflow-hidden bg-[#f8fafc] print-area">
       {/* Navbar */}
       <header className="bg-white border-b border-gray-100 flex-shrink-0 z-50">
-        <div className="px-8 h-16 flex items-center justify-between">
+        <div className="px-4 md:px-8 h-14 md:h-16 flex items-center justify-between">
           <div className="flex items-center gap-10">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-[#0A66C2] rounded-lg flex items-center justify-center">
@@ -830,24 +830,24 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       {/* Main area */}
       <div className="flex-1 flex overflow-hidden">
       {/* 左侧内容 - 可滚动 */}
-      <div className="flex-1 overflow-y-auto p-8 pr-4 print-area">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 md:pr-4 print-area">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6 md:mb-8">
           <div>
-            <span className="text-[11px] font-bold text-[#0A66C2] tracking-[0.15em] uppercase mb-1 block">COMPETITIVENESS ANALYSIS REPORT</span>
-            <h1 className="text-4xl font-bold text-gray-900">人才竞争力分析报告</h1>
+            <span className="text-[10px] md:text-[11px] font-bold text-[#0A66C2] tracking-[0.15em] uppercase mb-1 block">COMPETITIVENESS ANALYSIS REPORT</span>
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900">人才竞争力分析报告</h1>
           </div>
         </div>
 
         {/* 1. 你的能力底子 */}
-        <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-2xl md:rounded-[40px] p-5 md:p-10 mb-6 md:mb-8 border border-gray-100 shadow-sm">
           {/* 标题区 */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-              <Shield className="text-[#0A66C2] w-6 h-6" />
+          <div className="flex items-center gap-3 mb-4 md:mb-6">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+              <Shield className="text-[#0A66C2] w-5 h-5 md:w-6 md:h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">能力测评</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">能力测评</h2>
               <p className="text-xs text-gray-400 mt-0.5">基于简历内容的能力结构评估，衡量的是你当前展现出的能力水平</p>
             </div>
           </div>
@@ -865,7 +865,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
           {/* 分隔线 */}
           <div className="border-t border-gray-200 mt-6 pt-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 左：雷达图灰色卡片 */}
               <div className="bg-gray-50 rounded-xl p-6">
                 <p className="text-base font-bold text-gray-600 mb-2">核心能力雷达图</p>
@@ -901,14 +901,14 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
         {/* 2. 薪酬对标 */}
         {result.jobComparisons && result.jobComparisons.length > 0 && (
-          <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-2xl md:rounded-[40px] p-5 md:p-10 mb-6 md:mb-8 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-                  <Target className="text-purple-600 w-6 h-6" />
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                  <Target className="text-purple-600 w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">薪酬对标</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900">薪酬对标</h2>
                   <p className="text-xs text-gray-400 mt-0.5">同一份简历，不同赛道、不同城市，市场给出的定薪完全不同——选对方向很重要</p>
                 </div>
               </div>
@@ -944,20 +944,20 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
         {/* 3. 简历诊断 */}
         {result.resumeExpression && (
-          <div className="bg-white rounded-[40px] p-10 mb-8 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                <FileText className="text-amber-600 w-6 h-6" />
+          <div className="bg-white rounded-2xl md:rounded-[40px] p-5 md:p-10 mb-6 md:mb-8 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-4 md:mb-6">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                <FileText className="text-amber-600 w-5 h-5 md:w-6 md:h-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">简历诊断</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">简历诊断</h2>
                 <p className="text-xs text-gray-400 mt-0.5">能力是底子，简历是包装——同样的经历不同的写法，HR看到的是完全不同的人</p>
               </div>
             </div>
 
-            <div className="flex gap-6">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
               {/* 左侧：综合表达力 */}
-              <div className="flex-shrink-0 bg-gray-50 rounded-2xl p-6 flex flex-col items-center justify-center w-48">
+              <div className="flex-shrink-0 bg-gray-50 rounded-2xl p-6 flex flex-col items-center justify-center w-full md:w-48">
                 <span className="text-sm font-semibold text-gray-500 mb-2">综合表达力</span>
                 <div className="flex items-baseline">
                   <span className="text-5xl font-black text-gray-800">{result.resumeExpression.overallScore}</span>
@@ -967,7 +967,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               </div>
 
               {/* 右侧：6维卡片 3x2 */}
-              <div className="flex-1 grid grid-cols-3 gap-3">
+              <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3">
                 {Object.entries(result.resumeExpression.dimensions).map(([name, dim]: [string, { score: number; level: string; tip: string }]) => (
                   <div key={name} className="bg-gray-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
