@@ -1247,7 +1247,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4 md:space-y-6">
         {isInitializing && (
           <div className="flex items-center gap-2 text-gray-400 text-sm justify-center py-8">
             <Loader2 size={16} className="animate-spin" />
@@ -1351,8 +1351,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       </div>
 
       {/* Input Area */}
-      <div className="p-6 bg-white border-t border-gray-50">
-        <div className="bg-gray-50 rounded-2xl mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
+      <div className="p-3 md:p-6 bg-white border-t border-gray-50">
+        <div className="bg-gray-50 rounded-2xl mb-3 md:mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
           <textarea
             ref={inputRef}
             value={inputValue}
@@ -1446,13 +1446,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100]"
           onClick={() => setIsExpanded(false)}
         />
-        <div className="fixed inset-0 z-[101] flex items-center justify-center p-8 pointer-events-none">
-          <div className="w-full max-w-7xl h-[95vh] pointer-events-auto">
-            <div className="bg-white border border-gray-200 rounded-3xl flex overflow-hidden shadow-sm h-full">
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-2 md:p-8 pointer-events-none">
+          <div className="w-full max-w-7xl h-[98vh] md:h-[95vh] pointer-events-auto">
+            <div className="bg-white border border-gray-200 rounded-2xl md:rounded-3xl flex overflow-hidden shadow-sm h-full">
               {/* 左侧侧边栏 */}
               <div
                 className={`bg-gray-50 border-r border-gray-200 flex flex-col shrink-0 transition-all duration-200 overflow-hidden ${
-                  sidebarOpen ? 'w-[240px]' : 'w-0'
+                  sidebarOpen ? 'w-[200px] md:w-[240px]' : 'w-0'
                 }`}
               >
                 {historyList}
@@ -1469,8 +1469,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
   // ===== 窄模式：上下布局（汉堡菜单下拉面板） =====
   return (
-    <aside className="w-[420px] h-full shrink-0 p-4 pl-0">
-      <div className="bg-white border border-gray-200 rounded-3xl flex flex-col overflow-hidden shadow-sm h-full relative">
+    <aside className="w-full md:w-[420px] h-full shrink-0 p-2 md:p-4 md:pl-0">
+      <div className="bg-white border border-gray-200 rounded-2xl md:rounded-3xl flex flex-col overflow-hidden shadow-sm h-full relative">
         {/* Header */}
         <div className="p-4 px-6 border-b border-gray-50">
           <div className="flex items-center justify-between">
@@ -1510,7 +1510,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4 md:space-y-6">
           {isInitializing && (
             <div className="flex items-center gap-2 text-gray-400 text-sm justify-center py-8">
               <Loader2 size={16} className="animate-spin" />
@@ -1612,8 +1612,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         </div>
 
         {/* Input Area */}
-        <div className="p-6 bg-white border-t border-gray-50">
-          <div className="bg-gray-50 rounded-2xl mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
+        <div className="p-3 md:p-6 bg-white border-t border-gray-50">
+          <div className="bg-gray-50 rounded-2xl mb-3 md:mb-4 focus-within:ring-2 focus-within:ring-[#CA7C5E]/20 transition-all">
             <textarea
               ref={inputRef}
               value={inputValue}
