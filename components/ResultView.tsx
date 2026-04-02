@@ -151,6 +151,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const [viewMode, setViewMode] = useState<'report' | 'canvas'>('report');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [chatForceExpanded, setChatForceExpanded] = useState(false);
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const [resumeSections, setResumeSections] = useState<ResumeSection[]>(() => {
     // 从评测结果预加载简历段落
     if (result.resumeSections?.length) {
@@ -989,8 +990,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
       </div>
 
-      {/* 右侧 Chat - 固定不滚动 */}
-      <div data-no-print>
+      {/* 右侧 Chat - 桌面端显示，手机端隐藏 */}
+      <div data-no-print className="hidden md:block">
       <ChatWidget
         {...chatProps}
         onEnterCanvas={handleEnterCanvas}
@@ -999,6 +1000,38 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       />
       </div>
       </div>
+
+      {/* 手机端：浮动 Sparky 按钮 */}
+      {!mobileChatOpen && (
+        <button
+          onClick={() => setMobileChatOpen(true)}
+          className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#CA7C5E] rounded-full shadow-lg shadow-[#CA7C5E]/30 flex items-center justify-center active:scale-95 transition-transform"
+          data-no-print
+        >
+          <span className="text-white text-xl font-bold">S</span>
+        </button>
+      )}
+
+      {/* 手机端：全屏聊天 overlay */}
+      {mobileChatOpen && (
+        <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col" data-no-print>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <h3 className="font-bold text-base">求职小帮手</h3>
+            <button
+              onClick={() => setMobileChatOpen(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <ChatWidget
+              {...chatProps}
+              onEnterCanvas={handleEnterCanvas}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
