@@ -666,7 +666,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
       {/* JD 上传弹窗 */}
       {showJdModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20">
-          <div className="bg-white rounded-2xl shadow-2xl w-[520px] p-7">
+          <div className="bg-white rounded-2xl shadow-2xl w-[90vw] max-w-[520px] p-5 md:p-7">
             <h3 className="text-lg font-bold text-gray-900 mb-2">上传目标 JD</h3>
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs text-gray-400">粘贴岗位 JD 全文，Sparky 将针对该岗位定制化优化你的简历</p>

@@ -211,24 +211,26 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     localStorage.setItem(guideKey, '1');
   }, [guideKey]);
 
+  const [mobilePanel, setMobilePanel] = useState<'chat' | 'resume'>('chat');
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
       {/* Top bar */}
-      <header className="h-12 border-b border-gray-100 flex items-center px-5 gap-4 flex-shrink-0 bg-white z-10 canvas-no-print">
+      <header className="h-12 border-b border-gray-100 flex items-center px-3 md:px-5 gap-2 md:gap-4 flex-shrink-0 bg-white z-10 canvas-no-print">
         <button
           onClick={onExitCanvas}
-          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
+          className="flex items-center gap-1 md:gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          退出简历画布
+          <span className="hidden md:inline">退出简历画布</span>
         </button>
-        <div className="h-5 w-px bg-gray-200" />
-        <div className="flex items-center gap-2">
+        <div className="h-5 w-px bg-gray-200 hidden md:block" />
+        <div className="hidden md:flex items-center gap-2">
           <PixelCat size={18} />
           <span className="text-sm font-bold text-gray-800">简历画布</span>
         </div>
 
-        <div className="ml-auto flex items-center gap-6">
+        <div className="ml-auto flex items-center gap-2 md:gap-6">
           <VersionSelector
             versions={versions}
             activeVersionId={activeVersionId}
@@ -238,18 +240,34 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           <button
             onClick={handleExportWord}
             disabled={resumeSections.length === 0 || exportLoading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#004F90] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 px-2.5 md:px-3.5 py-1.5 text-xs md:text-sm font-medium text-white bg-[#0A66C2] rounded-lg hover:bg-[#004F90] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {exportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            {exportLoading ? '正在准备导出...' : '导出 Word'}
+            <span className="hidden md:inline">{exportLoading ? '正在准备导出...' : '导出 Word'}</span>
           </button>
         </div>
       </header>
 
-      {/* Main content — 两栏布局 */}
+      {/* 手机端 tab 栏 */}
+      <div className="flex md:hidden border-b border-gray-200">
+        <button
+          onClick={() => setMobilePanel('chat')}
+          className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors ${mobilePanel === 'chat' ? 'text-[#CA7C5E] border-b-2 border-[#CA7C5E]' : 'text-gray-400'}`}
+        >
+          对话
+        </button>
+        <button
+          onClick={() => setMobilePanel('resume')}
+          className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors ${mobilePanel === 'resume' ? 'text-[#CA7C5E] border-b-2 border-[#CA7C5E]' : 'text-gray-400'}`}
+        >
+          简历
+        </button>
+      </div>
+
+      {/* Main content — 桌面两栏 / 手机 tab 切换 */}
       <div className="flex-1 flex overflow-hidden divide-x divide-gray-100">
         {/* 左栏: Chat */}
-        <div className="w-[40%] min-w-[280px] flex flex-col bg-white canvas-no-print">
+        <div className={`w-full md:w-[40%] md:min-w-[280px] flex flex-col bg-white canvas-no-print ${mobilePanel !== 'chat' ? 'hidden md:flex' : ''}`}>
           <CanvasChat
             sessionId={sessionId}
             messages={messages}
@@ -279,7 +297,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         <div
           ref={optimizedRef}
           onMouseUp={handleMouseUp}
-          className="w-[60%] overflow-y-auto bg-white canvas-print-area"
+          className={`w-full md:w-[60%] overflow-y-auto bg-white canvas-print-area ${mobilePanel !== 'resume' ? 'hidden md:block' : ''}`}
         >
           <ResumePanel
             sections={resumeSections}
@@ -349,7 +367,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       {/* 首次使用引导弹窗 */}
       {showGuide && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20">
-          <div className="bg-white rounded-2xl shadow-2xl w-[420px] p-7">
+          <div className="bg-white rounded-2xl shadow-2xl w-[90vw] max-w-[420px] p-5 md:p-7">
             <h3 className="text-lg font-bold text-gray-900 mb-5">简历画布使用指南</h3>
             <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
               <div className="flex gap-3">
