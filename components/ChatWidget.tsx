@@ -443,6 +443,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [trialExpired, setTrialExpired] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   // chatHistory: 优先用外部传入的（ResultView 管理），否则用内部 state
@@ -943,6 +944,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        if (errData.error_code === 'TRIAL_EXPIRED') {
+          setTrialExpired(true);
+          setMessages(prev => prev.slice(0, -1)); // 移除 loading 消息
+          setIsLoading(false);
+          return;
+        }
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
 
@@ -1034,7 +1041,16 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
         body: JSON.stringify(body),
       });
 
-      if (!startRes.ok) throw new Error('请求失败');
+      if (!startRes.ok) {
+        const errData = await startRes.json().catch(() => ({}));
+        if (errData.error_code === 'TRIAL_EXPIRED') {
+          setTrialExpired(true);
+          setMessages([]);
+          setIsLoading(false);
+          return;
+        }
+        throw new Error('请求失败');
+      }
 
       // SSE 流式读取
       const reader = startRes.body?.getReader();
@@ -1662,6 +1678,40 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 
       </div>
       {actionMenu}
+
+      {/* 试用到期弹窗 */}
+      {trialExpired && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[300]" onClick={() => setTrialExpired(false)} />
+          <div className="fixed inset-0 z-[301] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-[90vw] max-w-[400px] p-6 md:p-8 text-center">
+              <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🎯</span>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">试用次数已用完</h3>
+              <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                你已体验完免费试用额度。继续使用全部功能，解锁无限次简历优化、模拟面试和职业规划。
+              </p>
+              <div className="bg-gradient-to-r from-[#CA7C5E] to-[#e8a47a] rounded-xl p-4 mb-4 text-white">
+                <p className="text-xs line-through opacity-70">原价 ¥68.9 / 两周</p>
+                <p className="text-2xl font-bold mt-1">¥28.9 <span className="text-sm font-normal">/ 两周</span></p>
+                <p className="text-xs mt-1 opacity-80">早鸟限时优惠</p>
+              </div>
+              <div className="text-sm text-gray-600 space-y-1 mb-5">
+                <p>购买请联系：</p>
+                <p className="font-medium">18038129437（手机）</p>
+                <p className="font-medium">benchunggz（微信）</p>
+              </div>
+              <button
+                onClick={() => setTrialExpired(false)}
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                稍后再说
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </aside>
   );
 };
