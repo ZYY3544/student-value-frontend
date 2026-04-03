@@ -664,7 +664,8 @@ const App: React.FC = () => {
                             <CloudUpload className="w-6 h-6 text-[#0A66C2]" />
                           </div>
                           <h4 className="text-sm font-bold text-slate-900 mb-1">点击或拖拽简历文件至此</h4>
-                          <p className="text-xs text-slate-400">支持 PDF, Word 格式，大小不超过 10MB</p>
+                          <p className="text-xs text-slate-400">支持 PDF、Word 格式，大小不超过 10MB</p>
+                          <p className="text-xs text-amber-500 mt-1">请上传文字版简历，图片型 PDF（如 Canva 导出）暂不支持</p>
                         </div>
                         <input
                           type="file"
