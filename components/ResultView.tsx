@@ -262,7 +262,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     const target = versions.find(v => v.id === versionId);
     if (!target) return;
     setActiveVersionId(versionId);
-    setResumeSections(target.sections.map(s => ({ ...s, highlightRanges: undefined })));
+    setResumeSections(target.sections.map(s => ({ ...s })));
     setPendingEdits(target.pendingEdits.map(e => ({ ...e })));
   }, [versions]);
 
@@ -276,7 +276,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       const general = versions.find(v => v.versionType === 'general');
       if (general) {
         setActiveVersionId(general.id);
-        setResumeSections(general.sections.map(s => ({ ...s, highlightRanges: undefined })));
+        setResumeSections(general.sections.map(s => ({ ...s })));
         setPendingEdits(general.pendingEdits.map(e => ({ ...e })));
       }
     }
@@ -348,7 +348,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
   // JD 编辑完成后：把最终 resumeSections 写入 JD 版本，并切换过去
   const handleJdEditComplete = useCallback((jdVersionId: string) => {
-    const finalSections = resumeSectionsRef.current.map(s => ({ ...s, highlightRanges: undefined }));
     setVersions(prev => prev.map(v =>
       v.id === jdVersionId
         ? { ...v, sections: resumeSectionsRef.current.map(s => ({ ...s })), updatedAt: Date.now() }
