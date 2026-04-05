@@ -455,6 +455,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
               salaryRange: result.salaryRange || result.personValue || '',
             },
             resumeText: result.resumeText || inputData.resumeText,
+            resumeSections: resumeSections.length > 0 ? resumeSections : undefined,
             userId,
             skipGreeting: true,
           }),
