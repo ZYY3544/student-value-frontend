@@ -203,33 +203,9 @@ const DiffMark: React.FC<{
  * 渲染带 inline diff 高亮的内容
  * content 是原文（未替换），在 edit.original 的位置嵌入 DiffMark，前后正常渲染
  */
-/** 流式显示高亮文本：逐字显示 + 透明占位（无布局跳动） */
+/** 高亮文本：直接显示绿色底色 */
 const StreamHighlight: React.FC<{ text: string }> = ({ text }) => {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    setProgress(0);
-    // 速度：总时长 = min(text.length * 25ms, 2000ms)，至少 15ms/字
-    const speed = Math.max(15, Math.min(25, 2000 / text.length));
-    let i = 0;
-    const timer = setInterval(() => {
-      i++;
-      setProgress(i);
-      if (i >= text.length) clearInterval(timer);
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text]);
-
-  if (progress >= text.length) {
-    return <span className="bg-green-50 border-b-2 border-green-200 rounded-sm">{text}</span>;
-  }
-
-  return (
-    <>
-      <span className="bg-green-50 border-b-2 border-green-200 rounded-sm">{text.slice(0, progress)}</span>
-      <span style={{ color: 'transparent' }}>{text.slice(progress)}</span>
-    </>
-  );
+  return <span className="bg-green-50 border-b-2 border-green-200 rounded-sm">{text}</span>;
 };
 
 /** 渲染带流式绿色高亮的内容（JD 优化后标记改过的区间） */
