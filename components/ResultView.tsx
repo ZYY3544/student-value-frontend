@@ -252,7 +252,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     if (active?.versionType === 'original') return; // 原始简历只读
     setVersions(prev => prev.map(v =>
       v.id === activeVersionId
-        ? { ...v, sections: resumeSections.map(s => ({ ...s, highlightRanges: undefined })), pendingEdits: [...pendingEdits], updatedAt: Date.now() }
+        ? { ...v, sections: resumeSections.map(s => ({ ...s })), pendingEdits: [...pendingEdits], updatedAt: Date.now() }
         : v
     ));
   // eslint-disable-next-line react-hooks/exhaustive-deps
