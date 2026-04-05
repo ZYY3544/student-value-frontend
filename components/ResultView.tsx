@@ -363,11 +363,14 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     if (resumeSections.length === 0) return;
     const hasGeneral = versions.some(v => v.versionType === 'general');
     if (hasGeneral) {
-      // 已有版本，激活通用版
+      // 已有版本，激活通用版并恢复其 sections（含高亮）
       versionInitRef.current = true;
       if (!activeVersionId) {
         const general = versions.find(v => v.versionType === 'general');
-        if (general) setActiveVersionId(general.id);
+        if (general) {
+          setActiveVersionId(general.id);
+          setResumeSections(general.sections.map(s => ({ ...s })));
+        }
       }
       return;
     }
