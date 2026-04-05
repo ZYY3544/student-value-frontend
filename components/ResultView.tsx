@@ -510,13 +510,16 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         if (sec.content.includes(edit.original)) {
           const start = sec.content.indexOf(edit.original);
           const newContent = sec.content.replace(edit.original, edit.suggested);
-          updated[idx] = { ...sec, content: newContent, highlightRanges: [...(sec.highlightRanges || []), { start, end: start + edit.suggested.length }] };
+          const newHighlights = [...(sec.highlightRanges || []), { start, end: start + edit.suggested.length }];
+          console.log('[AcceptEdit] 精确匹配成功, highlightRanges:', newHighlights);
+          updated[idx] = { ...sec, content: newContent, highlightRanges: newHighlights };
           return updated;
         }
 
         // normalize fallback
         const normContent = normalize(sec.content);
         const normOriginal = normalize(edit.original);
+        console.log('[AcceptEdit] 精确匹配失败, 尝试normalize. original长度:', edit.original.length, 'content长度:', sec.content.length);
         if (normContent.includes(normOriginal)) {
           let ci = 0;
           const normIdx = normContent.indexOf(normOriginal);
