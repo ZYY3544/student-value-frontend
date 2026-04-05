@@ -505,7 +505,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
         // 精确匹配
         if (sec.content.includes(edit.original)) {
-          updated[idx] = { ...sec, content: sec.content.replace(edit.original, edit.suggested) };
+          const start = sec.content.indexOf(edit.original);
+          const newContent = sec.content.replace(edit.original, edit.suggested);
+          updated[idx] = { ...sec, content: newContent, highlightRanges: [...(sec.highlightRanges || []), { start, end: start + edit.suggested.length }] };
           return updated;
         }
 
@@ -527,7 +529,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
             ci++; matchLen++; normMatchLen++;
           }
           if (matchLen > 0) {
-            updated[idx] = { ...sec, content: sec.content.slice(0, matchStart) + edit.suggested + sec.content.slice(matchStart + matchLen) };
+            const newContent = sec.content.slice(0, matchStart) + edit.suggested + sec.content.slice(matchStart + matchLen);
+            updated[idx] = { ...sec, content: newContent, highlightRanges: [...(sec.highlightRanges || []), { start: matchStart, end: matchStart + edit.suggested.length }] };
             return updated;
           }
         }
