@@ -440,7 +440,39 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
 
   // 进入画布模式
   const handleEnterCanvas = useCallback(async () => {
-    if (!sessionId) return;
+    // 没有 session 时自动创建一个
+    let sid = sessionId;
+    if (!sid) {
+      try {
+        const res = await fetch(`${API_BASE}/api/chat/start`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            assessmentContext: {
+              factors: result.factors || {},
+              abilities: result.abilities || {},
+              grade: result.level,
+              salaryRange: result.salaryRange || result.personValue || '',
+            },
+            resumeText: result.resumeText || inputData.resumeText,
+            userId,
+            skipGreeting: true,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          sid = data.sessionId;
+          setSessionId(sid);
+        } else {
+          console.error('Failed to create session for canvas');
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to create session for canvas:', err);
+        return;
+      }
+    }
+
     setViewMode('canvas');
 
     // 如果 sections 已经从后端预拆分拿到了，直接用
@@ -449,7 +481,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     // 拉取简历段落数据
     const fetchSections = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/chat/sections?sessionId=${sessionId}`);
+        const res = await fetch(`${API_BASE}/api/chat/sections?sessionId=${sid}`);
         const data = await res.json();
         if (data.success) {
           if (data.data.status === 'ready') {
@@ -463,7 +495,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       }
     };
     fetchSections();
-  }, [sessionId, resumeSections.length]);
+  }, [sessionId, resumeSections.length, userId, result, inputData]);
 
   // AI 编辑建议：不替换 content，只存 pendingEdits（content 在接受时才改）
   // 每个 edit 都有 editId，同 section 可有多个 edit（JD 优化场景）
