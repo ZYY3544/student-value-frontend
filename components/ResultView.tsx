@@ -662,7 +662,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
   const handleSectionContentChange = useCallback((sectionId: string, newContent: string) => {
     // 立即更新本地状态
     setResumeSections(prev => prev.map(sec =>
-      sec.id === sectionId ? { ...sec, content: newContent } : sec
+      sec.id === sectionId ? { ...sec, content: newContent, highlightRanges: undefined } : sec
     ));
 
     // 去抖保存到后端（1.5秒）
