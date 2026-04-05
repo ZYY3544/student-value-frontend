@@ -276,7 +276,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
       const general = versions.find(v => v.versionType === 'general');
       if (general) {
         setActiveVersionId(general.id);
-        setResumeSections(general.sections.map(s => ({ ...s })));
+        setResumeSections(general.sections.map(s => ({ ...s, highlightRanges: undefined })));
         setPendingEdits(general.pendingEdits.map(e => ({ ...e })));
       }
     }
