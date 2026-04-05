@@ -461,7 +461,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         });
         const data = await res.json();
         if (data.success) {
-          sid = data.sessionId;
+          sid = data.data.sessionId;
           setSessionId(sid);
         } else {
           console.error('Failed to create session for canvas');
