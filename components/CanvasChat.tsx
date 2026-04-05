@@ -441,7 +441,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     const sec = quotedSelection.sectionTitle ? `[SECTION:${quotedSelection.sectionTitle}] ` : '';
     const prompt = `[ACTION:定向改写] ${sec}[QUOTE:${quotedSelection.text}] ${text}`;
     const quotedPreview = quotedSelection.text.slice(0, 50) + (quotedSelection.text.length > 50 ? '...' : '');
-    const display = `[QUICK:[QUOTE_MSG:${quotedPreview}|||${text}]]${prompt}`;
+
     // 设置 pendingSelection 以便后续 EDIT 精确定位
     if (quotedSelection.sectionId && onSetPendingSelection) {
       onSetPendingSelection({
@@ -451,8 +451,88 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     }
     onClearQuote?.();
     setInputValue('');
-    sendMessageRef.current(display);
-  }, [inputValue, quotedSelection, onClearQuote, onSetPendingSelection]);
+
+    // 不用 [QUICK:] 包装（避免嵌套方括号导致正则解析错误）
+    // 直接显示引用消息 + 发送 prompt
+    const displayContent = `[QUOTE_MSG:${quotedPreview}|||${text}]`;
+    setMessages(prev => [...prev, { role: 'user', content: displayContent }]);
+
+    // 冻结当前 editCards
+    if (currentEditCards.length > 0) {
+      const lastAssistantIdx = messages.length - 1;
+      setFrozenEditCards(prev => ({ ...prev, [lastAssistantIdx]: currentEditCards }));
+    }
+    setCurrentEditCards([]);
+    setIsLoading(true);
+    streamHasEditRef.current = false;
+    processedEditsRef.current.clear();
+    pendingEditCardsRef.current = [];
+    setLastStreamHadEdit(false);
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+    // 直接发送（绕过 sendMessage 的 QUICK 解析）
+    (async () => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 90000);
+        const res = await fetch(`${apiBase}/api/chat/message`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            sessionId,
+            message: prompt,
+            stream: true,
+            canvasMode: true,
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+
+        await parseSseStream(
+          res,
+          (fullText) => {
+            const { displayText, edits } = cleanEditBlocksFromText(fullText, resumeSections);
+            for (const edit of edits) handleParsedEdit(edit);
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { role: 'assistant', content: displayText };
+              return updated;
+            });
+          },
+          (edit) => {
+            handleParsedEdit({
+              sectionId: edit.sectionId,
+              original: edit.original,
+              suggested: edit.suggested,
+              rationale: edit.rationale,
+            });
+          }
+        );
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Quote send failed:', err);
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: 'assistant', content: '抱歉，处理引用改写时遇到了问题，请再试一次。' };
+            return updated;
+          });
+        }
+      } finally {
+        setIsLoading(false);
+        if (streamHasEditRef.current) setLastStreamHadEdit(true);
+        // flush pending edit cards
+        if (pendingEditCardsRef.current.length > 0) {
+          setCurrentEditCards(pendingEditCardsRef.current);
+          pendingEditCardsRef.current = [];
+        }
+      }
+    })();
+  }, [inputValue, quotedSelection, onClearQuote, onSetPendingSelection, apiBase, sessionId, resumeSections, handleParsedEdit, currentEditCards, messages.length]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
