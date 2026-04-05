@@ -160,6 +160,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         type: sec.type,
         title: sec.title,
         content: sec.content,
+        highlightRanges: sec.highlightRanges || [],
       }));
     }
     return [];
@@ -657,17 +658,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
     return true;
   }, []);
 
-  // 清除所有高亮
-  const clearHighlights = useCallback(() => {
-    setResumeSections(prev => prev.map(sec => ({ ...sec, highlightRanges: undefined })));
-  }, []);
-
   // 手动编辑简历段落 + 自动保存
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSectionContentChange = useCallback((sectionId: string, newContent: string) => {
     // 立即更新本地状态
     setResumeSections(prev => prev.map(sec =>
-      sec.id === sectionId ? { ...sec, content: newContent, highlightRanges: undefined } : sec
+      sec.id === sectionId ? { ...sec, content: newContent, highlightRanges: [] } : sec
     ));
 
     // 去抖保存到后端（1.5秒）
@@ -771,7 +767,6 @@ export const ResultView: React.FC<ResultViewProps> = ({ result, inputData, onRes
         onJdEditComplete={handleJdEditComplete}
         onSetPendingSelection={setPendingSelection}
         onDirectReplace={handleDirectReplace}
-        clearHighlights={clearHighlights}
       />
     );
   }

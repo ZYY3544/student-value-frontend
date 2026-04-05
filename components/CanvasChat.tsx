@@ -108,7 +108,6 @@ interface CanvasChatProps {
   resumeSections?: ResumeSection[];
   // JD 优化：直接替换 + 高亮
   onDirectReplace?: (sectionId: string, original: string, suggested: string) => boolean;
-  clearHighlights?: () => void;
   // JD 版本创建（返回版本 id）
   onJdVersionCreate?: (jdContent: string) => string | null;
   skipAutoSaveRef?: React.MutableRefObject<boolean>;
@@ -149,7 +148,6 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
   onAcceptEdit,
   resumeSections = [],
   onDirectReplace,
-  clearHighlights,
   onJdVersionCreate,
   skipAutoSaveRef,
   onJdEditComplete,
@@ -418,7 +416,7 @@ export const CanvasChat: React.FC<CanvasChatProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [jdInput, isLoading, sessionId, apiBase, onDirectReplace, clearHighlights, onJdVersionCreate, skipAutoSaveRef, onJdEditComplete, resumeSections]);
+  }, [jdInput, isLoading, sessionId, apiBase, onDirectReplace, onJdVersionCreate, skipAutoSaveRef, onJdEditComplete, resumeSections]);
 
   useEffect(() => {
     if (externalMessage) {

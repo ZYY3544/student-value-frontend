@@ -52,7 +52,6 @@ interface CanvasViewProps {
   onSetPendingSelection: (sel: { text: string; sectionId: string } | null) => void;
   // JD 优化：直接替换 + 高亮
   onDirectReplace: (sectionId: string, original: string, suggested: string) => boolean;
-  clearHighlights: () => void;
   // Not needed but passed through
   assessmentContext?: any;
   resumeText?: string;
@@ -81,7 +80,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   onJdEditComplete,
   onSetPendingSelection,
   onDirectReplace,
-  clearHighlights,
   assessmentContext,
   userId,
 }) => {
@@ -283,7 +281,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             onAcceptEdit={handleAcceptEdit}
             resumeSections={resumeSections}
             onDirectReplace={onDirectReplace}
-            clearHighlights={clearHighlights}
             onJdVersionCreate={onJdVersionCreate}
             skipAutoSaveRef={skipAutoSaveRef}
             onJdEditComplete={onJdEditComplete}
